@@ -1,4 +1,4 @@
-namespace cpp org.example.msif.demo
+namespace cpp org.example.msgrpc.demo
 
 struct RequestData {
         1: i32 pet_id,

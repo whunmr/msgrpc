@@ -9,7 +9,7 @@
 
 #include "api_types.h"
 
-namespace org { namespace example { namespace msgrpc { namespace demo {
+namespace org { namespace example { namespace msgrpc { namespace thrift {
 
 class apiConstants {
  public:

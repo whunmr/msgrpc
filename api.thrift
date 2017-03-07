@@ -1,8 +1,5 @@
-namespace cpp org.example.msgrpc.demo
+namespace cpp org.example.msgrpc.thrift
 
-struct RequestData {
-        1: i32 pet_id,
-}
 
 struct ResponseData {
         1: i32    pet_id,
@@ -10,8 +7,13 @@ struct ResponseData {
         3: i32    pet_weight,
 }
 
+/*
+struct RequestData {
+        1: i32 pet_id,
+}
+
 service Petstore {
         ResponseData get_pet_info(1: RequestData req),
 }
-
+*/
 

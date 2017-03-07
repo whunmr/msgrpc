@@ -11,93 +11,7 @@
 
 #include <thrift/TToString.h>
 
-namespace org { namespace example { namespace msgrpc { namespace demo {
-
-
-RequestData::~RequestData() throw() {
-}
-
-
-void RequestData::__set_pet_id(const int32_t val) {
-  this->pet_id = val;
-}
-
-uint32_t RequestData::read(::apache::thrift::protocol::TProtocol* iprot) {
-
-  apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
-  uint32_t xfer = 0;
-  std::string fname;
-  ::apache::thrift::protocol::TType ftype;
-  int16_t fid;
-
-  xfer += iprot->readStructBegin(fname);
-
-  using ::apache::thrift::protocol::TProtocolException;
-
-
-  while (true)
-  {
-    xfer += iprot->readFieldBegin(fname, ftype, fid);
-    if (ftype == ::apache::thrift::protocol::T_STOP) {
-      break;
-    }
-    switch (fid)
-    {
-      case 1:
-        if (ftype == ::apache::thrift::protocol::T_I32) {
-          xfer += iprot->readI32(this->pet_id);
-          this->__isset.pet_id = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
-      default:
-        xfer += iprot->skip(ftype);
-        break;
-    }
-    xfer += iprot->readFieldEnd();
-  }
-
-  xfer += iprot->readStructEnd();
-
-  return xfer;
-}
-
-uint32_t RequestData::write(::apache::thrift::protocol::TProtocol* oprot) const {
-  uint32_t xfer = 0;
-  apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
-  xfer += oprot->writeStructBegin("RequestData");
-
-  xfer += oprot->writeFieldBegin("pet_id", ::apache::thrift::protocol::T_I32, 1);
-  xfer += oprot->writeI32(this->pet_id);
-  xfer += oprot->writeFieldEnd();
-
-  xfer += oprot->writeFieldStop();
-  xfer += oprot->writeStructEnd();
-  return xfer;
-}
-
-void swap(RequestData &a, RequestData &b) {
-  using ::std::swap;
-  swap(a.pet_id, b.pet_id);
-  swap(a.__isset, b.__isset);
-}
-
-RequestData::RequestData(const RequestData& other0) {
-  pet_id = other0.pet_id;
-  __isset = other0.__isset;
-}
-RequestData& RequestData::operator=(const RequestData& other1) {
-  pet_id = other1.pet_id;
-  __isset = other1.__isset;
-  return *this;
-}
-void RequestData::printTo(std::ostream& out) const {
-  using ::apache::thrift::to_string;
-  out << "RequestData(";
-  out << "pet_id=" << to_string(pet_id);
-  out << ")";
-}
+namespace org { namespace example { namespace msgrpc { namespace thrift {
 
 
 ResponseData::~ResponseData() throw() {
@@ -203,17 +117,17 @@ void swap(ResponseData &a, ResponseData &b) {
   swap(a.__isset, b.__isset);
 }
 
-ResponseData::ResponseData(const ResponseData& other2) {
-  pet_id = other2.pet_id;
-  pet_name = other2.pet_name;
-  pet_weight = other2.pet_weight;
-  __isset = other2.__isset;
+ResponseData::ResponseData(const ResponseData& other0) {
+  pet_id = other0.pet_id;
+  pet_name = other0.pet_name;
+  pet_weight = other0.pet_weight;
+  __isset = other0.__isset;
 }
-ResponseData& ResponseData::operator=(const ResponseData& other3) {
-  pet_id = other3.pet_id;
-  pet_name = other3.pet_name;
-  pet_weight = other3.pet_weight;
-  __isset = other3.__isset;
+ResponseData& ResponseData::operator=(const ResponseData& other1) {
+  pet_id = other1.pet_id;
+  pet_name = other1.pet_name;
+  pet_weight = other1.pet_weight;
+  __isset = other1.__isset;
   return *this;
 }
 void ResponseData::printTo(std::ostream& out) const {

@@ -17,57 +17,9 @@
 #include <thrift/cxxfunctional.h>
 
 
-namespace org { namespace example { namespace msgrpc { namespace demo {
-
-class RequestData;
+namespace org { namespace example { namespace msgrpc { namespace thrift {
 
 class ResponseData;
-
-typedef struct _RequestData__isset {
-  _RequestData__isset() : pet_id(false) {}
-  bool pet_id :1;
-} _RequestData__isset;
-
-class RequestData {
- public:
-
-  RequestData(const RequestData&);
-  RequestData& operator=(const RequestData&);
-  RequestData() : pet_id(0) {
-  }
-
-  virtual ~RequestData() throw();
-  int32_t pet_id;
-
-  _RequestData__isset __isset;
-
-  void __set_pet_id(const int32_t val);
-
-  bool operator == (const RequestData & rhs) const
-  {
-    if (!(pet_id == rhs.pet_id))
-      return false;
-    return true;
-  }
-  bool operator != (const RequestData &rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator < (const RequestData & ) const;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-  virtual void printTo(std::ostream& out) const;
-};
-
-void swap(RequestData &a, RequestData &b);
-
-inline std::ostream& operator<<(std::ostream& out, const RequestData& obj)
-{
-  obj.printTo(out);
-  return out;
-}
 
 typedef struct _ResponseData__isset {
   _ResponseData__isset() : pet_id(false), pet_name(false), pet_weight(false) {}

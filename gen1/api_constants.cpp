@@ -6,7 +6,7 @@
  */
 #include "api_constants.h"
 
-namespace org { namespace example { namespace msgrpc { namespace demo {
+namespace org { namespace example { namespace msgrpc { namespace thrift {
 
 const apiConstants g_api_constants;
 

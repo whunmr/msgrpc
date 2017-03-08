@@ -257,6 +257,41 @@ template<> struct TTypeT<binary> {
     }
 };
 
+template<typename T>
+struct TTypeT<std::vector<T> > {
+    enum {value = ::apache::thrift::protocol::T_LIST};
+    static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, std::vector<T>& ___t) {
+        uint32_t ret = 0;
+            ___t.clear();
+                uint32_t _size;
+                ::apache::thrift::protocol::TType _etype;
+                ret += iprot->readListBegin(_etype, _size);
+
+            ___t.resize(_size);
+                uint32_t _i;
+                for (_i = 0; _i < _size; ++_i)
+                {
+                    ret += TTypeT<T>::read(iprot, ___t[_i]);
+                }
+            ret += iprot->readListEnd();
+        return ret;
+    }
+
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const std::vector<T>& ___t) {
+        uint32_t ret = 0;
+        ret += oprot->writeListBegin(::apache::thrift::protocol::T_I32, static_cast<uint32_t>(___t.size()));
+
+        std::vector<int32_t> ::const_iterator _iter;
+        for (_iter = ___t.begin(); _iter != ___t.end(); ++_iter)
+        {
+            ret += TTypeT<T>::write(oprot, (*_iter));
+        }
+
+        ret += oprot->writeListEnd();
+        return ret;
+    }
+};
+
 /*enum TType {
     T_VOID       = 1,
     T_BOOL       = 2,
@@ -408,17 +443,18 @@ namespace msgrpc_demo {
 
     ___def_struct(EmbeddedStruct);
 
-    #define ___fields_of_struct___ResponseData(_, ...)      \
-      _(1, pet_id,           int32_t,           __VA_ARGS__)\
-      _(2, pet_name,         std::string,       __VA_ARGS__)\
-      _(3, pet_weight,       int32_t,           __VA_ARGS__)\
-      _(4, pet_i8_value,     int8_t,            __VA_ARGS__)\
-      _(5, pet_i16_value,    int16_t,           __VA_ARGS__)\
-      _(6, pet_i64_value,    int64_t,           __VA_ARGS__)\
-      _(7, pet_double_value, double,            __VA_ARGS__)\
-      _(8, pet_bool_value,   bool,              __VA_ARGS__)\
-      _(9, pet_binary_value, binary,            __VA_ARGS__)\
-      _(10, pet_embedded_struct, EmbeddedStruct, __VA_ARGS__)
+    #define ___fields_of_struct___ResponseData(_, ...)         \
+      _(1, pet_id,           int32_t,              __VA_ARGS__)\
+      _(2, pet_name,         std::string,          __VA_ARGS__)\
+      _(3, pet_weight,       int32_t,              __VA_ARGS__)\
+      _(4, pet_i8_value,     int8_t,               __VA_ARGS__)\
+      _(5, pet_i16_value,    int16_t,              __VA_ARGS__)\
+      _(6, pet_i64_value,    int64_t,              __VA_ARGS__)\
+      _(7, pet_double_value, double,               __VA_ARGS__)\
+      _(8, pet_bool_value,   bool,                 __VA_ARGS__)\
+      _(9, pet_binary_value, binary,               __VA_ARGS__)\
+      _(10, pet_embedded_struct, EmbeddedStruct,   __VA_ARGS__)\
+      _(11, pet_list_i32,    std::vector<int32_t>, __VA_ARGS__)
 
 ___def_struct(ResponseData);
 
@@ -441,6 +477,9 @@ int main() {
     ___foo.pet_embedded_struct.es_i8 = 88;
     ___foo.pet_embedded_struct.es_i16 = 1616;
 
+    ___foo.pet_list_i32.push_back(9);
+    ___foo.pet_list_i32.push_back(10);
+
     uint8_t* pbuf; uint32_t len;
 
     if (ThriftEncoder::encode(___foo, &pbuf, &len)) {
@@ -461,6 +500,8 @@ int main() {
             cout << ___bar.pet_binary_value << endl;
             cout << (int)___bar.pet_embedded_struct.es_i8 << endl;
             cout << ___bar.pet_embedded_struct.es_i16 << endl;
+            cout << ___bar.pet_list_i32.at(0) << endl;
+            cout << ___bar.pet_list_i32.at(1) << endl;
         }
     }
 

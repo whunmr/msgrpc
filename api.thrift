@@ -16,6 +16,7 @@ struct ResponseData {
         8: bool   pet_bool_value,
         9: binary pet_binary_value,
         10: EmbeddedStruct pet_embedded_struct;
+        11: list<i32> pet_list_i32;
 }
 
 /*

@@ -11,7 +11,8 @@ set(SOURCE_FILES
     gen1/api_types.cpp
     gen1/api_types.h
     api.thrift
-    LICENSE
-    README.md main.cpp)
+    main.cpp)
 
 add_executable(msgrpc ${SOURCE_FILES})
+
+target_link_libraries(msgrpc /Users/hmwang/lab/thrift-0.9.3/lib/cpp/.libs/libthrift.a)

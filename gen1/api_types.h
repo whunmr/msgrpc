@@ -22,10 +22,13 @@ namespace org { namespace example { namespace msgrpc { namespace thrift {
 class ResponseData;
 
 typedef struct _ResponseData__isset {
-  _ResponseData__isset() : pet_id(false), pet_name(false), pet_weight(false) {}
+  _ResponseData__isset() : pet_id(false), pet_name(false), pet_weight(false), pet_i8_value(false), pet_i16_value(false), pet_i64_value(false) {}
   bool pet_id :1;
   bool pet_name :1;
   bool pet_weight :1;
+  bool pet_i8_value :1;
+  bool pet_i16_value :1;
+  bool pet_i64_value :1;
 } _ResponseData__isset;
 
 class ResponseData {
@@ -33,13 +36,16 @@ class ResponseData {
 
   ResponseData(const ResponseData&);
   ResponseData& operator=(const ResponseData&);
-  ResponseData() : pet_id(0), pet_name(), pet_weight(0) {
+  ResponseData() : pet_id(0), pet_name(), pet_weight(0), pet_i8_value(0), pet_i16_value(0), pet_i64_value(0) {
   }
 
   virtual ~ResponseData() throw();
   int32_t pet_id;
   std::string pet_name;
   int32_t pet_weight;
+  int8_t pet_i8_value;
+  int16_t pet_i16_value;
+  int64_t pet_i64_value;
 
   _ResponseData__isset __isset;
 
@@ -49,6 +55,12 @@ class ResponseData {
 
   void __set_pet_weight(const int32_t val);
 
+  void __set_pet_i8_value(const int8_t val);
+
+  void __set_pet_i16_value(const int16_t val);
+
+  void __set_pet_i64_value(const int64_t val);
+
   bool operator == (const ResponseData & rhs) const
   {
     if (!(pet_id == rhs.pet_id))
@@ -56,6 +68,12 @@ class ResponseData {
     if (!(pet_name == rhs.pet_name))
       return false;
     if (!(pet_weight == rhs.pet_weight))
+      return false;
+    if (!(pet_i8_value == rhs.pet_i8_value))
+      return false;
+    if (!(pet_i16_value == rhs.pet_i16_value))
+      return false;
+    if (!(pet_i64_value == rhs.pet_i64_value))
       return false;
     return true;
   }

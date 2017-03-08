@@ -30,6 +30,18 @@ void ResponseData::__set_pet_weight(const int32_t val) {
   this->pet_weight = val;
 }
 
+void ResponseData::__set_pet_i8_value(const int8_t val) {
+  this->pet_i8_value = val;
+}
+
+void ResponseData::__set_pet_i16_value(const int16_t val) {
+  this->pet_i16_value = val;
+}
+
+void ResponseData::__set_pet_i64_value(const int64_t val) {
+  this->pet_i64_value = val;
+}
+
 uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
@@ -75,6 +87,30 @@ uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
           xfer += iprot->skip(ftype);
         }
         break;
+      case 4:
+        if (ftype == ::apache::thrift::protocol::T_BYTE) {
+          xfer += iprot->readByte(this->pet_i8_value);
+          this->__isset.pet_i8_value = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 5:
+        if (ftype == ::apache::thrift::protocol::T_I16) {
+          xfer += iprot->readI16(this->pet_i16_value);
+          this->__isset.pet_i16_value = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 6:
+        if (ftype == ::apache::thrift::protocol::T_I64) {
+          xfer += iprot->readI64(this->pet_i64_value);
+          this->__isset.pet_i64_value = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -104,6 +140,18 @@ uint32_t ResponseData::write(::apache::thrift::protocol::TProtocol* oprot) const
   xfer += oprot->writeI32(this->pet_weight);
   xfer += oprot->writeFieldEnd();
 
+  xfer += oprot->writeFieldBegin("pet_i8_value", ::apache::thrift::protocol::T_BYTE, 4);
+  xfer += oprot->writeByte(this->pet_i8_value);
+  xfer += oprot->writeFieldEnd();
+
+  xfer += oprot->writeFieldBegin("pet_i16_value", ::apache::thrift::protocol::T_I16, 5);
+  xfer += oprot->writeI16(this->pet_i16_value);
+  xfer += oprot->writeFieldEnd();
+
+  xfer += oprot->writeFieldBegin("pet_i64_value", ::apache::thrift::protocol::T_I64, 6);
+  xfer += oprot->writeI64(this->pet_i64_value);
+  xfer += oprot->writeFieldEnd();
+
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
@@ -114,6 +162,9 @@ void swap(ResponseData &a, ResponseData &b) {
   swap(a.pet_id, b.pet_id);
   swap(a.pet_name, b.pet_name);
   swap(a.pet_weight, b.pet_weight);
+  swap(a.pet_i8_value, b.pet_i8_value);
+  swap(a.pet_i16_value, b.pet_i16_value);
+  swap(a.pet_i64_value, b.pet_i64_value);
   swap(a.__isset, b.__isset);
 }
 
@@ -121,12 +172,18 @@ ResponseData::ResponseData(const ResponseData& other0) {
   pet_id = other0.pet_id;
   pet_name = other0.pet_name;
   pet_weight = other0.pet_weight;
+  pet_i8_value = other0.pet_i8_value;
+  pet_i16_value = other0.pet_i16_value;
+  pet_i64_value = other0.pet_i64_value;
   __isset = other0.__isset;
 }
 ResponseData& ResponseData::operator=(const ResponseData& other1) {
   pet_id = other1.pet_id;
   pet_name = other1.pet_name;
   pet_weight = other1.pet_weight;
+  pet_i8_value = other1.pet_i8_value;
+  pet_i16_value = other1.pet_i16_value;
+  pet_i64_value = other1.pet_i64_value;
   __isset = other1.__isset;
   return *this;
 }
@@ -136,6 +193,9 @@ void ResponseData::printTo(std::ostream& out) const {
   out << "pet_id=" << to_string(pet_id);
   out << ", " << "pet_name=" << to_string(pet_name);
   out << ", " << "pet_weight=" << to_string(pet_weight);
+  out << ", " << "pet_i8_value=" << to_string(pet_i8_value);
+  out << ", " << "pet_i16_value=" << to_string(pet_i16_value);
+  out << ", " << "pet_i64_value=" << to_string(pet_i64_value);
   out << ")";
 }
 

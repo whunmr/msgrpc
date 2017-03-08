@@ -169,6 +169,26 @@ template<> struct TTypeT<bool> {
     }
 };
 
+template<> struct TTypeT<int8_t> {
+    enum {value = ::apache::thrift::protocol::T_BYTE};
+    static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, int8_t& t) {
+        return iprot->readByte(t);
+    }
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int8_t t) {
+        return oprot->writeByte(t);
+    }
+};
+
+template<> struct TTypeT<int16_t> {
+    enum {value = ::apache::thrift::protocol::T_I16};
+    static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, int16_t& t) {
+        return iprot->readI16(t);
+    }
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int16_t t) {
+        return oprot->writeI16(t);
+    }
+};
+
 template<> struct TTypeT<int32_t> {
     enum {value = ::apache::thrift::protocol::T_I32};
     static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, int32_t& t) {
@@ -176,6 +196,16 @@ template<> struct TTypeT<int32_t> {
     }
     static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int32_t t) {
         return oprot->writeI32(t);
+    }
+};
+
+template<> struct TTypeT<int64_t> {
+    enum {value = ::apache::thrift::protocol::T_I64};
+    static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, int64_t& t) {
+        return iprot->readI64(t);
+    }
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int64_t t) {
+        return oprot->writeI64(t);
     }
 };
 
@@ -260,17 +290,17 @@ template<> struct TTypeT<std::string> {
     xfer += oprot->writeFieldEnd();
 
 #define ___define_write(struct_name_) \
-uint32_t struct_name_::write(::apache::thrift::protocol::TProtocol* oprot) const {\
-  uint32_t xfer = 0;\
-  apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);\
-  xfer += oprot->writeStructBegin(#struct_name_);\
-  \
-  ___apply_expand(struct_name_, ___expand_write_field, struct_name_) \
-  \
-  xfer += oprot->writeFieldStop();\
-  xfer += oprot->writeStructEnd();\
-  return xfer;\
-}
+    uint32_t struct_name_::write(::apache::thrift::protocol::TProtocol* oprot) const {\
+      uint32_t xfer = 0;\
+      apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);\
+      xfer += oprot->writeStructBegin(#struct_name_);\
+      \
+      ___apply_expand(struct_name_, ___expand_write_field, struct_name_) \
+      \
+      xfer += oprot->writeFieldStop();\
+      xfer += oprot->writeStructEnd();\
+      return xfer;\
+    }
 
 #define ___expand_swap_field(fid_, fname_, ftype_, ...) \
     swap(a.fname_, b.fname_);
@@ -335,10 +365,13 @@ uint32_t struct_name_::write(::apache::thrift::protocol::TProtocol* oprot) const
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc_demo {
 
-    #define ___fields_of_struct___ResponseData(_, ...)\
-      _(1, pet_id,     int32_t,           __VA_ARGS__)\
-      _(2, pet_name,   std::string,       __VA_ARGS__)\
-      _(3, pet_weight, int32_t,           __VA_ARGS__)
+    #define ___fields_of_struct___ResponseData(_, ...)   \
+      _(1, pet_id,        int32_t,           __VA_ARGS__)\
+      _(2, pet_name,      std::string,       __VA_ARGS__)\
+      _(3, pet_weight,    int32_t,           __VA_ARGS__)\
+      _(4, pet_i8_value,  int8_t,            __VA_ARGS__)\
+      _(5, pet_i16_value, int16_t,           __VA_ARGS__)\
+      _(6, pet_i64_value, int64_t,           __VA_ARGS__)
 
 ___def_struct(ResponseData);
 
@@ -351,16 +384,15 @@ int main() {
     ___foo.pet_id = 11;
     ___foo.pet_name = "pet_name_foo";
     ___foo.pet_weight = 23;
+    ___foo.pet_i8_value = 8;
+    ___foo.pet_i16_value = 16;
+    ___foo.pet_i64_value = 64;
 
     uint8_t* pbuf; uint32_t len;
 
     if (ThriftEncoder::encode(___foo, &pbuf, &len)) {
-        std::string encoded_json((char*)pbuf);
-        std::cout << encoded_json << std::endl;
-
         ___foo.pet_id = ___foo.pet_weight = 0;
         ___foo.pet_name = "aa";
-
 
         msgrpc_demo::ResponseData ___bar;
 
@@ -368,6 +400,9 @@ int main() {
             cout << ___bar.pet_id << endl;
             cout << ___bar.pet_name << endl;
             cout << ___bar.pet_weight << endl;
+            cout << (int)___bar.pet_i8_value << endl;
+            cout << ___bar.pet_i16_value << endl;
+            cout << ___bar.pet_i64_value << endl;
         }
     }
 

@@ -22,13 +22,15 @@ namespace org { namespace example { namespace msgrpc { namespace thrift {
 class ResponseData;
 
 typedef struct _ResponseData__isset {
-  _ResponseData__isset() : pet_id(false), pet_name(false), pet_weight(false), pet_i8_value(false), pet_i16_value(false), pet_i64_value(false) {}
+  _ResponseData__isset() : pet_id(false), pet_name(false), pet_weight(false), pet_i8_value(false), pet_i16_value(false), pet_i64_value(false), pet_double_value(false), pet_bool_value(false) {}
   bool pet_id :1;
   bool pet_name :1;
   bool pet_weight :1;
   bool pet_i8_value :1;
   bool pet_i16_value :1;
   bool pet_i64_value :1;
+  bool pet_double_value :1;
+  bool pet_bool_value :1;
 } _ResponseData__isset;
 
 class ResponseData {
@@ -36,7 +38,7 @@ class ResponseData {
 
   ResponseData(const ResponseData&);
   ResponseData& operator=(const ResponseData&);
-  ResponseData() : pet_id(0), pet_name(), pet_weight(0), pet_i8_value(0), pet_i16_value(0), pet_i64_value(0) {
+  ResponseData() : pet_id(0), pet_name(), pet_weight(0), pet_i8_value(0), pet_i16_value(0), pet_i64_value(0), pet_double_value(0), pet_bool_value(0) {
   }
 
   virtual ~ResponseData() throw();
@@ -46,6 +48,8 @@ class ResponseData {
   int8_t pet_i8_value;
   int16_t pet_i16_value;
   int64_t pet_i64_value;
+  double pet_double_value;
+  bool pet_bool_value;
 
   _ResponseData__isset __isset;
 
@@ -61,6 +65,10 @@ class ResponseData {
 
   void __set_pet_i64_value(const int64_t val);
 
+  void __set_pet_double_value(const double val);
+
+  void __set_pet_bool_value(const bool val);
+
   bool operator == (const ResponseData & rhs) const
   {
     if (!(pet_id == rhs.pet_id))
@@ -74,6 +82,10 @@ class ResponseData {
     if (!(pet_i16_value == rhs.pet_i16_value))
       return false;
     if (!(pet_i64_value == rhs.pet_i64_value))
+      return false;
+    if (!(pet_double_value == rhs.pet_double_value))
+      return false;
+    if (!(pet_bool_value == rhs.pet_bool_value))
       return false;
     return true;
   }

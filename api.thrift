@@ -8,6 +8,8 @@ struct ResponseData {
         4: byte   pet_i8_value,
         5: i16    pet_i16_value,
         6: i64    pet_i64_value,
+        7: double pet_double_value,
+        8: bool   pet_bool_value
 }
 
 /*

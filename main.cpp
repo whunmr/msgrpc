@@ -209,6 +209,16 @@ template<> struct TTypeT<int64_t> {
     }
 };
 
+template<> struct TTypeT<double> {
+    enum {value = ::apache::thrift::protocol::T_DOUBLE};
+    static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, double& t) {
+        return iprot->readDouble(t);
+    }
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const double t) {
+        return oprot->writeDouble(t);
+    }
+};
+
 template<> struct TTypeT<std::string> {
     enum {value = ::apache::thrift::protocol::T_STRING};
     static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, std::string& t) {
@@ -365,13 +375,15 @@ template<> struct TTypeT<std::string> {
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc_demo {
 
-    #define ___fields_of_struct___ResponseData(_, ...)   \
-      _(1, pet_id,        int32_t,           __VA_ARGS__)\
-      _(2, pet_name,      std::string,       __VA_ARGS__)\
-      _(3, pet_weight,    int32_t,           __VA_ARGS__)\
-      _(4, pet_i8_value,  int8_t,            __VA_ARGS__)\
-      _(5, pet_i16_value, int16_t,           __VA_ARGS__)\
-      _(6, pet_i64_value, int64_t,           __VA_ARGS__)
+    #define ___fields_of_struct___ResponseData(_, ...)      \
+      _(1, pet_id,           int32_t,           __VA_ARGS__)\
+      _(2, pet_name,         std::string,       __VA_ARGS__)\
+      _(3, pet_weight,       int32_t,           __VA_ARGS__)\
+      _(4, pet_i8_value,     int8_t,            __VA_ARGS__)\
+      _(5, pet_i16_value,    int16_t,           __VA_ARGS__)\
+      _(6, pet_i64_value,    int64_t,           __VA_ARGS__)\
+      _(7, pet_double_value, double,            __VA_ARGS__)\
+      _(8, pet_bool_value,   bool,              __VA_ARGS__)
 
 ___def_struct(ResponseData);
 
@@ -383,10 +395,12 @@ int main() {
     thrift::ResponseData ___foo;
     ___foo.pet_id = 11;
     ___foo.pet_name = "pet_name_foo";
-    ___foo.pet_weight = 23;
+    ___foo.pet_weight = 32;
     ___foo.pet_i8_value = 8;
     ___foo.pet_i16_value = 16;
     ___foo.pet_i64_value = 64;
+    ___foo.pet_double_value = 3.3;
+    ___foo.pet_bool_value = true;
 
     uint8_t* pbuf; uint32_t len;
 
@@ -403,6 +417,8 @@ int main() {
             cout << (int)___bar.pet_i8_value << endl;
             cout << ___bar.pet_i16_value << endl;
             cout << ___bar.pet_i64_value << endl;
+            cout << ___bar.pet_double_value << endl;
+            cout << ___bar.pet_bool_value << endl;
         }
     }
 

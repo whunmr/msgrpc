@@ -42,6 +42,14 @@ void ResponseData::__set_pet_i64_value(const int64_t val) {
   this->pet_i64_value = val;
 }
 
+void ResponseData::__set_pet_double_value(const double val) {
+  this->pet_double_value = val;
+}
+
+void ResponseData::__set_pet_bool_value(const bool val) {
+  this->pet_bool_value = val;
+}
+
 uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
@@ -111,6 +119,22 @@ uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
           xfer += iprot->skip(ftype);
         }
         break;
+      case 7:
+        if (ftype == ::apache::thrift::protocol::T_DOUBLE) {
+          xfer += iprot->readDouble(this->pet_double_value);
+          this->__isset.pet_double_value = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 8:
+        if (ftype == ::apache::thrift::protocol::T_BOOL) {
+          xfer += iprot->readBool(this->pet_bool_value);
+          this->__isset.pet_bool_value = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -152,6 +176,14 @@ uint32_t ResponseData::write(::apache::thrift::protocol::TProtocol* oprot) const
   xfer += oprot->writeI64(this->pet_i64_value);
   xfer += oprot->writeFieldEnd();
 
+  xfer += oprot->writeFieldBegin("pet_double_value", ::apache::thrift::protocol::T_DOUBLE, 7);
+  xfer += oprot->writeDouble(this->pet_double_value);
+  xfer += oprot->writeFieldEnd();
+
+  xfer += oprot->writeFieldBegin("pet_bool_value", ::apache::thrift::protocol::T_BOOL, 8);
+  xfer += oprot->writeBool(this->pet_bool_value);
+  xfer += oprot->writeFieldEnd();
+
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
@@ -165,6 +197,8 @@ void swap(ResponseData &a, ResponseData &b) {
   swap(a.pet_i8_value, b.pet_i8_value);
   swap(a.pet_i16_value, b.pet_i16_value);
   swap(a.pet_i64_value, b.pet_i64_value);
+  swap(a.pet_double_value, b.pet_double_value);
+  swap(a.pet_bool_value, b.pet_bool_value);
   swap(a.__isset, b.__isset);
 }
 
@@ -175,6 +209,8 @@ ResponseData::ResponseData(const ResponseData& other0) {
   pet_i8_value = other0.pet_i8_value;
   pet_i16_value = other0.pet_i16_value;
   pet_i64_value = other0.pet_i64_value;
+  pet_double_value = other0.pet_double_value;
+  pet_bool_value = other0.pet_bool_value;
   __isset = other0.__isset;
 }
 ResponseData& ResponseData::operator=(const ResponseData& other1) {
@@ -184,6 +220,8 @@ ResponseData& ResponseData::operator=(const ResponseData& other1) {
   pet_i8_value = other1.pet_i8_value;
   pet_i16_value = other1.pet_i16_value;
   pet_i64_value = other1.pet_i64_value;
+  pet_double_value = other1.pet_double_value;
+  pet_bool_value = other1.pet_bool_value;
   __isset = other1.__isset;
   return *this;
 }
@@ -196,6 +234,8 @@ void ResponseData::printTo(std::ostream& out) const {
   out << ", " << "pet_i8_value=" << to_string(pet_i8_value);
   out << ", " << "pet_i16_value=" << to_string(pet_i16_value);
   out << ", " << "pet_i64_value=" << to_string(pet_i64_value);
+  out << ", " << "pet_double_value=" << to_string(pet_double_value);
+  out << ", " << "pet_bool_value=" << to_string(pet_bool_value);
   out << ")";
 }
 

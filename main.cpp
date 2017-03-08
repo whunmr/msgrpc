@@ -87,6 +87,8 @@ private:
 template<typename T>
 struct DummyParent {};
 
+struct ThriftStruct {};
+
 ////////////////////////////////////////////////////////////////////////////////
 #define ___apply_expand(struct_name_, field_expand_macro_, ...) \
     ___fields_of_struct___##struct_name_(field_expand_macro_, __VA_ARGS__)
@@ -119,12 +121,12 @@ struct DummyParent {};
   if (!(fname_ == rhs.fname_)) return false;
 
 #define ___declare_struct_self(struct_name_) \
-  class struct_name_ : DummyParent<struct_name_> {\
+  class struct_name_ : ThriftStruct {\
     public:\
     \
     struct_name_(const struct_name_&);\
     struct_name_& operator=(const struct_name_&);\
-    struct_name_() : DummyParent<struct_name_>()\
+    struct_name_() : ThriftStruct()\
       ___apply_expand(struct_name_, ___expand_struct_init_list, struct_name_) {} \
     virtual ~struct_name_() throw();\
     ___apply_expand(struct_name_, ___expand_struct_field, struct_name_)\
@@ -144,7 +146,14 @@ struct DummyParent {};
     uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;\
     \
     virtual void printTo(std::ostream& out) const;\
-  };
+  };\
+  void swap(struct_name_ &a, struct_name_ &b);\
+  inline std::ostream& operator<<(std::ostream& out, const struct_name_& obj)\
+  {\
+    obj.printTo(out);\
+    return out;\
+  }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 #define ___expand_define_set_field_method(fid_, fname_, ftype_, struct_name_) \
@@ -153,10 +162,19 @@ struct DummyParent {};
     }
 
 //TODO: add all the types
+
+////////////////////////////////////////////////////////////////////////////////
+struct binary : std::string {};
+
+////////////////////////////////////////////////////////////////////////////////
 template<typename T> struct TTypeT {
-    enum {value = ::apache::thrift::protocol::T_VOID};
-    static uint32_t  read(::apache::thrift::protocol::TProtocol* iprot, T& t) { assert(0); }
-    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, T& t) { assert(0); }
+    enum {value = ::apache::thrift::protocol::T_STRUCT};
+    static uint32_t  read(::apache::thrift::protocol::TProtocol* iprot, T& t) {
+        return t.read(iprot);
+    }
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const T& t) {
+        return t.write(oprot);
+    }
 };
 
 template<> struct TTypeT<bool> {
@@ -225,6 +243,16 @@ template<> struct TTypeT<std::string> {
         return iprot->readString(t);
     }
     static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const std::string& t) {
+        return oprot->writeString(t);
+    }
+};
+
+template<> struct TTypeT<binary> {
+    enum {value = ::apache::thrift::protocol::T_STRING};
+    static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, binary& t) {
+        return iprot->readBinary(t);
+    }
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const binary& t) {
         return oprot->writeString(t);
     }
 };
@@ -333,7 +361,7 @@ template<> struct TTypeT<std::string> {
     }
 
 #define ___define_assign_constructor(struct_name_) \
-    ResponseData& ResponseData::operator=(const ResponseData& other0) {\
+    struct_name_& struct_name_::operator=(const struct_name_& other0) {\
         ___apply_expand(struct_name_, ___expand_assign_field, struct_name_)\
         __isset = other0.__isset;\
         return *this;\
@@ -374,6 +402,11 @@ template<> struct TTypeT<std::string> {
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc_demo {
+    #define ___fields_of_struct___EmbeddedStruct(_, ...)    \
+      _(1, es_i8,          int8_t,              __VA_ARGS__)\
+      _(2, es_i16,         int16_t,             __VA_ARGS__)
+
+    ___def_struct(EmbeddedStruct);
 
     #define ___fields_of_struct___ResponseData(_, ...)      \
       _(1, pet_id,           int32_t,           __VA_ARGS__)\
@@ -383,7 +416,9 @@ namespace msgrpc_demo {
       _(5, pet_i16_value,    int16_t,           __VA_ARGS__)\
       _(6, pet_i64_value,    int64_t,           __VA_ARGS__)\
       _(7, pet_double_value, double,            __VA_ARGS__)\
-      _(8, pet_bool_value,   bool,              __VA_ARGS__)
+      _(8, pet_bool_value,   bool,              __VA_ARGS__)\
+      _(9, pet_binary_value, binary,            __VA_ARGS__)\
+      _(10, pet_embedded_struct, EmbeddedStruct, __VA_ARGS__)
 
 ___def_struct(ResponseData);
 
@@ -401,6 +436,10 @@ int main() {
     ___foo.pet_i64_value = 64;
     ___foo.pet_double_value = 3.3;
     ___foo.pet_bool_value = true;
+    ___foo.pet_binary_value = string("abcd");
+
+    ___foo.pet_embedded_struct.es_i8 = 88;
+    ___foo.pet_embedded_struct.es_i16 = 1616;
 
     uint8_t* pbuf; uint32_t len;
 
@@ -419,6 +458,9 @@ int main() {
             cout << ___bar.pet_i64_value << endl;
             cout << ___bar.pet_double_value << endl;
             cout << ___bar.pet_bool_value << endl;
+            cout << ___bar.pet_binary_value << endl;
+            cout << (int)___bar.pet_embedded_struct.es_i8 << endl;
+            cout << ___bar.pet_embedded_struct.es_i16 << endl;
         }
     }
 

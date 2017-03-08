@@ -19,10 +19,64 @@
 
 namespace org { namespace example { namespace msgrpc { namespace thrift {
 
+class EmbeddedStruct;
+
 class ResponseData;
 
+typedef struct _EmbeddedStruct__isset {
+  _EmbeddedStruct__isset() : es_i8(false), es_i16(false) {}
+  bool es_i8 :1;
+  bool es_i16 :1;
+} _EmbeddedStruct__isset;
+
+class EmbeddedStruct {
+ public:
+
+  EmbeddedStruct(const EmbeddedStruct&);
+  EmbeddedStruct& operator=(const EmbeddedStruct&);
+  EmbeddedStruct() : es_i8(0), es_i16(0) {
+  }
+
+  virtual ~EmbeddedStruct() throw();
+  int8_t es_i8;
+  int16_t es_i16;
+
+  _EmbeddedStruct__isset __isset;
+
+  void __set_es_i8(const int8_t val);
+
+  void __set_es_i16(const int16_t val);
+
+  bool operator == (const EmbeddedStruct & rhs) const
+  {
+    if (!(es_i8 == rhs.es_i8))
+      return false;
+    if (!(es_i16 == rhs.es_i16))
+      return false;
+    return true;
+  }
+  bool operator != (const EmbeddedStruct &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const EmbeddedStruct & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(EmbeddedStruct &a, EmbeddedStruct &b);
+
+inline std::ostream& operator<<(std::ostream& out, const EmbeddedStruct& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
 typedef struct _ResponseData__isset {
-  _ResponseData__isset() : pet_id(false), pet_name(false), pet_weight(false), pet_i8_value(false), pet_i16_value(false), pet_i64_value(false), pet_double_value(false), pet_bool_value(false) {}
+  _ResponseData__isset() : pet_id(false), pet_name(false), pet_weight(false), pet_i8_value(false), pet_i16_value(false), pet_i64_value(false), pet_double_value(false), pet_bool_value(false), pet_binary_value(false), pet_embedded_struct(false) {}
   bool pet_id :1;
   bool pet_name :1;
   bool pet_weight :1;
@@ -31,6 +85,8 @@ typedef struct _ResponseData__isset {
   bool pet_i64_value :1;
   bool pet_double_value :1;
   bool pet_bool_value :1;
+  bool pet_binary_value :1;
+  bool pet_embedded_struct :1;
 } _ResponseData__isset;
 
 class ResponseData {
@@ -38,7 +94,7 @@ class ResponseData {
 
   ResponseData(const ResponseData&);
   ResponseData& operator=(const ResponseData&);
-  ResponseData() : pet_id(0), pet_name(), pet_weight(0), pet_i8_value(0), pet_i16_value(0), pet_i64_value(0), pet_double_value(0), pet_bool_value(0) {
+  ResponseData() : pet_id(0), pet_name(), pet_weight(0), pet_i8_value(0), pet_i16_value(0), pet_i64_value(0), pet_double_value(0), pet_bool_value(0), pet_binary_value() {
   }
 
   virtual ~ResponseData() throw();
@@ -50,6 +106,8 @@ class ResponseData {
   int64_t pet_i64_value;
   double pet_double_value;
   bool pet_bool_value;
+  std::string pet_binary_value;
+  EmbeddedStruct pet_embedded_struct;
 
   _ResponseData__isset __isset;
 
@@ -69,6 +127,10 @@ class ResponseData {
 
   void __set_pet_bool_value(const bool val);
 
+  void __set_pet_binary_value(const std::string& val);
+
+  void __set_pet_embedded_struct(const EmbeddedStruct& val);
+
   bool operator == (const ResponseData & rhs) const
   {
     if (!(pet_id == rhs.pet_id))
@@ -86,6 +148,10 @@ class ResponseData {
     if (!(pet_double_value == rhs.pet_double_value))
       return false;
     if (!(pet_bool_value == rhs.pet_bool_value))
+      return false;
+    if (!(pet_binary_value == rhs.pet_binary_value))
+      return false;
+    if (!(pet_embedded_struct == rhs.pet_embedded_struct))
       return false;
     return true;
   }

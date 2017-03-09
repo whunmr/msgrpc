@@ -182,7 +182,10 @@ template<> struct TTypeT<bool> {
     static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, bool& t) {
         return iprot->readBool(t);
     }
-    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const bool t) {
+    static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, std::vector<bool>::reference t) {
+        return iprot->readBool(t);
+    }
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const bool& t) {
         return oprot->writeBool(t);
     }
 };
@@ -192,7 +195,7 @@ template<> struct TTypeT<int8_t> {
     static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, int8_t& t) {
         return iprot->readByte(t);
     }
-    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int8_t t) {
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int8_t& t) {
         return oprot->writeByte(t);
     }
 };
@@ -202,7 +205,7 @@ template<> struct TTypeT<int16_t> {
     static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, int16_t& t) {
         return iprot->readI16(t);
     }
-    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int16_t t) {
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int16_t& t) {
         return oprot->writeI16(t);
     }
 };
@@ -212,7 +215,7 @@ template<> struct TTypeT<int32_t> {
     static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, int32_t& t) {
         return iprot->readI32(t);
     }
-    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int32_t t) {
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int32_t& t) {
         return oprot->writeI32(t);
     }
 };
@@ -222,7 +225,7 @@ template<> struct TTypeT<int64_t> {
     static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, int64_t& t) {
         return iprot->readI64(t);
     }
-    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int64_t t) {
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const int64_t& t) {
         return oprot->writeI64(t);
     }
 };
@@ -232,7 +235,7 @@ template<> struct TTypeT<double> {
     static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, double& t) {
         return iprot->readDouble(t);
     }
-    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const double t) {
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const double& t) {
         return oprot->writeDouble(t);
     }
 };
@@ -279,9 +282,9 @@ struct TTypeT<std::vector<T> > {
 
     static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const std::vector<T>& ___t) {
         uint32_t ret = 0;
-        ret += oprot->writeListBegin(::apache::thrift::protocol::T_I32, static_cast<uint32_t>(___t.size()));
+        ret += oprot->writeListBegin((TType)TTypeT<T>::value, static_cast<uint32_t>(___t.size()));
 
-        std::vector<int32_t> ::const_iterator _iter;
+        typename std::vector<T>::const_iterator _iter;
         for (_iter = ___t.begin(); _iter != ___t.end(); ++_iter)
         {
             ret += TTypeT<T>::write(oprot, (*_iter));
@@ -291,6 +294,8 @@ struct TTypeT<std::vector<T> > {
         return ret;
     }
 };
+
+
 
 /*enum TType {
     T_VOID       = 1,
@@ -454,7 +459,9 @@ namespace msgrpc_demo {
       _(8, pet_bool_value,   bool,                 __VA_ARGS__)\
       _(9, pet_binary_value, binary,               __VA_ARGS__)\
       _(10, pet_embedded_struct, EmbeddedStruct,   __VA_ARGS__)\
-      _(11, pet_list_i32,    std::vector<int32_t>, __VA_ARGS__)
+      _(11, pet_list_i32,    std::vector<int32_t>, __VA_ARGS__)\
+      _(12, pet_list_of_struct, std::vector<EmbeddedStruct>, __VA_ARGS__)\
+      _(13, pet_list_of_bool, std::vector<bool>, __VA_ARGS__)
 
 ___def_struct(ResponseData);
 
@@ -480,6 +487,15 @@ int main() {
     ___foo.pet_list_i32.push_back(9);
     ___foo.pet_list_i32.push_back(10);
 
+    thrift::EmbeddedStruct es1; es1.es_i8 = 18; es1.es_i16 = 116;
+    thrift::EmbeddedStruct es2; es2.es_i8 = 28; es2.es_i16 = 216;
+    ___foo.pet_list_of_struct.push_back(es1);
+    ___foo.pet_list_of_struct.push_back(es2);
+
+    ___foo.pet_list_of_bool.push_back(true);
+    ___foo.pet_list_of_bool.push_back(false);
+    ___foo.pet_list_of_bool.push_back(true);
+
     uint8_t* pbuf; uint32_t len;
 
     if (ThriftEncoder::encode(___foo, &pbuf, &len)) {
@@ -502,6 +518,16 @@ int main() {
             cout << ___bar.pet_embedded_struct.es_i16 << endl;
             cout << ___bar.pet_list_i32.at(0) << endl;
             cout << ___bar.pet_list_i32.at(1) << endl;
+
+            cout << (int)___bar.pet_list_of_struct.at(0).es_i8 << endl;
+            cout << ___bar.pet_list_of_struct.at(0).es_i16 << endl;
+
+            cout << (int)___bar.pet_list_of_struct.at(1).es_i8 << endl;
+            cout << ___bar.pet_list_of_struct.at(1).es_i16 << endl;
+
+            cout << ___bar.pet_list_of_bool.at(0) << endl;
+            cout << ___bar.pet_list_of_bool.at(1) << endl;
+            cout << ___bar.pet_list_of_bool.at(2) << endl;
         }
     }
 

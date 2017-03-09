@@ -168,6 +168,14 @@ void ResponseData::__set_pet_list_i32(const std::vector<int32_t> & val) {
   this->pet_list_i32 = val;
 }
 
+void ResponseData::__set_pet_list_of_struct(const std::vector<EmbeddedStruct> & val) {
+  this->pet_list_of_struct = val;
+}
+
+void ResponseData::__set_pet_list_of_bool(const std::vector<bool> & val) {
+  this->pet_list_of_bool = val;
+}
+
 uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
@@ -289,6 +297,46 @@ uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
           xfer += iprot->skip(ftype);
         }
         break;
+      case 12:
+        if (ftype == ::apache::thrift::protocol::T_LIST) {
+          {
+            this->pet_list_of_struct.clear();
+            uint32_t _size7;
+            ::apache::thrift::protocol::TType _etype10;
+            xfer += iprot->readListBegin(_etype10, _size7);
+            this->pet_list_of_struct.resize(_size7);
+            uint32_t _i11;
+            for (_i11 = 0; _i11 < _size7; ++_i11)
+            {
+              xfer += this->pet_list_of_struct[_i11].read(iprot);
+            }
+            xfer += iprot->readListEnd();
+          }
+          this->__isset.pet_list_of_struct = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 13:
+        if (ftype == ::apache::thrift::protocol::T_LIST) {
+          {
+            this->pet_list_of_bool.clear();
+            uint32_t _size12;
+            ::apache::thrift::protocol::TType _etype15;
+            xfer += iprot->readListBegin(_etype15, _size12);
+            this->pet_list_of_bool.resize(_size12);
+            uint32_t _i16;
+            for (_i16 = 0; _i16 < _size12; ++_i16)
+            {
+              xfer += iprot->readBool(this->pet_list_of_bool[_i16]);
+            }
+            xfer += iprot->readListEnd();
+          }
+          this->__isset.pet_list_of_bool = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -349,10 +397,34 @@ uint32_t ResponseData::write(::apache::thrift::protocol::TProtocol* oprot) const
   xfer += oprot->writeFieldBegin("pet_list_i32", ::apache::thrift::protocol::T_LIST, 11);
   {
     xfer += oprot->writeListBegin(::apache::thrift::protocol::T_I32, static_cast<uint32_t>(this->pet_list_i32.size()));
-    std::vector<int32_t> ::const_iterator _iter7;
-    for (_iter7 = this->pet_list_i32.begin(); _iter7 != this->pet_list_i32.end(); ++_iter7)
+    std::vector<int32_t> ::const_iterator _iter17;
+    for (_iter17 = this->pet_list_i32.begin(); _iter17 != this->pet_list_i32.end(); ++_iter17)
     {
-      xfer += oprot->writeI32((*_iter7));
+      xfer += oprot->writeI32((*_iter17));
+    }
+    xfer += oprot->writeListEnd();
+  }
+  xfer += oprot->writeFieldEnd();
+
+  xfer += oprot->writeFieldBegin("pet_list_of_struct", ::apache::thrift::protocol::T_LIST, 12);
+  {
+    xfer += oprot->writeListBegin(::apache::thrift::protocol::T_STRUCT, static_cast<uint32_t>(this->pet_list_of_struct.size()));
+    std::vector<EmbeddedStruct> ::const_iterator _iter18;
+    for (_iter18 = this->pet_list_of_struct.begin(); _iter18 != this->pet_list_of_struct.end(); ++_iter18)
+    {
+      xfer += (*_iter18).write(oprot);
+    }
+    xfer += oprot->writeListEnd();
+  }
+  xfer += oprot->writeFieldEnd();
+
+  xfer += oprot->writeFieldBegin("pet_list_of_bool", ::apache::thrift::protocol::T_LIST, 13);
+  {
+    xfer += oprot->writeListBegin(::apache::thrift::protocol::T_BOOL, static_cast<uint32_t>(this->pet_list_of_bool.size()));
+    std::vector<bool> ::const_iterator _iter19;
+    for (_iter19 = this->pet_list_of_bool.begin(); _iter19 != this->pet_list_of_bool.end(); ++_iter19)
+    {
+      xfer += oprot->writeBool((*_iter19));
     }
     xfer += oprot->writeListEnd();
   }
@@ -376,36 +448,42 @@ void swap(ResponseData &a, ResponseData &b) {
   swap(a.pet_binary_value, b.pet_binary_value);
   swap(a.pet_embedded_struct, b.pet_embedded_struct);
   swap(a.pet_list_i32, b.pet_list_i32);
+  swap(a.pet_list_of_struct, b.pet_list_of_struct);
+  swap(a.pet_list_of_bool, b.pet_list_of_bool);
   swap(a.__isset, b.__isset);
 }
 
-ResponseData::ResponseData(const ResponseData& other8) {
-  pet_id = other8.pet_id;
-  pet_name = other8.pet_name;
-  pet_weight = other8.pet_weight;
-  pet_i8_value = other8.pet_i8_value;
-  pet_i16_value = other8.pet_i16_value;
-  pet_i64_value = other8.pet_i64_value;
-  pet_double_value = other8.pet_double_value;
-  pet_bool_value = other8.pet_bool_value;
-  pet_binary_value = other8.pet_binary_value;
-  pet_embedded_struct = other8.pet_embedded_struct;
-  pet_list_i32 = other8.pet_list_i32;
-  __isset = other8.__isset;
+ResponseData::ResponseData(const ResponseData& other20) {
+  pet_id = other20.pet_id;
+  pet_name = other20.pet_name;
+  pet_weight = other20.pet_weight;
+  pet_i8_value = other20.pet_i8_value;
+  pet_i16_value = other20.pet_i16_value;
+  pet_i64_value = other20.pet_i64_value;
+  pet_double_value = other20.pet_double_value;
+  pet_bool_value = other20.pet_bool_value;
+  pet_binary_value = other20.pet_binary_value;
+  pet_embedded_struct = other20.pet_embedded_struct;
+  pet_list_i32 = other20.pet_list_i32;
+  pet_list_of_struct = other20.pet_list_of_struct;
+  pet_list_of_bool = other20.pet_list_of_bool;
+  __isset = other20.__isset;
 }
-ResponseData& ResponseData::operator=(const ResponseData& other9) {
-  pet_id = other9.pet_id;
-  pet_name = other9.pet_name;
-  pet_weight = other9.pet_weight;
-  pet_i8_value = other9.pet_i8_value;
-  pet_i16_value = other9.pet_i16_value;
-  pet_i64_value = other9.pet_i64_value;
-  pet_double_value = other9.pet_double_value;
-  pet_bool_value = other9.pet_bool_value;
-  pet_binary_value = other9.pet_binary_value;
-  pet_embedded_struct = other9.pet_embedded_struct;
-  pet_list_i32 = other9.pet_list_i32;
-  __isset = other9.__isset;
+ResponseData& ResponseData::operator=(const ResponseData& other21) {
+  pet_id = other21.pet_id;
+  pet_name = other21.pet_name;
+  pet_weight = other21.pet_weight;
+  pet_i8_value = other21.pet_i8_value;
+  pet_i16_value = other21.pet_i16_value;
+  pet_i64_value = other21.pet_i64_value;
+  pet_double_value = other21.pet_double_value;
+  pet_bool_value = other21.pet_bool_value;
+  pet_binary_value = other21.pet_binary_value;
+  pet_embedded_struct = other21.pet_embedded_struct;
+  pet_list_i32 = other21.pet_list_i32;
+  pet_list_of_struct = other21.pet_list_of_struct;
+  pet_list_of_bool = other21.pet_list_of_bool;
+  __isset = other21.__isset;
   return *this;
 }
 void ResponseData::printTo(std::ostream& out) const {
@@ -422,6 +500,8 @@ void ResponseData::printTo(std::ostream& out) const {
   out << ", " << "pet_binary_value=" << to_string(pet_binary_value);
   out << ", " << "pet_embedded_struct=" << to_string(pet_embedded_struct);
   out << ", " << "pet_list_i32=" << to_string(pet_list_i32);
+  out << ", " << "pet_list_of_struct=" << to_string(pet_list_of_struct);
+  out << ", " << "pet_list_of_bool=" << to_string(pet_list_of_bool);
   out << ")";
 }
 

@@ -544,7 +544,7 @@ namespace msgrpc_demo {
       _(16, pet_map_i32_string,    map_int32_string,                  __VA_ARGS__)\
       _(17, pet_map_string_struct, map_string_struct,                 __VA_ARGS__)
 
-___def_struct(ResponseData);
+    ___def_struct(ResponseData);
 
 } //namespace msgrpc_demo
 

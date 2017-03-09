@@ -19,6 +19,8 @@ struct ResponseData {
         11: list<i32>            pet_list_i32,
         12: list<EmbeddedStruct> pet_list_of_struct,
         13: list<bool>           pet_list_of_bool,
+        14: set<i32>             pet_set_of_i32,
+        15: set<EmbeddedStruct>  pet_set_of_struct,
 }
 
 /*

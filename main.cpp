@@ -295,6 +295,41 @@ struct TTypeT<std::vector<T> > {
     }
 };
 
+template<typename T>
+struct TTypeT<std::set<T> > {
+    enum {value = ::apache::thrift::protocol::T_SET};
+    static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, std::set<T>& ___t) {
+        uint32_t ret = 0;
+        uint32_t _size;
+        ::apache::thrift::protocol::TType _etype;
+        ret += iprot->readSetBegin(_etype, _size);
+
+        uint32_t _i;
+        for (_i = 0; _i < _size; ++_i)
+        {
+            T _elem;
+            ret += TTypeT<T>::read(iprot, _elem);
+            ___t.insert(_elem);
+        }
+        ret += iprot->readSetEnd();
+
+        return ret;
+    }
+
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const std::set<T>& ___t) {
+        uint32_t ret = 0;
+
+        ret += oprot->writeSetBegin((TType)TTypeT<T>::value, static_cast<uint32_t>(___t.size()));
+        typename std::set<T>::const_iterator _iter;
+        for (_iter = ___t.begin(); _iter != ___t.end(); ++_iter)
+        {
+            ret += TTypeT<T>::write(oprot, (*_iter));
+        }
+        ret += oprot->writeSetEnd();
+
+        return ret;
+    }
+};
 
 
 /*enum TType {
@@ -449,24 +484,37 @@ namespace msgrpc_demo {
     ___def_struct(EmbeddedStruct);
 
     #define ___fields_of_struct___ResponseData(_, ...)         \
-      _(1, pet_id,           int32_t,              __VA_ARGS__)\
-      _(2, pet_name,         std::string,          __VA_ARGS__)\
-      _(3, pet_weight,       int32_t,              __VA_ARGS__)\
-      _(4, pet_i8_value,     int8_t,               __VA_ARGS__)\
-      _(5, pet_i16_value,    int16_t,              __VA_ARGS__)\
-      _(6, pet_i64_value,    int64_t,              __VA_ARGS__)\
-      _(7, pet_double_value, double,               __VA_ARGS__)\
-      _(8, pet_bool_value,   bool,                 __VA_ARGS__)\
-      _(9, pet_binary_value, binary,               __VA_ARGS__)\
-      _(10, pet_embedded_struct, EmbeddedStruct,   __VA_ARGS__)\
-      _(11, pet_list_i32,    std::vector<int32_t>, __VA_ARGS__)\
+      _(1, pet_id,           int32_t,                        __VA_ARGS__)\
+      _(2, pet_name,         std::string,                    __VA_ARGS__)\
+      _(3, pet_weight,       int32_t,                        __VA_ARGS__)\
+      _(4, pet_i8_value,     int8_t,                         __VA_ARGS__)\
+      _(5, pet_i16_value,    int16_t,                        __VA_ARGS__)\
+      _(6, pet_i64_value,    int64_t,                        __VA_ARGS__)\
+      _(7, pet_double_value, double,                         __VA_ARGS__)\
+      _(8, pet_bool_value,   bool,                           __VA_ARGS__)\
+      _(9, pet_binary_value, binary,                         __VA_ARGS__)\
+      _(10, pet_embedded_struct, EmbeddedStruct,             __VA_ARGS__)\
+      _(11, pet_list_i32,    std::vector<int32_t>,           __VA_ARGS__)\
       _(12, pet_list_of_struct, std::vector<EmbeddedStruct>, __VA_ARGS__)\
-      _(13, pet_list_of_bool, std::vector<bool>, __VA_ARGS__)
+      _(13, pet_list_of_bool, std::vector<bool>,             __VA_ARGS__)\
+      _(14, pet_set_of_i32, std::set<int32_t>,               __VA_ARGS__)\
+      _(15, pet_set_of_struct, std::set<EmbeddedStruct>,     __VA_ARGS__)
 
 ___def_struct(ResponseData);
 
 } //namespace msgrpc_demo
 
+////////////////////////////////////////////////////////////////////////////////
+namespace msgrpc_demo {
+    bool EmbeddedStruct::operator<(const EmbeddedStruct &rhs) const {
+        return es_i8 < rhs.es_i8 ? true : (es_i8 > rhs.es_i8 ? false : (es_i16 < rhs.es_i16));
+    }
+}
+namespace org { namespace example { namespace msgrpc { namespace thrift {
+    bool EmbeddedStruct::operator<(const EmbeddedStruct &rhs) const {
+        return es_i8 < rhs.es_i8 ? true : (es_i8 > rhs.es_i8 ? false : (es_i16 < rhs.es_i16));
+    }
+}}}} // namespace
 ////////////////////////////////////////////////////////////////////////////////
 
 int main() {
@@ -487,14 +535,22 @@ int main() {
     ___foo.pet_list_i32.push_back(9);
     ___foo.pet_list_i32.push_back(10);
 
-    thrift::EmbeddedStruct es1; es1.es_i8 = 18; es1.es_i16 = 116;
-    thrift::EmbeddedStruct es2; es2.es_i8 = 28; es2.es_i16 = 216;
+    thrift::EmbeddedStruct es1; es1.es_i8 = 97; es1.es_i16 = 116;
+    thrift::EmbeddedStruct es2; es2.es_i8 = 98; es2.es_i16 = 216;
+
     ___foo.pet_list_of_struct.push_back(es1);
     ___foo.pet_list_of_struct.push_back(es2);
 
     ___foo.pet_list_of_bool.push_back(true);
     ___foo.pet_list_of_bool.push_back(false);
     ___foo.pet_list_of_bool.push_back(true);
+
+    ___foo.pet_set_of_i32.insert(100);
+    ___foo.pet_set_of_i32.insert(101);
+    ___foo.pet_set_of_i32.insert(102);
+
+    ___foo.pet_set_of_struct.insert(es1);
+    ___foo.pet_set_of_struct.insert(es2);
 
     uint8_t* pbuf; uint32_t len;
 
@@ -528,6 +584,10 @@ int main() {
             cout << ___bar.pet_list_of_bool.at(0) << endl;
             cout << ___bar.pet_list_of_bool.at(1) << endl;
             cout << ___bar.pet_list_of_bool.at(2) << endl;
+
+            for (auto i : ___bar.pet_set_of_i32) { cout << i << endl; }
+
+            for (auto es : ___bar.pet_set_of_struct) { cout << es << endl; }
         }
     }
 

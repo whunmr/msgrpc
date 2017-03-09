@@ -76,7 +76,7 @@ inline std::ostream& operator<<(std::ostream& out, const EmbeddedStruct& obj)
 }
 
 typedef struct _ResponseData__isset {
-  _ResponseData__isset() : pet_id(false), pet_name(false), pet_weight(false), pet_i8_value(false), pet_i16_value(false), pet_i64_value(false), pet_double_value(false), pet_bool_value(false), pet_binary_value(false), pet_embedded_struct(false), pet_list_i32(false), pet_list_of_struct(false), pet_list_of_bool(false) {}
+  _ResponseData__isset() : pet_id(false), pet_name(false), pet_weight(false), pet_i8_value(false), pet_i16_value(false), pet_i64_value(false), pet_double_value(false), pet_bool_value(false), pet_binary_value(false), pet_embedded_struct(false), pet_list_i32(false), pet_list_of_struct(false), pet_list_of_bool(false), pet_set_of_i32(false), pet_set_of_struct(false) {}
   bool pet_id :1;
   bool pet_name :1;
   bool pet_weight :1;
@@ -90,6 +90,8 @@ typedef struct _ResponseData__isset {
   bool pet_list_i32 :1;
   bool pet_list_of_struct :1;
   bool pet_list_of_bool :1;
+  bool pet_set_of_i32 :1;
+  bool pet_set_of_struct :1;
 } _ResponseData__isset;
 
 class ResponseData {
@@ -114,6 +116,8 @@ class ResponseData {
   std::vector<int32_t>  pet_list_i32;
   std::vector<EmbeddedStruct>  pet_list_of_struct;
   std::vector<bool>  pet_list_of_bool;
+  std::set<int32_t>  pet_set_of_i32;
+  std::set<EmbeddedStruct>  pet_set_of_struct;
 
   _ResponseData__isset __isset;
 
@@ -143,6 +147,10 @@ class ResponseData {
 
   void __set_pet_list_of_bool(const std::vector<bool> & val);
 
+  void __set_pet_set_of_i32(const std::set<int32_t> & val);
+
+  void __set_pet_set_of_struct(const std::set<EmbeddedStruct> & val);
+
   bool operator == (const ResponseData & rhs) const
   {
     if (!(pet_id == rhs.pet_id))
@@ -170,6 +178,10 @@ class ResponseData {
     if (!(pet_list_of_struct == rhs.pet_list_of_struct))
       return false;
     if (!(pet_list_of_bool == rhs.pet_list_of_bool))
+      return false;
+    if (!(pet_set_of_i32 == rhs.pet_set_of_i32))
+      return false;
+    if (!(pet_set_of_struct == rhs.pet_set_of_struct))
       return false;
     return true;
   }

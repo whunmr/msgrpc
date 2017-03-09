@@ -1,16 +1,12 @@
 #include <iostream>
-
-#include "thrift/thrift_codec.h"
-#include "thrift/thrift_struct_def_idl.h"
-
 #include "gen1/api_types.h"
 
-using namespace std;
 using namespace org::example::msgrpc;
 
 #include "thrift/thrift_struct_def_idl.h"
-#include "demo_service_idl.h"
-
+namespace msgrpc_demo {
+    #include "demo_service_interface.h"
+}
 
 namespace msgrpc_demo {
     bool EmbeddedStruct::operator<(const EmbeddedStruct &rhs) const {
@@ -24,6 +20,9 @@ namespace org { namespace example { namespace msgrpc { namespace thrift {
     }
 }}}}
 
+////////////////////////////////////////////////////////////////////////////////
+using namespace std;
+#include "thrift/thrift_codec.h"
 
 int main() {
     thrift::ResponseData ___foo;

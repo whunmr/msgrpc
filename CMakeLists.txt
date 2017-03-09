@@ -11,7 +11,7 @@ set(SOURCE_FILES
     gen1/api_types.cpp
     gen1/api_types.h
     api.thrift
-    main.cpp thrift/thrift_codec.h thrift/thrift_struct_def_idl.h demo_service_idl.h thrift/thrift_idl_common.h demo_service_trivial.cpp.cpp)
+    main.cpp thrift/thrift_codec.h thrift/thrift_struct_def_idl.h demo_service_interface.h)
 
 add_executable(msgrpc ${SOURCE_FILES})
 

@@ -22,6 +22,7 @@ struct ResponseData {
         14: set<i32>             pet_set_of_i32,
         15: set<EmbeddedStruct>  pet_set_of_struct,
         16: map<i32, string>     pet_map_i32_string,
+        17: map<string, EmbeddedStruct> pet_map_string_struct,
 }
 
 /*

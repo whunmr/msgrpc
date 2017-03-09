@@ -331,6 +331,45 @@ struct TTypeT<std::set<T> > {
     }
 };
 
+template<typename _K, typename _V>
+struct TTypeT<std::map<_K, _V> > {
+    enum {value = ::apache::thrift::protocol::T_MAP};
+    static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, std::map<_K, _V>& ___t) {
+        uint32_t ret = 0;
+
+        ___t.clear();
+        uint32_t _size;
+        ::apache::thrift::protocol::TType _ktype;
+        ::apache::thrift::protocol::TType _vtype;
+        ret += iprot->readMapBegin(_ktype, _vtype, _size);
+
+        uint32_t _i;
+        for (_i = 0; _i < _size; ++_i) {
+            _K _key;
+            ret += TTypeT<_K>::read(iprot, _key);
+            _V &_val = ___t[_key];
+            ret += TTypeT<_V>::read(iprot, _val);
+        }
+        ret += iprot->readMapEnd();
+
+        return ret;
+    }
+
+    static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const std::map<_K, _V>& ___t) {
+        uint32_t ret = 0;
+
+        ret += oprot->writeMapBegin((TType)TTypeT<_K>::value, (TType)TTypeT<_V>::value, static_cast<uint32_t>(___t.size()));
+        std::map<int32_t, std::string> ::const_iterator _iter;
+        for (_iter = ___t.begin(); _iter != ___t.end(); ++_iter)
+        {
+            ret += TTypeT<_K>::write(oprot, _iter->first);
+            ret += TTypeT<_V>::write(oprot, _iter->second);
+        }
+        ret += oprot->writeMapEnd();
+
+        return ret;
+    }
+};
 
 /*enum TType {
     T_VOID       = 1,
@@ -483,22 +522,25 @@ namespace msgrpc_demo {
 
     ___def_struct(EmbeddedStruct);
 
-    #define ___fields_of_struct___ResponseData(_, ...)                    \
-      _(1, pet_id,               int32_t,                     __VA_ARGS__)\
-      _(2, pet_name,             std::string,                 __VA_ARGS__)\
-      _(3, pet_weight,           int32_t,                     __VA_ARGS__)\
-      _(4, pet_i8_value,         int8_t,                      __VA_ARGS__)\
-      _(5, pet_i16_value,        int16_t,                     __VA_ARGS__)\
-      _(6, pet_i64_value,        int64_t,                     __VA_ARGS__)\
-      _(7, pet_double_value,     double,                      __VA_ARGS__)\
-      _(8, pet_bool_value,       bool,                        __VA_ARGS__)\
-      _(9, pet_binary_value,     binary,                      __VA_ARGS__)\
-      _(10, pet_embedded_struct, EmbeddedStruct,              __VA_ARGS__)\
-      _(11, pet_list_i32,        std::vector<int32_t>,        __VA_ARGS__)\
-      _(12, pet_list_of_struct,  std::vector<EmbeddedStruct>, __VA_ARGS__)\
-      _(13, pet_list_of_bool,    std::vector<bool>,           __VA_ARGS__)\
-      _(14, pet_set_of_i32,      std::set<int32_t>,           __VA_ARGS__)\
-      _(15, pet_set_of_struct,   std::set<EmbeddedStruct>,    __VA_ARGS__)
+    typedef std::map<int32_t, std::string> map_int32_string;
+
+    #define ___fields_of_struct___ResponseData(_, ...)                          \
+      _(1, pet_id,               int32_t,                           __VA_ARGS__)\
+      _(2, pet_name,             std::string,                       __VA_ARGS__)\
+      _(3, pet_weight,           int32_t,                           __VA_ARGS__)\
+      _(4, pet_i8_value,         int8_t,                            __VA_ARGS__)\
+      _(5, pet_i16_value,        int16_t,                           __VA_ARGS__)\
+      _(6, pet_i64_value,        int64_t,                           __VA_ARGS__)\
+      _(7, pet_double_value,     double,                            __VA_ARGS__)\
+      _(8, pet_bool_value,       bool,                              __VA_ARGS__)\
+      _(9, pet_binary_value,     binary,                            __VA_ARGS__)\
+      _(10, pet_embedded_struct, EmbeddedStruct,                    __VA_ARGS__)\
+      _(11, pet_list_i32,        std::vector<int32_t>,              __VA_ARGS__)\
+      _(12, pet_list_of_struct,  std::vector<EmbeddedStruct>,       __VA_ARGS__)\
+      _(13, pet_list_of_bool,    std::vector<bool>,                 __VA_ARGS__)\
+      _(14, pet_set_of_i32,      std::set<int32_t>,                 __VA_ARGS__)\
+      _(15, pet_set_of_struct,   std::set<EmbeddedStruct>,          __VA_ARGS__)\
+      _(16, pet_map_i32_string,  map_int32_string,                  __VA_ARGS__)
 
 ___def_struct(ResponseData);
 
@@ -552,6 +594,9 @@ int main() {
     ___foo.pet_set_of_struct.insert(es1);
     ___foo.pet_set_of_struct.insert(es2);
 
+    ___foo.pet_map_i32_string[200] = "hello";
+    ___foo.pet_map_i32_string[201] = "world";
+
     uint8_t* pbuf; uint32_t len;
 
     if (ThriftEncoder::encode(___foo, &pbuf, &len)) {
@@ -588,6 +633,8 @@ int main() {
             for (auto i : ___bar.pet_set_of_i32) { cout << i << endl; }
 
             for (auto es : ___bar.pet_set_of_struct) { cout << es << endl; }
+
+            for (auto kv : ___bar.pet_map_i32_string) { cout << kv.first << "=>" << kv.second << endl; }
         }
     }
 

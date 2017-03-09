@@ -8,7 +8,7 @@
 #include <thrift/protocol/TProtocol.h>
 #include <thrift/TToString.h>
 
-using namespace ::apache::thrift::protocol;
+//using namespace ::apache::thrift::protocol;
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -228,7 +228,7 @@ static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, std::vector<T
 
 static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const std::vector<T>& ___t) {
     uint32_t ret = 0;
-    ret += oprot->writeListBegin((TType)TTypeT<T>::value, static_cast<uint32_t>(___t.size()));
+    ret += oprot->writeListBegin((::apache::thrift::protocol::TType)TTypeT<T>::value, static_cast<uint32_t>(___t.size()));
 
     typename std::vector<T>::const_iterator _iter;
     for (_iter = ___t.begin(); _iter != ___t.end(); ++_iter)
@@ -265,7 +265,7 @@ static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, std::set<T>& 
 static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const std::set<T>& ___t) {
     uint32_t ret = 0;
 
-    ret += oprot->writeSetBegin((TType)TTypeT<T>::value, static_cast<uint32_t>(___t.size()));
+    ret += oprot->writeSetBegin((::apache::thrift::protocol::TType)TTypeT<T>::value, static_cast<uint32_t>(___t.size()));
     typename std::set<T>::const_iterator _iter;
     for (_iter = ___t.begin(); _iter != ___t.end(); ++_iter)
     {
@@ -304,7 +304,9 @@ static uint32_t read(::apache::thrift::protocol::TProtocol* iprot, std::map<_K, 
 static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const std::map<_K, _V>& ___t) {
     uint32_t ret = 0;
 
-    ret += oprot->writeMapBegin((TType)TTypeT<_K>::value, (TType)TTypeT<_V>::value, static_cast<uint32_t>(___t.size()));
+    ret += oprot->writeMapBegin((::apache::thrift::protocol::TType)TTypeT<_K>::value
+                                , (::apache::thrift::protocol::TType)TTypeT<_V>::value
+                                , static_cast<uint32_t>(___t.size()));
     typename std::map<_K, _V> ::const_iterator _iter;
     for (_iter = ___t.begin(); _iter != ___t.end(); ++_iter)
     {
@@ -364,7 +366,7 @@ static uint32_t write(::apache::thrift::protocol::TProtocol* oprot, const std::m
 
 
 #define ___expand_write_field(fid_, fname_, ftype_, ...) \
-    xfer += oprot->writeFieldBegin(#fname_, (TType)TTypeT<ftype_>::value, fid_);\
+    xfer += oprot->writeFieldBegin(#fname_, (::apache::thrift::protocol::TType)TTypeT<ftype_>::value, fid_);\
     xfer += TTypeT<ftype_>::write(oprot, this->fname_); \
     xfer += oprot->writeFieldEnd();
 

@@ -4,11 +4,11 @@
 using namespace org::example::msgrpc;
 
 #include "thrift/thrift_struct_def_idl.h"
-namespace msgrpc_demo {
+namespace demo {
     #include "demo_service_interface.h"
 }
 
-namespace msgrpc_demo {
+namespace demo {
     bool EmbeddedStruct::operator<(const EmbeddedStruct &rhs) const {
         return es_i8 < rhs.es_i8 ? true : (es_i8 > rhs.es_i8 ? false : (es_i16 < rhs.es_i16));
     }
@@ -68,7 +68,7 @@ int main() {
     uint8_t* pbuf; uint32_t len;
 
     if (ThriftEncoder::encode(___foo, &pbuf, &len)) {
-        msgrpc_demo::ResponseData ___bar;
+        demo::ResponseData ___bar;
 
         if (ThriftDecoder::decode(___bar, pbuf, len)) {
             cout << ___bar.pet_id << endl;

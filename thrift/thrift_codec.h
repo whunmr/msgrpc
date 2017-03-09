@@ -8,10 +8,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-using namespace apache::thrift;
-using namespace apache::thrift::protocol;
-using namespace apache::thrift::transport;
-
 template<typename T>
 struct Singleton {
     virtual ~Singleton() { }
@@ -23,13 +19,13 @@ struct Singleton {
 };
 
 struct ThriftCodecBase {
-    ThriftCodecBase() : mem_buf_(new TMemoryBuffer())
-            , protocol_(new TBinaryProtocol(mem_buf_)) { }
+    ThriftCodecBase() : mem_buf_(new apache::thrift::transport::TMemoryBuffer())
+            , protocol_(new apache::thrift::protocol::TBinaryProtocol(mem_buf_)) { }
           //, protocol_(new TJSONProtocol(mem_buf_)) { }
 
 protected:
-    boost::shared_ptr<TMemoryBuffer>  mem_buf_;
-    boost::shared_ptr<TBinaryProtocol> protocol_;
+    boost::shared_ptr<apache::thrift::transport::TMemoryBuffer>  mem_buf_;
+    boost::shared_ptr<apache::thrift::protocol::TBinaryProtocol> protocol_;
     //boost::shared_ptr<TJSONProtocol> protocol_;
 };
 
@@ -60,7 +56,7 @@ private:
 struct ThriftDecoder : ThriftCodecBase, Singleton<ThriftDecoder> {
     template<typename T>
     static bool decode(T& ___struct, uint8_t* buf, uint32_t len) {
-        ThriftDecoder::instance().mem_buf_->resetBuffer(buf, len, TMemoryBuffer::MemoryPolicy::OBSERVE);
+        ThriftDecoder::instance().mem_buf_->resetBuffer(buf, len, apache::thrift::transport::TMemoryBuffer::MemoryPolicy::OBSERVE);
         return ThriftDecoder::instance().do_decode(___struct);
     }
 

@@ -47,7 +47,7 @@ namespace demo {
         _(1, optional, value,          int16_t,        __VA_ARGS__)\
         _(2, required, value64,        int64_t,        __VA_ARGS__)
 
-    ___def_struct(SingleOptionalFieldStruct);
+___def_struct(SingleOptionalFieldStruct);
 }
 
 namespace demo {
@@ -83,8 +83,7 @@ void expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(T &_
 
 TEST(test, should_decoded_failed_if_required_field_are_not_setted) {
     thrift::SingleOptionalFieldStruct ___t;
-    //___t.__set_value(100);
-    ___t.value = 100;
+    ___t.__set_value(100);
 
     cout << ___t << endl;
     demo::SingleOptionalFieldStruct ___m;
@@ -95,7 +94,6 @@ TEST(test, should_decoded_failed_if_required_field_are_not_setted) {
 TEST(test, should_decoded_failed_if_required_field_are_not_setted____reversed) {
     demo::SingleOptionalFieldStruct ___t;
     ___t.__set_value(100);
-    //___t.value = 100;
 
     cout << ___t << endl;
     thrift::SingleOptionalFieldStruct ___m;

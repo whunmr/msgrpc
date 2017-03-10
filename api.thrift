@@ -1,8 +1,9 @@
 namespace cpp org.example.msgrpc.thrift
 
 struct SingleOptionalFieldStruct {
-    1: optional i16 value,
-    2:          i64 value64,
+    1: optional i16  value,
+    2: required i64  value64,
+    3:          byte field_with_default_attr,
 }
 
 struct EmbeddedStruct {

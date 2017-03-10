@@ -27,8 +27,18 @@ struct ThriftStruct {};
 //    bool pet_name :1;
 //    bool pet_weight :1;
 //} _ResponseData__isset;
-#define ___expand_isset_init_list(fid_, opt_or_req_, fname_, ftype_, ...)       , fname_(false)
-#define ___expand_isset_field(fid_, opt_or_req_, fname_, ftype_, ...)           bool fname_ :1;
+#define ___expand_isset_init_list__required(fid_, opt_or_req_, fname_, ftype_, ...)
+
+#define ___expand_isset_init_list__optional(fid_, opt_or_req_, fname_, ftype_, ...)  , fname_(false)
+
+#define ___expand_isset_init_list(fid_, opt_or_req_, fname_, ftype_, ...) \
+   ___expand_isset_init_list__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
+
+#define ___expand_isset_field__required(fid_, opt_or_req_, fname_, ftype_, ...)
+#define ___expand_isset_field__optional(fid_, opt_or_req_, fname_, ftype_, ...)  bool fname_ :1;
+#define ___expand_isset_field(fid_, opt_or_req_, fname_, ftype_, ...) \
+    ___expand_isset_field__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
+
 
 #define ___declare_struct_isset(struct_name_) \
     typedef struct _##struct_name_##__isset : DummyParent<_##struct_name_##__isset> { \
@@ -114,8 +124,18 @@ struct ThriftStruct {};
 #define ___expand_define_set_field_method(fid_, opt_or_req_, fname_, ftype_, struct_name_) \
     ___expand_define_set_field_method__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, struct_name_)
 
+////////////////////////////////////////////////////////////////////////////////
+#define ___expand_read_field_case__required(fid_, opt_or_req_, fname_, ftype_, ...) \
+  case fid_:\
+    if (ftype == TTypeT<ftype_>::value) {\
+      xfer +=  TTypeT<ftype_>::read(iprot, this->fname_);\
+      isset_##fname_ = true;\
+    } else {\
+      xfer += iprot->skip(ftype);\
+    }\
+    break;
 
-#define ___expand_read_field_case(fid_, opt_or_req_, fname_, ftype_, ...) \
+#define ___expand_read_field_case__optional(fid_, opt_or_req_, fname_, ftype_, ...) \
   case fid_:\
     if (ftype == TTypeT<ftype_>::value) {\
       xfer +=  TTypeT<ftype_>::read(iprot, this->fname_);\
@@ -125,6 +145,28 @@ struct ThriftStruct {};
     }\
     break;
 
+#define ___expand_read_field_case(fid_, opt_or_req_, fname_, ftype_, ...) \
+            ___expand_read_field_case__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
+
+////////////////////////////////////////////////////////////////////////////////
+#define ___expand_read_declare_required_field_readed__required(fid_, opt_or_req_, fname_, ftype_, struct_name_)\
+    bool isset_##fname_ = false;
+
+#define ___expand_read_declare_required_field_readed__optional(...)
+
+#define ___expand_read_declare_required_field_readed(fid_, opt_or_req_, fname_, ftype_, ...) \
+            ___expand_read_declare_required_field_readed__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
+
+////////////////////////////////////////////////////////////////////////////////
+#define ___expand_read_check_required_field_received__required(fid_, opt_or_req_, fname_, ftype_, ...)\
+          if (!isset_##fname_) throw TProtocolException(TProtocolException::INVALID_DATA);
+
+#define ___expand_read_check_required_field_received__optional(fid_, opt_or_req_, fname_, ftype_, ...)
+
+#define ___expand_read_check_required_field_received(fid_, opt_or_req_, fname_, ftype_, ...)\
+            ___expand_read_check_required_field_received__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
+
+////////////////////////////////////////////////////////////////////////////////
 #define ___define_read(struct_name_) \
     uint32_t struct_name_::read(::apache::thrift::protocol::TProtocol* iprot) {\
       apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);\
@@ -137,6 +179,7 @@ struct ThriftStruct {};
       \
       using ::apache::thrift::protocol::TProtocolException;\
       \
+      ___apply_expand(struct_name_, ___expand_read_declare_required_field_readed, struct_name_)\
       \
       while (true)\
       {\
@@ -156,14 +199,26 @@ struct ThriftStruct {};
       \
       xfer += iprot->readStructEnd();\
       \
+      ___apply_expand(struct_name_, ___expand_read_check_required_field_received, struct_name_)\
       return xfer;\
     }
 
 
-#define ___expand_write_field(fid_, opt_or_req_, fname_, ftype_, ...) \
+////////////////////////////////////////////////////////////////////////////////
+#define ___expand_write_field__required(fid_, opt_or_req_, fname_, ftype_, ...) \
+  xfer += oprot->writeFieldBegin(#fname_, (::apache::thrift::protocol::TType)TTypeT<ftype_>::value, fid_);\
+  xfer += TTypeT<ftype_>::write(oprot, this->fname_); \
+  xfer += oprot->writeFieldEnd();
+
+#define ___expand_write_field__optional(fid_, opt_or_req_, fname_, ftype_, ...) \
+  if (this->__isset.fname_) {\
     xfer += oprot->writeFieldBegin(#fname_, (::apache::thrift::protocol::TType)TTypeT<ftype_>::value, fid_);\
     xfer += TTypeT<ftype_>::write(oprot, this->fname_); \
-    xfer += oprot->writeFieldEnd();
+    xfer += oprot->writeFieldEnd();\
+  }
+
+#define ___expand_write_field(fid_, opt_or_req_, fname_, ftype_, ...) \
+    ___expand_write_field__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
 
 #define ___define_write(struct_name_) \
     uint32_t struct_name_::write(::apache::thrift::protocol::TProtocol* oprot) const {\
@@ -178,6 +233,7 @@ struct ThriftStruct {};
       return xfer;\
     }
 
+////////////////////////////////////////////////////////////////////////////////
 #define ___expand_swap_field(fid_, opt_or_req_, fname_, ftype_, ...) \
     swap(a.fname_, b.fname_);
 
@@ -188,6 +244,7 @@ struct ThriftStruct {};
         swap(a.__isset, b.__isset);\
     }
 
+////////////////////////////////////////////////////////////////////////////////
 #define ___expand_assign_field(fid_, opt_or_req_, fname_, ftype_, ...) \
     fname_ = other0.fname_;
 
@@ -204,8 +261,15 @@ struct ThriftStruct {};
         return *this;\
     }
 
-#define ___expand_print_out_field(fid_, opt_or_req_, fname_, ftype_, ...) \
+////////////////////////////////////////////////////////////////////////////////
+#define ___expand_print_out_field__required(fid_, opt_or_req_, fname_, ftype_, ...) \
     out << ", "#fname_"=" << to_string(fname_);
+
+#define ___expand_print_out_field__optional(fid_, opt_or_req_, fname_, ftype_, ...) \
+    out << ", "#fname_"="; (__isset.fname_ ? (out << to_string(fname_)) : (out << "<null>"));
+
+#define ___expand_print_out_field(fid_, opt_or_req_, fname_, ftype_, ...) \
+    ___expand_print_out_field__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
 
 #define ___define_print_to(struct_name_) \
     void struct_name_::printTo(std::ostream& out) const {\
@@ -215,6 +279,7 @@ struct ThriftStruct {};
         out << ")";\
     }\
 
+////////////////////////////////////////////////////////////////////////////////
 #define ___define_struct_self(struct_name_) \
     struct_name_::~struct_name_() throw() {} \
     ___apply_expand(struct_name_, ___expand_define_set_field_method, struct_name_)\

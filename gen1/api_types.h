@@ -26,9 +26,9 @@ class EmbeddedStruct;
 class ResponseData;
 
 typedef struct _SingleOptionalFieldStruct__isset {
-  _SingleOptionalFieldStruct__isset() : value(false), value64(false) {}
+  _SingleOptionalFieldStruct__isset() : value(false), field_with_default_attr(false) {}
   bool value :1;
-  bool value64 :1;
+  bool field_with_default_attr :1;
 } _SingleOptionalFieldStruct__isset;
 
 class SingleOptionalFieldStruct {
@@ -36,18 +36,21 @@ class SingleOptionalFieldStruct {
 
   SingleOptionalFieldStruct(const SingleOptionalFieldStruct&);
   SingleOptionalFieldStruct& operator=(const SingleOptionalFieldStruct&);
-  SingleOptionalFieldStruct() : value(0), value64(0) {
+  SingleOptionalFieldStruct() : value(0), value64(0), field_with_default_attr(0) {
   }
 
   virtual ~SingleOptionalFieldStruct() throw();
   int16_t value;
   int64_t value64;
+  int8_t field_with_default_attr;
 
   _SingleOptionalFieldStruct__isset __isset;
 
   void __set_value(const int16_t val);
 
   void __set_value64(const int64_t val);
+
+  void __set_field_with_default_attr(const int8_t val);
 
   bool operator == (const SingleOptionalFieldStruct & rhs) const
   {
@@ -56,6 +59,8 @@ class SingleOptionalFieldStruct {
     else if (__isset.value && !(value == rhs.value))
       return false;
     if (!(value64 == rhs.value64))
+      return false;
+    if (!(field_with_default_attr == rhs.field_with_default_attr))
       return false;
     return true;
   }

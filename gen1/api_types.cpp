@@ -27,6 +27,10 @@ void SingleOptionalFieldStruct::__set_value64(const int64_t val) {
   this->value64 = val;
 }
 
+void SingleOptionalFieldStruct::__set_field_with_default_attr(const int8_t val) {
+  this->field_with_default_attr = val;
+}
+
 uint32_t SingleOptionalFieldStruct::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
@@ -39,6 +43,7 @@ uint32_t SingleOptionalFieldStruct::read(::apache::thrift::protocol::TProtocol* 
 
   using ::apache::thrift::protocol::TProtocolException;
 
+  bool isset_value64 = false;
 
   while (true)
   {
@@ -59,7 +64,15 @@ uint32_t SingleOptionalFieldStruct::read(::apache::thrift::protocol::TProtocol* 
       case 2:
         if (ftype == ::apache::thrift::protocol::T_I64) {
           xfer += iprot->readI64(this->value64);
-          this->__isset.value64 = true;
+          isset_value64 = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 3:
+        if (ftype == ::apache::thrift::protocol::T_BYTE) {
+          xfer += iprot->readByte(this->field_with_default_attr);
+          this->__isset.field_with_default_attr = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -73,6 +86,8 @@ uint32_t SingleOptionalFieldStruct::read(::apache::thrift::protocol::TProtocol* 
 
   xfer += iprot->readStructEnd();
 
+  if (!isset_value64)
+    throw TProtocolException(TProtocolException::INVALID_DATA);
   return xfer;
 }
 
@@ -90,6 +105,10 @@ uint32_t SingleOptionalFieldStruct::write(::apache::thrift::protocol::TProtocol*
   xfer += oprot->writeI64(this->value64);
   xfer += oprot->writeFieldEnd();
 
+  xfer += oprot->writeFieldBegin("field_with_default_attr", ::apache::thrift::protocol::T_BYTE, 3);
+  xfer += oprot->writeByte(this->field_with_default_attr);
+  xfer += oprot->writeFieldEnd();
+
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
@@ -99,17 +118,20 @@ void swap(SingleOptionalFieldStruct &a, SingleOptionalFieldStruct &b) {
   using ::std::swap;
   swap(a.value, b.value);
   swap(a.value64, b.value64);
+  swap(a.field_with_default_attr, b.field_with_default_attr);
   swap(a.__isset, b.__isset);
 }
 
 SingleOptionalFieldStruct::SingleOptionalFieldStruct(const SingleOptionalFieldStruct& other0) {
   value = other0.value;
   value64 = other0.value64;
+  field_with_default_attr = other0.field_with_default_attr;
   __isset = other0.__isset;
 }
 SingleOptionalFieldStruct& SingleOptionalFieldStruct::operator=(const SingleOptionalFieldStruct& other1) {
   value = other1.value;
   value64 = other1.value64;
+  field_with_default_attr = other1.field_with_default_attr;
   __isset = other1.__isset;
   return *this;
 }
@@ -118,6 +140,7 @@ void SingleOptionalFieldStruct::printTo(std::ostream& out) const {
   out << "SingleOptionalFieldStruct(";
   out << "value="; (__isset.value ? (out << to_string(value)) : (out << "<null>"));
   out << ", " << "value64=" << to_string(value64);
+  out << ", " << "field_with_default_attr=" << to_string(field_with_default_attr);
   out << ")";
 }
 

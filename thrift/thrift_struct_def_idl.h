@@ -21,12 +21,6 @@ struct ThriftStruct {};
     ___fields_of_struct___##struct_name_(field_expand_macro_, __VA_ARGS__)
 
 ////////////////////////////////////////////////////////////////////////////////
-//typedef struct _ResponseData__isset {
-//    _ResponseData__isset() : pet_id(false), pet_name(false), pet_weight(false) {}
-//    bool pet_id :1;
-//    bool pet_name :1;
-//    bool pet_weight :1;
-//} _ResponseData__isset;
 #define ___expand_isset_init_list__required(fid_, opt_or_req_, fname_, ftype_, ...)
 
 #define ___expand_isset_init_list__optional(fid_, opt_or_req_, fname_, ftype_, ...)  , fname_(false)
@@ -34,12 +28,13 @@ struct ThriftStruct {};
 #define ___expand_isset_init_list(fid_, opt_or_req_, fname_, ftype_, ...) \
    ___expand_isset_init_list__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
 
+////////////////////////////////////////////////////////////////////////////////
 #define ___expand_isset_field__required(fid_, opt_or_req_, fname_, ftype_, ...)
 #define ___expand_isset_field__optional(fid_, opt_or_req_, fname_, ftype_, ...)  bool fname_ :1;
 #define ___expand_isset_field(fid_, opt_or_req_, fname_, ftype_, ...) \
     ___expand_isset_field__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
 
-
+////////////////////////////////////////////////////////////////////////////////
 #define ___declare_struct_isset(struct_name_) \
     typedef struct _##struct_name_##__isset : DummyParent<_##struct_name_##__isset> { \
         _##struct_name_##__isset() : DummyParent<_##struct_name_##__isset>()\
@@ -59,6 +54,7 @@ struct ThriftStruct {};
 #define ___expand_declare_set_field_method(fid_, opt_or_req_, fname_, ftype_, ...) \
   void __set_##fname_(const ftype_& val);
 
+////////////////////////////////////////////////////////////////////////////////
 #define ___expand_field_compare_statement__required(fid_, opt_or_req_, fname_, ftype_, ...) \
   if (!(fname_ == rhs.fname_)) return false;
 
@@ -71,7 +67,7 @@ struct ThriftStruct {};
 #define ___expand_field_compare_statement(fid_, opt_or_req_, fname_, ftype_, ...) \
     ___expand_field_compare_statement__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
 
-
+////////////////////////////////////////////////////////////////////////////////
 #define ___declare_struct_self(struct_name_) \
   class struct_name_ : ThriftStruct {\
     public:\
@@ -220,6 +216,7 @@ struct ThriftStruct {};
 #define ___expand_write_field(fid_, opt_or_req_, fname_, ftype_, ...) \
     ___expand_write_field__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
 
+////////////////////////////////////////////////////////////////////////////////
 #define ___define_write(struct_name_) \
     uint32_t struct_name_::write(::apache::thrift::protocol::TProtocol* oprot) const {\
       uint32_t xfer = 0;\
@@ -271,6 +268,7 @@ struct ThriftStruct {};
 #define ___expand_print_out_field(fid_, opt_or_req_, fname_, ftype_, ...) \
     ___expand_print_out_field__##opt_or_req_(fid_, opt_or_req_, fname_, ftype_, __VA_ARGS__)
 
+////////////////////////////////////////////////////////////////////////////////
 #define ___define_print_to(struct_name_) \
     void struct_name_::printTo(std::ostream& out) const {\
         using ::apache::thrift::to_string;\

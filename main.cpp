@@ -10,13 +10,14 @@ namespace demo {
     //#include "demo_service_interface.h"
     const std::string api_version = "1.0.3";
 
+    /*------------------------------------------------------------------------*/
     #define ___fields_of_struct___EmbeddedStruct(_, ...)\
         _(1, optional, es_i8,          int8_t,        __VA_ARGS__)\
         _(2, optional, es_i16,         int16_t,       __VA_ARGS__)
 
     ___def_struct(EmbeddedStruct);
 
-
+    /*------------------------------------------------------------------------*/
     /*constraints: can not contains comma in type field, using typedef to remove comma.*/
     typedef std::map<int32_t, std::string> map_int32_string;
     typedef std::map<std::string, EmbeddedStruct> map_string_struct;
@@ -42,7 +43,7 @@ namespace demo {
 
     ___def_struct(ResponseData);
 
-
+    /*------------------------------------------------------------------------*/
     #define ___fields_of_struct___SingleOptionalFieldStruct(_, ...)\
         _(1, optional, value,          int16_t,        __VA_ARGS__)\
         _(2, required, value64,        int64_t,        __VA_ARGS__)

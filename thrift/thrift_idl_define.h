@@ -195,5 +195,10 @@
     ___define_struct_self(struct_name_)
 
 ////////////////////////////////////////////////////////////////////////////////
+#ifdef ___api_version
+#undef ___api_version
+#endif
+#define ___api_version(version)  const char* api_version = #version;
+
 
 #endif //MSGRPC_THRIFT_IDL_DEFINE_H

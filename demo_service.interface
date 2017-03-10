@@ -1,5 +1,5 @@
 namespace demo {
-    //const std::string api_version = "1.0.3";
+    ___api_version(1.0.3)
 
     /*----------------------------------------------------------------------------*/
     #define ___fields_of_struct___SingleOptionalFieldStruct(_, ...)    \

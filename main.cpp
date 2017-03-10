@@ -1,30 +1,11 @@
-#include <iostream>
 #include "gen1/api_types.h"
+#include "demo_api_declare.h"
 
-using namespace org::example::msgrpc;
-
-
-#include "thrift/thrift_struct_def_idl.h"
-namespace demo {
-    #include "demo_service.interface"
-}
-
-namespace demo {
-    bool EmbeddedStruct::operator<(const EmbeddedStruct &rhs) const {
-        return es_i8 < rhs.es_i8 ? true : (es_i8 > rhs.es_i8 ? false : (es_i16 < rhs.es_i16));
-    }
-}
-
-namespace org { namespace example { namespace msgrpc { namespace thrift {
-    bool EmbeddedStruct::operator<(const EmbeddedStruct &rhs) const {
-        return es_i8 < rhs.es_i8 ? true : (es_i8 > rhs.es_i8 ? false : (es_i16 < rhs.es_i16));
-    }
-}}}}
-
-////////////////////////////////////////////////////////////////////////////////
+#include <iostream>
 #include "thrift/thrift_codec.h"
 #include <gtest/gtest.h>
 using namespace std;
+using namespace org::example::msgrpc;
 
 template<typename T, typename M>
 void expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(T &___t, M &___m) {
@@ -44,7 +25,6 @@ TEST(test, should_decoded_failed_if_required_field_are_not_setted) {
     thrift::SingleOptionalFieldStruct ___t;
     ___t.__set_value(100);
 
-    cout << ___t << endl;
     demo::SingleOptionalFieldStruct ___m;
 
     expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___t, ___m);
@@ -54,14 +34,12 @@ TEST(test, should_decoded_failed_if_required_field_are_not_setted____reversed) {
     demo::SingleOptionalFieldStruct ___t;
     ___t.__set_value(100);
 
-    cout << ___t << endl;
     thrift::SingleOptionalFieldStruct ___m;
 
     expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___t, ___m);
 };
 
-
-TEST(test, test1) {
+TEST(test, test_complex_data_types) {
     thrift::ResponseData ___foo;
     ___foo.pet_id = 11;
     ___foo.pet_name = "pet_name_foo";

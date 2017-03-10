@@ -1,3 +1,6 @@
+gen2/
+gen3/
+
 # Compiled Object files
 *.slo
 *.lo

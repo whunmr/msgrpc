@@ -19,9 +19,59 @@
 
 namespace org { namespace example { namespace msgrpc { namespace thrift {
 
+class SingleOptionalFieldStruct;
+
 class EmbeddedStruct;
 
 class ResponseData;
+
+typedef struct _SingleOptionalFieldStruct__isset {
+  _SingleOptionalFieldStruct__isset() : value(false) {}
+  bool value :1;
+} _SingleOptionalFieldStruct__isset;
+
+class SingleOptionalFieldStruct {
+ public:
+
+  SingleOptionalFieldStruct(const SingleOptionalFieldStruct&);
+  SingleOptionalFieldStruct& operator=(const SingleOptionalFieldStruct&);
+  SingleOptionalFieldStruct() : value(0) {
+  }
+
+  virtual ~SingleOptionalFieldStruct() throw();
+  int16_t value;
+
+  _SingleOptionalFieldStruct__isset __isset;
+
+  void __set_value(const int16_t val);
+
+  bool operator == (const SingleOptionalFieldStruct & rhs) const
+  {
+    if (__isset.value != rhs.__isset.value)
+      return false;
+    else if (__isset.value && !(value == rhs.value))
+      return false;
+    return true;
+  }
+  bool operator != (const SingleOptionalFieldStruct &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const SingleOptionalFieldStruct & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(SingleOptionalFieldStruct &a, SingleOptionalFieldStruct &b);
+
+inline std::ostream& operator<<(std::ostream& out, const SingleOptionalFieldStruct& obj)
+{
+  obj.printTo(out);
+  return out;
+}
 
 typedef struct _EmbeddedStruct__isset {
   _EmbeddedStruct__isset() : es_i8(false), es_i16(false) {}
@@ -49,9 +99,7 @@ class EmbeddedStruct {
 
   bool operator == (const EmbeddedStruct & rhs) const
   {
-    if (__isset.es_i8 != rhs.__isset.es_i8)
-      return false;
-    else if (__isset.es_i8 && !(es_i8 == rhs.es_i8))
+    if (!(es_i8 == rhs.es_i8))
       return false;
     if (!(es_i16 == rhs.es_i16))
       return false;

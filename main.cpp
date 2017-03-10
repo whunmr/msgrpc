@@ -3,16 +3,11 @@
 
 using namespace org::example::msgrpc;
 
-#if 0
-TODO:
-1. add required and optional keyword.
-2. separate the thrift_struct_def_idl.h into declaration and definition.
-#endif
-
 
 #include "thrift/thrift_struct_def_idl.h"
 namespace demo {
     //#include "demo_service_interface.h"
+    const std::string api_version = "1.0.3";
 
     #define ___fields_of_struct___EmbeddedStruct(_, ...)\
         _(1, es_i8,          int8_t,        __VA_ARGS__)\
@@ -45,6 +40,12 @@ namespace demo {
         _(17, pet_map_string_struct, map_string_struct,                 __VA_ARGS__)
 
     ___def_struct(ResponseData);
+
+
+    #define ___fields_of_struct___SingleOptionalFieldStruct(_, ...)\
+                   _(1, value,          int16_t,        __VA_ARGS__)
+
+    ___def_struct(SingleOptionalFieldStruct);
 }
 
 namespace demo {
@@ -64,6 +65,30 @@ namespace org { namespace example { namespace msgrpc { namespace thrift {
 #include <gtest/gtest.h>
 using namespace std;
 
+template<typename T, typename M>
+void expect_thrift_decoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(T& ___t, M& ___m) {
+    T ___t2;
+
+    uint8_t* pbuf; uint32_t len;
+
+    EXPECT_TRUE(ThriftEncoder::encode(___t, &pbuf, &len));
+    EXPECT_TRUE(ThriftDecoder::decode(___m, pbuf, len));
+    EXPECT_TRUE(ThriftEncoder::encode(___m, &pbuf, &len));
+    EXPECT_TRUE(ThriftDecoder::decode(___t2, pbuf, len));
+    cout << ___t2 << endl;
+    EXPECT_EQ(___t, ___t2);
+}
+
+TEST(test, should_decoded_failed_if_required_field_are_not_setted) {
+    thrift::SingleOptionalFieldStruct ___t;
+    ___t.__set_value(100);
+    //___t.value = 100;
+
+    demo::SingleOptionalFieldStruct ___m;
+
+    expect_thrift_decoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___t, ___m);
+};
+
 TEST(test, test1) {
     thrift::ResponseData ___foo;
     ___foo.pet_id = 11;
@@ -76,7 +101,8 @@ TEST(test, test1) {
     ___foo.pet_bool_value = true;
     ___foo.pet_binary_value = string("abcd");
 
-    ___foo.pet_embedded_struct.es_i8 = 88;
+    ___foo.pet_embedded_struct.es_i8 = 99;
+    //___foo.pet_embedded_struct.__set_es_i8(99);
     ___foo.pet_embedded_struct.es_i16 = 1616;
 
     ___foo.pet_list_i32.push_back(9);
@@ -105,53 +131,17 @@ TEST(test, test1) {
     ___foo.pet_map_string_struct["foo"] = es1;
     ___foo.pet_map_string_struct["bar"] = es2;
 
-    uint8_t* pbuf; uint32_t len;
 
-    if (ThriftEncoder::encode(___foo, &pbuf, &len)) {
-        demo::ResponseData ___bar;
+    demo::ResponseData ___bar;
 
-        if (ThriftDecoder::decode(___bar, pbuf, len)) {
-            cout << ___bar.pet_id << endl;
-            cout << ___bar.pet_name << endl;
-            cout << ___bar.pet_weight << endl;
-            cout << (int)___bar.pet_i8_value << endl;
-            cout << ___bar.pet_i16_value << endl;
-            cout << ___bar.pet_i64_value << endl;
-            cout << ___bar.pet_double_value << endl;
-            cout << ___bar.pet_bool_value << endl;
-            cout << ___bar.pet_binary_value << endl;
-            cout << (int)___bar.pet_embedded_struct.es_i8 << endl;
-            cout << ___bar.pet_embedded_struct.es_i16 << endl;
-            cout << ___bar.pet_list_i32.at(0) << endl;
-            cout << ___bar.pet_list_i32.at(1) << endl;
-
-            cout << (int)___bar.pet_list_of_struct.at(0).es_i8 << endl;
-            cout << ___bar.pet_list_of_struct.at(0).es_i16 << endl;
-
-            cout << (int)___bar.pet_list_of_struct.at(1).es_i8 << endl;
-            cout << ___bar.pet_list_of_struct.at(1).es_i16 << endl;
-
-            cout << ___bar.pet_list_of_bool.at(0) << endl;
-            cout << ___bar.pet_list_of_bool.at(1) << endl;
-            cout << ___bar.pet_list_of_bool.at(2) << endl;
-
-            for (auto i : ___bar.pet_set_of_i32) { cout << i << endl; }
-
-            for (auto es : ___bar.pet_set_of_struct) { cout << es << endl; }
-
-            for (auto kv : ___bar.pet_map_i32_string) { cout << kv.first << "=>" << kv.second << endl; }
-
-            if (ThriftEncoder::encode(___bar, &pbuf, &len)) {
-                thrift::ResponseData ___foo2;
-                if (ThriftDecoder::decode(___foo2, pbuf, len)) {
-                    cout << ___foo << endl;
-                    cout << ___foo2 << endl;
-                    cout << ___bar << endl;
-
-                    cout << "thrift___foo => msgrpc___bar => thrift___foo2, thrift___foo == thrift___foo2 ? "
-                         << (___foo == ___foo2) << endl;
-                }
-            }
-        }
-    }
+    expect_thrift_decoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___foo, ___bar);
 }
+
+#if 0
+TODO:
+-1. add required support
+0. make optional field not directed assignable, but only can set value by __set_xxx(v) method.
+   beacuse the directly assigned values are not serialized by default.
+1. add required and optional keyword.
+2. separate the thrift_struct_def_idl.h into declaration and definition.
+#endif

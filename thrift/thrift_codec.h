@@ -21,7 +21,7 @@ struct Singleton {
 struct ThriftCodecBase {
     ThriftCodecBase() : mem_buf_(new apache::thrift::transport::TMemoryBuffer())
             , protocol_(new apache::thrift::protocol::TBinaryProtocol(mem_buf_)) { }
-          //, protocol_(new TJSONProtocol(mem_buf_)) { }
+            //, protocol_(new TJSONProtocol(mem_buf_)) { }
 
 protected:
     boost::shared_ptr<apache::thrift::transport::TMemoryBuffer>  mem_buf_;
@@ -41,6 +41,7 @@ private:
         *len = 0;
 
         try {
+            mem_buf_->resetBuffer();
             ___struct.write(protocol_.get());
             mem_buf_->getBuffer(buf, len);
         } catch (...) {

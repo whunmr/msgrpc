@@ -1,8 +1,12 @@
 namespace cpp org.example.msgrpc.thrift
 
+struct SingleOptionalFieldStruct {
+    1: optional i16 value,
+}
+
 struct EmbeddedStruct {
-        1: optional byte  es_i8;
-        2: required i16   es_i16;
+    1:  byte   es_i8,
+    2:  i16    es_i16,
 }
 
 struct ResponseData {

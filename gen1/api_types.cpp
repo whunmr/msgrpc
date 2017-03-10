@@ -14,13 +14,100 @@
 namespace org { namespace example { namespace msgrpc { namespace thrift {
 
 
+SingleOptionalFieldStruct::~SingleOptionalFieldStruct() throw() {
+}
+
+
+void SingleOptionalFieldStruct::__set_value(const int16_t val) {
+  this->value = val;
+__isset.value = true;
+}
+
+uint32_t SingleOptionalFieldStruct::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == ::apache::thrift::protocol::T_I16) {
+          xfer += iprot->readI16(this->value);
+          this->__isset.value = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t SingleOptionalFieldStruct::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
+  xfer += oprot->writeStructBegin("SingleOptionalFieldStruct");
+
+  if (this->__isset.value) {
+    xfer += oprot->writeFieldBegin("value", ::apache::thrift::protocol::T_I16, 1);
+    xfer += oprot->writeI16(this->value);
+    xfer += oprot->writeFieldEnd();
+  }
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+void swap(SingleOptionalFieldStruct &a, SingleOptionalFieldStruct &b) {
+  using ::std::swap;
+  swap(a.value, b.value);
+  swap(a.__isset, b.__isset);
+}
+
+SingleOptionalFieldStruct::SingleOptionalFieldStruct(const SingleOptionalFieldStruct& other0) {
+  value = other0.value;
+  __isset = other0.__isset;
+}
+SingleOptionalFieldStruct& SingleOptionalFieldStruct::operator=(const SingleOptionalFieldStruct& other1) {
+  value = other1.value;
+  __isset = other1.__isset;
+  return *this;
+}
+void SingleOptionalFieldStruct::printTo(std::ostream& out) const {
+  using ::apache::thrift::to_string;
+  out << "SingleOptionalFieldStruct(";
+  out << "value="; (__isset.value ? (out << to_string(value)) : (out << "<null>"));
+  out << ")";
+}
+
+
 EmbeddedStruct::~EmbeddedStruct() throw() {
 }
 
 
 void EmbeddedStruct::__set_es_i8(const int8_t val) {
   this->es_i8 = val;
-__isset.es_i8 = true;
 }
 
 void EmbeddedStruct::__set_es_i16(const int16_t val) {
@@ -81,11 +168,10 @@ uint32_t EmbeddedStruct::write(::apache::thrift::protocol::TProtocol* oprot) con
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("EmbeddedStruct");
 
-  if (this->__isset.es_i8) {
-    xfer += oprot->writeFieldBegin("es_i8", ::apache::thrift::protocol::T_BYTE, 1);
-    xfer += oprot->writeByte(this->es_i8);
-    xfer += oprot->writeFieldEnd();
-  }
+  xfer += oprot->writeFieldBegin("es_i8", ::apache::thrift::protocol::T_BYTE, 1);
+  xfer += oprot->writeByte(this->es_i8);
+  xfer += oprot->writeFieldEnd();
+
   xfer += oprot->writeFieldBegin("es_i16", ::apache::thrift::protocol::T_I16, 2);
   xfer += oprot->writeI16(this->es_i16);
   xfer += oprot->writeFieldEnd();
@@ -102,21 +188,21 @@ void swap(EmbeddedStruct &a, EmbeddedStruct &b) {
   swap(a.__isset, b.__isset);
 }
 
-EmbeddedStruct::EmbeddedStruct(const EmbeddedStruct& other0) {
-  es_i8 = other0.es_i8;
-  es_i16 = other0.es_i16;
-  __isset = other0.__isset;
+EmbeddedStruct::EmbeddedStruct(const EmbeddedStruct& other2) {
+  es_i8 = other2.es_i8;
+  es_i16 = other2.es_i16;
+  __isset = other2.__isset;
 }
-EmbeddedStruct& EmbeddedStruct::operator=(const EmbeddedStruct& other1) {
-  es_i8 = other1.es_i8;
-  es_i16 = other1.es_i16;
-  __isset = other1.__isset;
+EmbeddedStruct& EmbeddedStruct::operator=(const EmbeddedStruct& other3) {
+  es_i8 = other3.es_i8;
+  es_i16 = other3.es_i16;
+  __isset = other3.__isset;
   return *this;
 }
 void EmbeddedStruct::printTo(std::ostream& out) const {
   using ::apache::thrift::to_string;
   out << "EmbeddedStruct(";
-  out << "es_i8="; (__isset.es_i8 ? (out << to_string(es_i8)) : (out << "<null>"));
+  out << "es_i8=" << to_string(es_i8);
   out << ", " << "es_i16=" << to_string(es_i16);
   out << ")";
 }
@@ -299,14 +385,14 @@ uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
         if (ftype == ::apache::thrift::protocol::T_LIST) {
           {
             this->pet_list_i32.clear();
-            uint32_t _size2;
-            ::apache::thrift::protocol::TType _etype5;
-            xfer += iprot->readListBegin(_etype5, _size2);
-            this->pet_list_i32.resize(_size2);
-            uint32_t _i6;
-            for (_i6 = 0; _i6 < _size2; ++_i6)
+            uint32_t _size4;
+            ::apache::thrift::protocol::TType _etype7;
+            xfer += iprot->readListBegin(_etype7, _size4);
+            this->pet_list_i32.resize(_size4);
+            uint32_t _i8;
+            for (_i8 = 0; _i8 < _size4; ++_i8)
             {
-              xfer += iprot->readI32(this->pet_list_i32[_i6]);
+              xfer += iprot->readI32(this->pet_list_i32[_i8]);
             }
             xfer += iprot->readListEnd();
           }
@@ -319,14 +405,14 @@ uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
         if (ftype == ::apache::thrift::protocol::T_LIST) {
           {
             this->pet_list_of_struct.clear();
-            uint32_t _size7;
-            ::apache::thrift::protocol::TType _etype10;
-            xfer += iprot->readListBegin(_etype10, _size7);
-            this->pet_list_of_struct.resize(_size7);
-            uint32_t _i11;
-            for (_i11 = 0; _i11 < _size7; ++_i11)
+            uint32_t _size9;
+            ::apache::thrift::protocol::TType _etype12;
+            xfer += iprot->readListBegin(_etype12, _size9);
+            this->pet_list_of_struct.resize(_size9);
+            uint32_t _i13;
+            for (_i13 = 0; _i13 < _size9; ++_i13)
             {
-              xfer += this->pet_list_of_struct[_i11].read(iprot);
+              xfer += this->pet_list_of_struct[_i13].read(iprot);
             }
             xfer += iprot->readListEnd();
           }
@@ -339,14 +425,14 @@ uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
         if (ftype == ::apache::thrift::protocol::T_LIST) {
           {
             this->pet_list_of_bool.clear();
-            uint32_t _size12;
-            ::apache::thrift::protocol::TType _etype15;
-            xfer += iprot->readListBegin(_etype15, _size12);
-            this->pet_list_of_bool.resize(_size12);
-            uint32_t _i16;
-            for (_i16 = 0; _i16 < _size12; ++_i16)
+            uint32_t _size14;
+            ::apache::thrift::protocol::TType _etype17;
+            xfer += iprot->readListBegin(_etype17, _size14);
+            this->pet_list_of_bool.resize(_size14);
+            uint32_t _i18;
+            for (_i18 = 0; _i18 < _size14; ++_i18)
             {
-              xfer += iprot->readBool(this->pet_list_of_bool[_i16]);
+              xfer += iprot->readBool(this->pet_list_of_bool[_i18]);
             }
             xfer += iprot->readListEnd();
           }
@@ -359,15 +445,15 @@ uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
         if (ftype == ::apache::thrift::protocol::T_SET) {
           {
             this->pet_set_of_i32.clear();
-            uint32_t _size17;
-            ::apache::thrift::protocol::TType _etype20;
-            xfer += iprot->readSetBegin(_etype20, _size17);
-            uint32_t _i21;
-            for (_i21 = 0; _i21 < _size17; ++_i21)
+            uint32_t _size19;
+            ::apache::thrift::protocol::TType _etype22;
+            xfer += iprot->readSetBegin(_etype22, _size19);
+            uint32_t _i23;
+            for (_i23 = 0; _i23 < _size19; ++_i23)
             {
-              int32_t _elem22;
-              xfer += iprot->readI32(_elem22);
-              this->pet_set_of_i32.insert(_elem22);
+              int32_t _elem24;
+              xfer += iprot->readI32(_elem24);
+              this->pet_set_of_i32.insert(_elem24);
             }
             xfer += iprot->readSetEnd();
           }
@@ -380,15 +466,15 @@ uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
         if (ftype == ::apache::thrift::protocol::T_SET) {
           {
             this->pet_set_of_struct.clear();
-            uint32_t _size23;
-            ::apache::thrift::protocol::TType _etype26;
-            xfer += iprot->readSetBegin(_etype26, _size23);
-            uint32_t _i27;
-            for (_i27 = 0; _i27 < _size23; ++_i27)
+            uint32_t _size25;
+            ::apache::thrift::protocol::TType _etype28;
+            xfer += iprot->readSetBegin(_etype28, _size25);
+            uint32_t _i29;
+            for (_i29 = 0; _i29 < _size25; ++_i29)
             {
-              EmbeddedStruct _elem28;
-              xfer += _elem28.read(iprot);
-              this->pet_set_of_struct.insert(_elem28);
+              EmbeddedStruct _elem30;
+              xfer += _elem30.read(iprot);
+              this->pet_set_of_struct.insert(_elem30);
             }
             xfer += iprot->readSetEnd();
           }
@@ -401,17 +487,17 @@ uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
         if (ftype == ::apache::thrift::protocol::T_MAP) {
           {
             this->pet_map_i32_string.clear();
-            uint32_t _size29;
-            ::apache::thrift::protocol::TType _ktype30;
-            ::apache::thrift::protocol::TType _vtype31;
-            xfer += iprot->readMapBegin(_ktype30, _vtype31, _size29);
-            uint32_t _i33;
-            for (_i33 = 0; _i33 < _size29; ++_i33)
+            uint32_t _size31;
+            ::apache::thrift::protocol::TType _ktype32;
+            ::apache::thrift::protocol::TType _vtype33;
+            xfer += iprot->readMapBegin(_ktype32, _vtype33, _size31);
+            uint32_t _i35;
+            for (_i35 = 0; _i35 < _size31; ++_i35)
             {
-              int32_t _key34;
-              xfer += iprot->readI32(_key34);
-              std::string& _val35 = this->pet_map_i32_string[_key34];
-              xfer += iprot->readString(_val35);
+              int32_t _key36;
+              xfer += iprot->readI32(_key36);
+              std::string& _val37 = this->pet_map_i32_string[_key36];
+              xfer += iprot->readString(_val37);
             }
             xfer += iprot->readMapEnd();
           }
@@ -424,17 +510,17 @@ uint32_t ResponseData::read(::apache::thrift::protocol::TProtocol* iprot) {
         if (ftype == ::apache::thrift::protocol::T_MAP) {
           {
             this->pet_map_string_struct.clear();
-            uint32_t _size36;
-            ::apache::thrift::protocol::TType _ktype37;
-            ::apache::thrift::protocol::TType _vtype38;
-            xfer += iprot->readMapBegin(_ktype37, _vtype38, _size36);
-            uint32_t _i40;
-            for (_i40 = 0; _i40 < _size36; ++_i40)
+            uint32_t _size38;
+            ::apache::thrift::protocol::TType _ktype39;
+            ::apache::thrift::protocol::TType _vtype40;
+            xfer += iprot->readMapBegin(_ktype39, _vtype40, _size38);
+            uint32_t _i42;
+            for (_i42 = 0; _i42 < _size38; ++_i42)
             {
-              std::string _key41;
-              xfer += iprot->readString(_key41);
-              EmbeddedStruct& _val42 = this->pet_map_string_struct[_key41];
-              xfer += _val42.read(iprot);
+              std::string _key43;
+              xfer += iprot->readString(_key43);
+              EmbeddedStruct& _val44 = this->pet_map_string_struct[_key43];
+              xfer += _val44.read(iprot);
             }
             xfer += iprot->readMapEnd();
           }
@@ -503,10 +589,10 @@ uint32_t ResponseData::write(::apache::thrift::protocol::TProtocol* oprot) const
   xfer += oprot->writeFieldBegin("pet_list_i32", ::apache::thrift::protocol::T_LIST, 11);
   {
     xfer += oprot->writeListBegin(::apache::thrift::protocol::T_I32, static_cast<uint32_t>(this->pet_list_i32.size()));
-    std::vector<int32_t> ::const_iterator _iter43;
-    for (_iter43 = this->pet_list_i32.begin(); _iter43 != this->pet_list_i32.end(); ++_iter43)
+    std::vector<int32_t> ::const_iterator _iter45;
+    for (_iter45 = this->pet_list_i32.begin(); _iter45 != this->pet_list_i32.end(); ++_iter45)
     {
-      xfer += oprot->writeI32((*_iter43));
+      xfer += oprot->writeI32((*_iter45));
     }
     xfer += oprot->writeListEnd();
   }
@@ -515,10 +601,10 @@ uint32_t ResponseData::write(::apache::thrift::protocol::TProtocol* oprot) const
   xfer += oprot->writeFieldBegin("pet_list_of_struct", ::apache::thrift::protocol::T_LIST, 12);
   {
     xfer += oprot->writeListBegin(::apache::thrift::protocol::T_STRUCT, static_cast<uint32_t>(this->pet_list_of_struct.size()));
-    std::vector<EmbeddedStruct> ::const_iterator _iter44;
-    for (_iter44 = this->pet_list_of_struct.begin(); _iter44 != this->pet_list_of_struct.end(); ++_iter44)
+    std::vector<EmbeddedStruct> ::const_iterator _iter46;
+    for (_iter46 = this->pet_list_of_struct.begin(); _iter46 != this->pet_list_of_struct.end(); ++_iter46)
     {
-      xfer += (*_iter44).write(oprot);
+      xfer += (*_iter46).write(oprot);
     }
     xfer += oprot->writeListEnd();
   }
@@ -527,10 +613,10 @@ uint32_t ResponseData::write(::apache::thrift::protocol::TProtocol* oprot) const
   xfer += oprot->writeFieldBegin("pet_list_of_bool", ::apache::thrift::protocol::T_LIST, 13);
   {
     xfer += oprot->writeListBegin(::apache::thrift::protocol::T_BOOL, static_cast<uint32_t>(this->pet_list_of_bool.size()));
-    std::vector<bool> ::const_iterator _iter45;
-    for (_iter45 = this->pet_list_of_bool.begin(); _iter45 != this->pet_list_of_bool.end(); ++_iter45)
+    std::vector<bool> ::const_iterator _iter47;
+    for (_iter47 = this->pet_list_of_bool.begin(); _iter47 != this->pet_list_of_bool.end(); ++_iter47)
     {
-      xfer += oprot->writeBool((*_iter45));
+      xfer += oprot->writeBool((*_iter47));
     }
     xfer += oprot->writeListEnd();
   }
@@ -539,10 +625,10 @@ uint32_t ResponseData::write(::apache::thrift::protocol::TProtocol* oprot) const
   xfer += oprot->writeFieldBegin("pet_set_of_i32", ::apache::thrift::protocol::T_SET, 14);
   {
     xfer += oprot->writeSetBegin(::apache::thrift::protocol::T_I32, static_cast<uint32_t>(this->pet_set_of_i32.size()));
-    std::set<int32_t> ::const_iterator _iter46;
-    for (_iter46 = this->pet_set_of_i32.begin(); _iter46 != this->pet_set_of_i32.end(); ++_iter46)
+    std::set<int32_t> ::const_iterator _iter48;
+    for (_iter48 = this->pet_set_of_i32.begin(); _iter48 != this->pet_set_of_i32.end(); ++_iter48)
     {
-      xfer += oprot->writeI32((*_iter46));
+      xfer += oprot->writeI32((*_iter48));
     }
     xfer += oprot->writeSetEnd();
   }
@@ -551,10 +637,10 @@ uint32_t ResponseData::write(::apache::thrift::protocol::TProtocol* oprot) const
   xfer += oprot->writeFieldBegin("pet_set_of_struct", ::apache::thrift::protocol::T_SET, 15);
   {
     xfer += oprot->writeSetBegin(::apache::thrift::protocol::T_STRUCT, static_cast<uint32_t>(this->pet_set_of_struct.size()));
-    std::set<EmbeddedStruct> ::const_iterator _iter47;
-    for (_iter47 = this->pet_set_of_struct.begin(); _iter47 != this->pet_set_of_struct.end(); ++_iter47)
+    std::set<EmbeddedStruct> ::const_iterator _iter49;
+    for (_iter49 = this->pet_set_of_struct.begin(); _iter49 != this->pet_set_of_struct.end(); ++_iter49)
     {
-      xfer += (*_iter47).write(oprot);
+      xfer += (*_iter49).write(oprot);
     }
     xfer += oprot->writeSetEnd();
   }
@@ -563,11 +649,11 @@ uint32_t ResponseData::write(::apache::thrift::protocol::TProtocol* oprot) const
   xfer += oprot->writeFieldBegin("pet_map_i32_string", ::apache::thrift::protocol::T_MAP, 16);
   {
     xfer += oprot->writeMapBegin(::apache::thrift::protocol::T_I32, ::apache::thrift::protocol::T_STRING, static_cast<uint32_t>(this->pet_map_i32_string.size()));
-    std::map<int32_t, std::string> ::const_iterator _iter48;
-    for (_iter48 = this->pet_map_i32_string.begin(); _iter48 != this->pet_map_i32_string.end(); ++_iter48)
+    std::map<int32_t, std::string> ::const_iterator _iter50;
+    for (_iter50 = this->pet_map_i32_string.begin(); _iter50 != this->pet_map_i32_string.end(); ++_iter50)
     {
-      xfer += oprot->writeI32(_iter48->first);
-      xfer += oprot->writeString(_iter48->second);
+      xfer += oprot->writeI32(_iter50->first);
+      xfer += oprot->writeString(_iter50->second);
     }
     xfer += oprot->writeMapEnd();
   }
@@ -576,11 +662,11 @@ uint32_t ResponseData::write(::apache::thrift::protocol::TProtocol* oprot) const
   xfer += oprot->writeFieldBegin("pet_map_string_struct", ::apache::thrift::protocol::T_MAP, 17);
   {
     xfer += oprot->writeMapBegin(::apache::thrift::protocol::T_STRING, ::apache::thrift::protocol::T_STRUCT, static_cast<uint32_t>(this->pet_map_string_struct.size()));
-    std::map<std::string, EmbeddedStruct> ::const_iterator _iter49;
-    for (_iter49 = this->pet_map_string_struct.begin(); _iter49 != this->pet_map_string_struct.end(); ++_iter49)
+    std::map<std::string, EmbeddedStruct> ::const_iterator _iter51;
+    for (_iter51 = this->pet_map_string_struct.begin(); _iter51 != this->pet_map_string_struct.end(); ++_iter51)
     {
-      xfer += oprot->writeString(_iter49->first);
-      xfer += _iter49->second.write(oprot);
+      xfer += oprot->writeString(_iter51->first);
+      xfer += _iter51->second.write(oprot);
     }
     xfer += oprot->writeMapEnd();
   }
@@ -613,45 +699,45 @@ void swap(ResponseData &a, ResponseData &b) {
   swap(a.__isset, b.__isset);
 }
 
-ResponseData::ResponseData(const ResponseData& other50) {
-  pet_id = other50.pet_id;
-  pet_name = other50.pet_name;
-  pet_weight = other50.pet_weight;
-  pet_i8_value = other50.pet_i8_value;
-  pet_i16_value = other50.pet_i16_value;
-  pet_i64_value = other50.pet_i64_value;
-  pet_double_value = other50.pet_double_value;
-  pet_bool_value = other50.pet_bool_value;
-  pet_binary_value = other50.pet_binary_value;
-  pet_embedded_struct = other50.pet_embedded_struct;
-  pet_list_i32 = other50.pet_list_i32;
-  pet_list_of_struct = other50.pet_list_of_struct;
-  pet_list_of_bool = other50.pet_list_of_bool;
-  pet_set_of_i32 = other50.pet_set_of_i32;
-  pet_set_of_struct = other50.pet_set_of_struct;
-  pet_map_i32_string = other50.pet_map_i32_string;
-  pet_map_string_struct = other50.pet_map_string_struct;
-  __isset = other50.__isset;
+ResponseData::ResponseData(const ResponseData& other52) {
+  pet_id = other52.pet_id;
+  pet_name = other52.pet_name;
+  pet_weight = other52.pet_weight;
+  pet_i8_value = other52.pet_i8_value;
+  pet_i16_value = other52.pet_i16_value;
+  pet_i64_value = other52.pet_i64_value;
+  pet_double_value = other52.pet_double_value;
+  pet_bool_value = other52.pet_bool_value;
+  pet_binary_value = other52.pet_binary_value;
+  pet_embedded_struct = other52.pet_embedded_struct;
+  pet_list_i32 = other52.pet_list_i32;
+  pet_list_of_struct = other52.pet_list_of_struct;
+  pet_list_of_bool = other52.pet_list_of_bool;
+  pet_set_of_i32 = other52.pet_set_of_i32;
+  pet_set_of_struct = other52.pet_set_of_struct;
+  pet_map_i32_string = other52.pet_map_i32_string;
+  pet_map_string_struct = other52.pet_map_string_struct;
+  __isset = other52.__isset;
 }
-ResponseData& ResponseData::operator=(const ResponseData& other51) {
-  pet_id = other51.pet_id;
-  pet_name = other51.pet_name;
-  pet_weight = other51.pet_weight;
-  pet_i8_value = other51.pet_i8_value;
-  pet_i16_value = other51.pet_i16_value;
-  pet_i64_value = other51.pet_i64_value;
-  pet_double_value = other51.pet_double_value;
-  pet_bool_value = other51.pet_bool_value;
-  pet_binary_value = other51.pet_binary_value;
-  pet_embedded_struct = other51.pet_embedded_struct;
-  pet_list_i32 = other51.pet_list_i32;
-  pet_list_of_struct = other51.pet_list_of_struct;
-  pet_list_of_bool = other51.pet_list_of_bool;
-  pet_set_of_i32 = other51.pet_set_of_i32;
-  pet_set_of_struct = other51.pet_set_of_struct;
-  pet_map_i32_string = other51.pet_map_i32_string;
-  pet_map_string_struct = other51.pet_map_string_struct;
-  __isset = other51.__isset;
+ResponseData& ResponseData::operator=(const ResponseData& other53) {
+  pet_id = other53.pet_id;
+  pet_name = other53.pet_name;
+  pet_weight = other53.pet_weight;
+  pet_i8_value = other53.pet_i8_value;
+  pet_i16_value = other53.pet_i16_value;
+  pet_i64_value = other53.pet_i64_value;
+  pet_double_value = other53.pet_double_value;
+  pet_bool_value = other53.pet_bool_value;
+  pet_binary_value = other53.pet_binary_value;
+  pet_embedded_struct = other53.pet_embedded_struct;
+  pet_list_i32 = other53.pet_list_i32;
+  pet_list_of_struct = other53.pet_list_of_struct;
+  pet_list_of_bool = other53.pet_list_of_bool;
+  pet_set_of_i32 = other53.pet_set_of_i32;
+  pet_set_of_struct = other53.pet_set_of_struct;
+  pet_map_i32_string = other53.pet_map_i32_string;
+  pet_map_string_struct = other53.pet_map_string_struct;
+  __isset = other53.__isset;
   return *this;
 }
 void ResponseData::printTo(std::ostream& out) const {

@@ -1,3 +1,4 @@
+    const std::string api_version = "1.0.3";
 
     #define ___fields_of_struct___EmbeddedStruct(_, ...)\
         _(1, es_i8,          int8_t,        __VA_ARGS__)\

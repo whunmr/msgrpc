@@ -2,17 +2,17 @@
 <module type="CPP_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_types.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_codec.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_struct_def_idl.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/gen1/api_constants.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/gen1/api_types.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/gen1/api_constants.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/gen1/api_types.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo_service_interface.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_types.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_codec.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_struct_def_idl.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/api.thrift" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_service.interface" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">

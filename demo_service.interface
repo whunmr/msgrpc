@@ -1,0 +1,41 @@
+const std::string api_version = "1.0.3";
+
+/*----------------------------------------------------------------------------*/
+#define ___fields_of_struct___EmbeddedStruct(_, ...)\
+        _(1, optional, es_i8,          int8_t,        __VA_ARGS__)\
+        _(2, optional, es_i16,         int16_t,       __VA_ARGS__)
+
+___def_struct(EmbeddedStruct);
+
+/*----------------------------------------------------------------------------*/
+/*constraints: can not contains comma in type field, using typedef to remove comma.*/
+typedef std::map<int32_t, std::string> map_int32_string;
+typedef std::map<std::string, EmbeddedStruct> map_string_struct;
+
+#define ___fields_of_struct___ResponseData(_, ...)                                        \
+        _(1,  optional, pet_id,                int32_t,                           __VA_ARGS__)\
+        _(2,  optional, pet_name,              std::string,                       __VA_ARGS__)\
+        _(3,  optional, pet_weight,            int32_t,                           __VA_ARGS__)\
+        _(4,  optional, pet_i8_value,          int8_t,                            __VA_ARGS__)\
+        _(5,  optional, pet_i16_value,         int16_t,                           __VA_ARGS__)\
+        _(6,  optional, pet_i64_value,         int64_t,                           __VA_ARGS__)\
+        _(7,  optional, pet_double_value,      double,                            __VA_ARGS__)\
+        _(8,  optional, pet_bool_value,        bool,                              __VA_ARGS__)\
+        _(9,  optional, pet_binary_value,      binary,                            __VA_ARGS__)\
+        _(10, optional, pet_embedded_struct,   EmbeddedStruct,                    __VA_ARGS__)\
+        _(11, optional, pet_list_i32,          std::vector<int32_t>,              __VA_ARGS__)\
+        _(12, optional, pet_list_of_struct,    std::vector<EmbeddedStruct>,       __VA_ARGS__)\
+        _(13, optional, pet_list_of_bool,      std::vector<bool>,                 __VA_ARGS__)\
+        _(14, optional, pet_set_of_i32,        std::set<int32_t>,                 __VA_ARGS__)\
+        _(15, optional, pet_set_of_struct,     std::set<EmbeddedStruct>,          __VA_ARGS__)\
+        _(16, optional, pet_map_i32_string,    map_int32_string,                  __VA_ARGS__)\
+        _(17, optional, pet_map_string_struct, map_string_struct,                 __VA_ARGS__)
+
+___def_struct(ResponseData);
+
+/*----------------------------------------------------------------------------*/
+#define ___fields_of_struct___SingleOptionalFieldStruct(_, ...)\
+        _(1, optional, value,          int16_t,        __VA_ARGS__)\
+        _(2, required, value64,        int64_t,        __VA_ARGS__)
+
+___def_struct(SingleOptionalFieldStruct);

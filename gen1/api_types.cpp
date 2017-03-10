@@ -20,6 +20,7 @@ EmbeddedStruct::~EmbeddedStruct() throw() {
 
 void EmbeddedStruct::__set_es_i8(const int8_t val) {
   this->es_i8 = val;
+__isset.es_i8 = true;
 }
 
 void EmbeddedStruct::__set_es_i16(const int16_t val) {
@@ -80,10 +81,11 @@ uint32_t EmbeddedStruct::write(::apache::thrift::protocol::TProtocol* oprot) con
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("EmbeddedStruct");
 
-  xfer += oprot->writeFieldBegin("es_i8", ::apache::thrift::protocol::T_BYTE, 1);
-  xfer += oprot->writeByte(this->es_i8);
-  xfer += oprot->writeFieldEnd();
-
+  if (this->__isset.es_i8) {
+    xfer += oprot->writeFieldBegin("es_i8", ::apache::thrift::protocol::T_BYTE, 1);
+    xfer += oprot->writeByte(this->es_i8);
+    xfer += oprot->writeFieldEnd();
+  }
   xfer += oprot->writeFieldBegin("es_i16", ::apache::thrift::protocol::T_I16, 2);
   xfer += oprot->writeI16(this->es_i16);
   xfer += oprot->writeFieldEnd();
@@ -114,7 +116,7 @@ EmbeddedStruct& EmbeddedStruct::operator=(const EmbeddedStruct& other1) {
 void EmbeddedStruct::printTo(std::ostream& out) const {
   using ::apache::thrift::to_string;
   out << "EmbeddedStruct(";
-  out << "es_i8=" << to_string(es_i8);
+  out << "es_i8="; (__isset.es_i8 ? (out << to_string(es_i8)) : (out << "<null>"));
   out << ", " << "es_i16=" << to_string(es_i16);
   out << ")";
 }

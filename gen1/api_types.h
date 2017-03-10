@@ -49,7 +49,9 @@ class EmbeddedStruct {
 
   bool operator == (const EmbeddedStruct & rhs) const
   {
-    if (!(es_i8 == rhs.es_i8))
+    if (__isset.es_i8 != rhs.__isset.es_i8)
+      return false;
+    else if (__isset.es_i8 && !(es_i8 == rhs.es_i8))
       return false;
     if (!(es_i16 == rhs.es_i16))
       return false;

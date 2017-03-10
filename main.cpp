@@ -6,12 +6,13 @@ using namespace org::example::msgrpc;
 
 #include "thrift/thrift_struct_def_idl.h"
 namespace demo {
+
     //#include "demo_service_interface.h"
     const std::string api_version = "1.0.3";
 
     #define ___fields_of_struct___EmbeddedStruct(_, ...)\
-        _(1, es_i8,          int8_t,        __VA_ARGS__)\
-        _(2, es_i16,         int16_t,       __VA_ARGS__)
+        _(1, optional, es_i8,          int8_t,        __VA_ARGS__)\
+        _(2, optional, es_i16,         int16_t,       __VA_ARGS__)
 
     ___def_struct(EmbeddedStruct);
 
@@ -21,29 +22,30 @@ namespace demo {
     typedef std::map<std::string, EmbeddedStruct> map_string_struct;
 
     #define ___fields_of_struct___ResponseData(_, ...)                              \
-        _(1,  pet_id,                int32_t,                           __VA_ARGS__)\
-        _(2,  pet_name,              std::string,                       __VA_ARGS__)\
-        _(3,  pet_weight,            int32_t,                           __VA_ARGS__)\
-        _(4,  pet_i8_value,          int8_t,                            __VA_ARGS__)\
-        _(5,  pet_i16_value,         int16_t,                           __VA_ARGS__)\
-        _(6,  pet_i64_value,         int64_t,                           __VA_ARGS__)\
-        _(7,  pet_double_value,      double,                            __VA_ARGS__)\
-        _(8,  pet_bool_value,        bool,                              __VA_ARGS__)\
-        _(9,  pet_binary_value,      binary,                            __VA_ARGS__)\
-        _(10, pet_embedded_struct,   EmbeddedStruct,                    __VA_ARGS__)\
-        _(11, pet_list_i32,          std::vector<int32_t>,              __VA_ARGS__)\
-        _(12, pet_list_of_struct,    std::vector<EmbeddedStruct>,       __VA_ARGS__)\
-        _(13, pet_list_of_bool,      std::vector<bool>,                 __VA_ARGS__)\
-        _(14, pet_set_of_i32,        std::set<int32_t>,                 __VA_ARGS__)\
-        _(15, pet_set_of_struct,     std::set<EmbeddedStruct>,          __VA_ARGS__)\
-        _(16, pet_map_i32_string,    map_int32_string,                  __VA_ARGS__)\
-        _(17, pet_map_string_struct, map_string_struct,                 __VA_ARGS__)
+        _(1,  optional, pet_id,                int32_t,                           __VA_ARGS__)\
+        _(2,  optional, pet_name,              std::string,                       __VA_ARGS__)\
+        _(3,  optional, pet_weight,            int32_t,                           __VA_ARGS__)\
+        _(4,  optional, pet_i8_value,          int8_t,                            __VA_ARGS__)\
+        _(5,  optional, pet_i16_value,         int16_t,                           __VA_ARGS__)\
+        _(6,  optional, pet_i64_value,         int64_t,                           __VA_ARGS__)\
+        _(7,  optional, pet_double_value,      double,                            __VA_ARGS__)\
+        _(8,  optional, pet_bool_value,        bool,                              __VA_ARGS__)\
+        _(9,  optional, pet_binary_value,      binary,                            __VA_ARGS__)\
+        _(10, optional, pet_embedded_struct,   EmbeddedStruct,                    __VA_ARGS__)\
+        _(11, optional, pet_list_i32,          std::vector<int32_t>,              __VA_ARGS__)\
+        _(12, optional, pet_list_of_struct,    std::vector<EmbeddedStruct>,       __VA_ARGS__)\
+        _(13, optional, pet_list_of_bool,      std::vector<bool>,                 __VA_ARGS__)\
+        _(14, optional, pet_set_of_i32,        std::set<int32_t>,                 __VA_ARGS__)\
+        _(15, optional, pet_set_of_struct,     std::set<EmbeddedStruct>,          __VA_ARGS__)\
+        _(16, optional, pet_map_i32_string,    map_int32_string,                  __VA_ARGS__)\
+        _(17, optional, pet_map_string_struct, map_string_struct,                 __VA_ARGS__)
 
     ___def_struct(ResponseData);
 
 
     #define ___fields_of_struct___SingleOptionalFieldStruct(_, ...)\
-                   _(1, value,          int16_t,        __VA_ARGS__)
+        _(1, optional, value,          int16_t,        __VA_ARGS__)\
+        _(2, required, value64,        int64_t,        __VA_ARGS__)
 
     ___def_struct(SingleOptionalFieldStruct);
 }
@@ -66,7 +68,7 @@ namespace org { namespace example { namespace msgrpc { namespace thrift {
 using namespace std;
 
 template<typename T, typename M>
-void expect_thrift_decoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(T& ___t, M& ___m) {
+void expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(T &___t, M &___m) {
     T ___t2;
 
     uint8_t* pbuf; uint32_t len;
@@ -81,13 +83,26 @@ void expect_thrift_decoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(T& _
 
 TEST(test, should_decoded_failed_if_required_field_are_not_setted) {
     thrift::SingleOptionalFieldStruct ___t;
+    //___t.__set_value(100);
+    ___t.value = 100;
+
+    cout << ___t << endl;
+    demo::SingleOptionalFieldStruct ___m;
+
+    expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___t, ___m);
+};
+
+TEST(test, should_decoded_failed_if_required_field_are_not_setted____reversed) {
+    demo::SingleOptionalFieldStruct ___t;
     ___t.__set_value(100);
     //___t.value = 100;
 
-    demo::SingleOptionalFieldStruct ___m;
+    cout << ___t << endl;
+    thrift::SingleOptionalFieldStruct ___m;
 
-    expect_thrift_decoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___t, ___m);
+    expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___t, ___m);
 };
+
 
 TEST(test, test1) {
     thrift::ResponseData ___foo;
@@ -102,7 +117,7 @@ TEST(test, test1) {
     ___foo.pet_binary_value = string("abcd");
 
     ___foo.pet_embedded_struct.es_i8 = 99;
-    //___foo.pet_embedded_struct.__set_es_i8(99);
+    ___foo.pet_embedded_struct.__set_es_i8(99);
     ___foo.pet_embedded_struct.es_i16 = 1616;
 
     ___foo.pet_list_i32.push_back(9);
@@ -134,7 +149,7 @@ TEST(test, test1) {
 
     demo::ResponseData ___bar;
 
-    expect_thrift_decoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___foo, ___bar);
+    expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___foo, ___bar);
 }
 
 #if 0

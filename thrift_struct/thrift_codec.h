@@ -13,7 +13,7 @@ struct Singleton {
     virtual ~Singleton() { }
 
     static T& instance() {
-        static T t;
+        static thread_local T t;
         return t;
     }
 };

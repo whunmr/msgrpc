@@ -1,6 +1,6 @@
 #include "demo_api_declare.h"
 
-#include "thrift_struct/thrift_struct_define.h"
+#include <api/service_api_define.h>
 #include "demo_service.interface"
 
 namespace demo {

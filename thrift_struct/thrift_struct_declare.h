@@ -160,12 +160,5 @@
 #define ___as_struct(struct_name_) \
         ___declare_struct(struct_name_)
 
-////////////////////////////////////////////////////////////////////////////////
-#ifdef ___api_version
-#undef ___api_version
-#endif
-
-#define ___api_version(version)  extern const char* api_version;
-
 
 #endif //MSGRPC_THRIFT_STRUCT_DEF_IDL_H

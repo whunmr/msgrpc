@@ -30,6 +30,8 @@ protected:
 };
 
 struct ThriftEncoder : ThriftCodecBase, Singleton<ThriftEncoder> {
+    ThriftEncoder() : should_reset_to_default_size_(false) {}
+
     template<typename T>
     static bool encode(const T& ___struct, uint8_t** buf, uint32_t* len) {
         return ThriftEncoder::instance().do_encode(___struct, buf, len);
@@ -41,9 +43,18 @@ private:
         *len = 0;
 
         try {
-            mem_buf_->resetBuffer();
+            if (should_reset_to_default_size_) {
+                mem_buf_->resetBuffer(apache::thrift::transport::TMemoryBuffer::defaultSize);
+            } else {
+                mem_buf_->resetBuffer();
+            }
+
             ___struct.write(protocol_.get());
             mem_buf_->getBuffer(buf, len);
+
+            if (*len > apache::thrift::transport::TMemoryBuffer::defaultSize) {
+                should_reset_to_default_size_ = true;
+            }
         } catch (...) {
             //TODO: add debug log
             return false;
@@ -51,6 +62,8 @@ private:
 
         return *len != 0;
     }
+
+    bool should_reset_to_default_size_;
 };
 
 

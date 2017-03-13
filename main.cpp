@@ -17,7 +17,7 @@ void expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(T &_
     EXPECT_TRUE(ThriftDecoder::decode(___m, pbuf, len));
     EXPECT_TRUE(ThriftEncoder::encode(___m, &pbuf, &len));
     EXPECT_TRUE(ThriftDecoder::decode(___t2, pbuf, len));
-    cout << ___t2 << endl;
+
     EXPECT_EQ(___t, ___t2);
 }
 
@@ -87,7 +87,19 @@ TEST(test, test_complex_data_types) {
     expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___foo, ___bar);
 }
 
-#if 0
-TODO:
-2. separate the thrift_struct_def_idl.h into declaration and definition.
-#endif
+TEST(test, test_should_able_to__encode_and_decode___large_object) {
+    thrift::ResponseData ___foo;
+
+    thrift::EmbeddedStruct es1; es1.es_i8 = 97; es1.es_i16 = 116;
+    thrift::EmbeddedStruct es2; es2.es_i8 = 98; es2.es_i16 = 216;
+
+    for (int i = 0; i < 1000; ++i) {
+        ___foo.pet_list_of_struct.push_back(es1);
+        ___foo.pet_list_of_struct.push_back(es2);
+    }
+
+    demo::ResponseData ___bar;
+
+    expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___foo, ___bar);
+}
+

@@ -1,20 +1,20 @@
 namespace demo {
     ___api_version(1.0.3)
 
-    /*----------------------------------------------------------------------------*/
     #define ___fields_of_struct___SingleOptionalFieldStruct(_, ...)    \
             _(1, optional, value,          int16_t,        __VA_ARGS__)\
             _(2, required, value64,        int64_t,        __VA_ARGS__)
 
     ___as_struct(SingleOptionalFieldStruct);
-    /*----------------------------------------------------------------------------*/
+
+
     #define ___fields_of_struct___EmbeddedStruct(_, ...)              \
             _(1, required, es_i8,          int8_t,        __VA_ARGS__)\
             _(2, optional, es_i16,         int16_t,       __VA_ARGS__)
 
     ___as_struct(EmbeddedStruct);
 
-    /*----------------------------------------------------------------------------*/
+
     typedef std::map <int32_t, std::string> map_int32_string;
     typedef std::map <std::string, EmbeddedStruct> map_string_struct;
 
@@ -38,5 +38,6 @@ namespace demo {
             _(17, optional, pet_map_string_struct, map_string_struct,                 __VA_ARGS__)
 
     ___as_struct(ResponseData);
-    /*----------------------------------------------------------------------------*/
+
+
 }

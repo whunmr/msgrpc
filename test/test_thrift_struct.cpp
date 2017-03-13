@@ -1,8 +1,8 @@
-#include "gen1/api_types.h"
-#include "demo_api_declare.h"
+#include "demo/gen1/api_types.h"
+#include "demo/demo_api_declare.h"
 
 #include <iostream>
-#include "thrift_struct/thrift_codec.h"
+#include <msgrpc/thrift_struct/thrift_codec.h>
 #include <gtest/gtest.h>
 using namespace std;
 using namespace org::example::msgrpc;
@@ -102,5 +102,3 @@ TEST(test, test_should_able_to__encode_and_decode___large_object) {
 
     expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___foo, ___bar);
 }
-
-//TODO: remove ___api_version(1.0.3) in DataEx

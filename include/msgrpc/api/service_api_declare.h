@@ -1,7 +1,7 @@
 #ifndef MSGRPC_SERVICE_API_DECLARE_H_H
 #define MSGRPC_SERVICE_API_DECLARE_H_H
 
-#include <thrift_struct/thrift_struct_declare.h>
+#include <msgrpc/thrift_struct/thrift_struct_declare.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ___api_version

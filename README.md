@@ -80,3 +80,19 @@ namespace demo {
 }
 
 ```
+
+2. type mapping
+```
+bool      bool
+byte      int8_t
+i16       int16_t
+i32       int32_t
+i64       int64_t
+double    double
+string    std::string
+binary    binary
+list      std::vector
+set       std::set
+map       std::map
+```
+

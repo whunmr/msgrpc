@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.3)
 project(msgrpc)
 
 LINK_DIRECTORIES(/Users/hmwang/lab/repo/googletest/googlemock/gtest)
@@ -20,3 +20,4 @@ set(SOURCE_FILES
 add_executable(msgrpc ${SOURCE_FILES})
 
 target_link_libraries(msgrpc /Users/hmwang/lab/thrift-0.9.3/lib/cpp/.libs/libthrift.a gtest gtest_main)
+

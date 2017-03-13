@@ -8,15 +8,15 @@
       <sourceFolder url="file://$MODULE_DIR$/gen1/api_types.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/gen1/api_constants.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/gen1/api_types.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_types.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_idl_common.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_codec.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_idl_define.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/thrift/thrift_idl_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo_service.interface" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo_api_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/api.thrift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_service.interface" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/thrift_struct/thrift_struct_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/thrift_struct/thrift_types.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/thrift_struct/thrift_codec.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/thrift_struct/thrift_struct_define.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/thrift_struct/thrift_struct_common.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_api_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">

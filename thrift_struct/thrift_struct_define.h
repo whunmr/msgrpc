@@ -1,7 +1,7 @@
 #ifndef MSGRPC_THRIFT_IDL_DEFINE_H
 #define MSGRPC_THRIFT_IDL_DEFINE_H
 
-#include "thrift_idl_common.h"
+#include "thrift_struct_common.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 #define ___expand_define_set_field_method__required(fid_, opt_or_req_, fname_, ftype_, struct_name_) \

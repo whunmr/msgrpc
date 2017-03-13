@@ -1,7 +1,7 @@
 #ifndef MSGRPC_THRIFT_STRUCT_DEF_IDL_H
 #define MSGRPC_THRIFT_STRUCT_DEF_IDL_H
 
-#include "thrift_idl_common.h"
+#include "thrift_struct_common.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 #define ___expand_isset_init_list__required(fid_, opt_or_req_, fname_, ftype_, ...)

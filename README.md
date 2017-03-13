@@ -1,7 +1,7 @@
 # msgrpc
 async RPC implemented by async message-passing
 
-1. using macro to replace thrift IDL, e.g.:
+* using macro to replace thrift IDL, e.g.:
 ```
 namespace cpp org.example.msgrpc.thrift
 
@@ -81,7 +81,7 @@ namespace demo {
 
 ```
 
-2. type mapping
+* type mapping
 ```
 bool      bool
 byte      int8_t

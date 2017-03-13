@@ -1,7 +1,6 @@
 #include "demo/gen1/api_types.h"
 #include "demo/demo_api_declare.h"
 
-#include <iostream>
 #include <msgrpc/thrift_struct/thrift_codec.h>
 #include <gtest/gtest.h>
 using namespace std;
@@ -21,7 +20,7 @@ void expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(T &_
     EXPECT_EQ(___t, ___t2);
 }
 
-TEST(test, should_decoded_failed_if_required_field_are_not_setted) {
+TEST(thrift_struct, should_decoded_failed_if_required_field_are_not_setted) {
     thrift::SingleOptionalFieldStruct ___t;
     ___t.__set_value(100);
 
@@ -30,7 +29,7 @@ TEST(test, should_decoded_failed_if_required_field_are_not_setted) {
     expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___t, ___m);
 };
 
-TEST(test, should_decoded_failed_if_required_field_are_not_setted____reversed) {
+TEST(thrift_struct, should_decoded_failed_if_required_field_are_not_setted____reversed) {
     demo::SingleOptionalFieldStruct ___t;
     ___t.__set_value(100);
 
@@ -39,7 +38,7 @@ TEST(test, should_decoded_failed_if_required_field_are_not_setted____reversed) {
     expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___t, ___m);
 };
 
-TEST(test, test_complex_data_types) {
+TEST(thrift_struct, test_complex_data_types) {
     thrift::ResponseData ___foo;
     ___foo.pet_id = 11;
     ___foo.pet_name = "pet_name_foo";
@@ -87,7 +86,7 @@ TEST(test, test_complex_data_types) {
     expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___foo, ___bar);
 }
 
-TEST(test, test_should_able_to__encode_and_decode___large_object) {
+TEST(thrift_struct, test_should_able_to__encode_and_decode___large_object) {
     thrift::ResponseData ___foo;
 
     thrift::EmbeddedStruct es1; es1.es_i8 = 97; es1.es_i16 = 116;

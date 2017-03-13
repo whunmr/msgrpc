@@ -19,6 +19,7 @@
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/api/service_api_define.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/api/service_api_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/test_thrift_struct.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/test_async_rpc.cpp.cpp" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">

@@ -42,44 +42,41 @@ can be write in msgrpc DSL:
 namespace demo {
     ___api_version(1.0.3)
 
-    /*----------------------------------------------------------------------------*/
-    #define ___fields_of_struct___SingleOptionalFieldStruct(_, ...)    \
-            _(1, optional, value,          int16_t,        __VA_ARGS__)\
-            _(2, required, value64,        int64_t,        __VA_ARGS__)
-
+    ////////////////////////////////////////////////////////////////////////////
+    #define ___fields_of_struct___SingleOptionalFieldStruct(_, ...) \
+        _(1, optional, int16_t, value,                  __VA_ARGS__)\
+        _(2, required, int64_t, value64,                __VA_ARGS__)
     ___as_struct(SingleOptionalFieldStruct);
-    
-    /*----------------------------------------------------------------------------*/
-    #define ___fields_of_struct___EmbeddedStruct(_, ...)              \
-            _(1, required, es_i8,          int8_t,        __VA_ARGS__)\
-            _(2, optional, es_i16,         int16_t,       __VA_ARGS__)
 
+    ////////////////////////////////////////////////////////////////////////////
+    #define ___fields_of_struct___EmbeddedStruct(_, ...)          \
+        _(1, required, int8_t,  es_i8,                __VA_ARGS__)\
+        _(2, optional, int16_t, es_i16,               __VA_ARGS__)
     ___as_struct(EmbeddedStruct);
 
-    /*----------------------------------------------------------------------------*/
+    ////////////////////////////////////////////////////////////////////////////
     typedef std::map <int32_t, std::string> map_int32_string;
     typedef std::map <std::string, EmbeddedStruct> map_string_struct;
 
-    #define ___fields_of_struct___ResponseData(_, ...)                                            \
-            _(1,  required, pet_id,                int32_t,                           __VA_ARGS__)\
-            _(2,  required, pet_name,              std::string,                       __VA_ARGS__)\
-            _(3,  required, pet_weight,            int32_t,                           __VA_ARGS__)\
-            _(4,  required, pet_i8_value,          int8_t,                            __VA_ARGS__)\
-            _(5,  required, pet_i16_value,         int16_t,                           __VA_ARGS__)\
-            _(6,  required, pet_i64_value,         int64_t,                           __VA_ARGS__)\
-            _(7,  required, pet_double_value,      double,                            __VA_ARGS__)\
-            _(8,  required, pet_bool_value,        bool,                              __VA_ARGS__)\
-            _(9,  required, pet_binary_value,      binary,                            __VA_ARGS__)\
-            _(10, required, pet_embedded_struct,   EmbeddedStruct,                    __VA_ARGS__)\
-            _(11, required, pet_list_i32,          std::vector<int32_t>,              __VA_ARGS__)\
-            _(12, required, pet_list_of_struct,    std::vector<EmbeddedStruct>,       __VA_ARGS__)\
-            _(13, optional, pet_list_of_bool,      std::vector<bool>,                 __VA_ARGS__)\
-            _(14, optional, pet_set_of_i32,        std::set<int32_t>,                 __VA_ARGS__)\
-            _(15, optional, pet_set_of_struct,     std::set<EmbeddedStruct>,          __VA_ARGS__)\
-            _(16, optional, pet_map_i32_string,    map_int32_string,                  __VA_ARGS__)\
-            _(17, optional, pet_map_string_struct, map_string_struct,                 __VA_ARGS__)
-
+    #define ___fields_of_struct___ResponseData(_, ...)                                  \
+        _(1,  required, int32_t,                     pet_id,                __VA_ARGS__)\
+        _(2,  required, std::string,                 pet_name,              __VA_ARGS__)\
+        _(3,  required, int32_t,                     pet_weight,            __VA_ARGS__)\
+        _(4,  required, int8_t,                      pet_i8_value,          __VA_ARGS__)\
+        _(5,  required, int16_t,                     pet_i16_value,         __VA_ARGS__)\
+        _(6,  required, int64_t,                     pet_i64_value,         __VA_ARGS__)\
+        _(7,  required, double,                      pet_double_value,      __VA_ARGS__)\
+        _(8,  required, bool,                        pet_bool_value,        __VA_ARGS__)\
+        _(9,  required, binary,                      pet_binary_value,      __VA_ARGS__)\
+        _(10, required, EmbeddedStruct,              pet_embedded_struct,   __VA_ARGS__)\
+        _(11, required, std::vector<int32_t>,        pet_list_i32,          __VA_ARGS__)\
+        _(12, required, std::vector<EmbeddedStruct>, pet_list_of_struct,    __VA_ARGS__)\
+        _(13, optional, std::vector<bool>,           pet_list_of_bool,      __VA_ARGS__)\
+        _(14, optional, std::set<int32_t>,           pet_set_of_i32,        __VA_ARGS__)\
+        _(15, optional, std::set<EmbeddedStruct>,    pet_set_of_struct,     __VA_ARGS__)\
+        _(16, optional, map_int32_string,            pet_map_i32_string,    __VA_ARGS__)\
+        _(17, optional, map_string_struct,           pet_map_string_struct, __VA_ARGS__)
     ___as_struct(ResponseData);
-    /*----------------------------------------------------------------------------*/
 }
+
 ```

@@ -101,3 +101,6 @@ TEST(thrift_struct, test_should_able_to__encode_and_decode___large_object) {
 
     expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(___foo, ___bar);
 }
+
+
+

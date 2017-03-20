@@ -34,6 +34,13 @@
 #define ___expand_struct_field(fid_, opt_or_req_, ftype_, fname_, ...) \
               ___expand_struct_field__##opt_or_req_(fid_, opt_or_req_, ftype_, fname_, __VA_ARGS__)
 
+
+#define ___expand_get_struct_field_method__required(fid_, opt_or_req_, ftype_, fname_, ...)
+#define ___expand_get_struct_field_method__optional(fid_, opt_or_req_, ftype_, fname_, ...) ftype_ get_##fname_() const { return this->fname_; }
+
+#define ___expand_get_struct_field_method(fid_, opt_or_req_, ftype_, fname_, ...) \
+              ___expand_get_struct_field_method__##opt_or_req_(fid_, opt_or_req_, ftype_, fname_, __VA_ARGS__)
+
 #define ___expand_declare_set_field_method(fid_, opt_or_req_, ftype_, fname_, ...) \
   void __set_##fname_(const ftype_& val);
 
@@ -61,6 +68,8 @@
       ___apply_expand(struct_name_, ___expand_struct_init_list, struct_name_) {} \
     virtual ~struct_name_() throw();\
     ___apply_expand(struct_name_, ___expand_struct_field, struct_name_)\
+    public: \
+    ___apply_expand(struct_name_, ___expand_get_struct_field_method, struct_name_)\
     \
     public: \
     _##struct_name_##__isset __isset;\

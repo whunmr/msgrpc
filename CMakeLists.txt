@@ -26,7 +26,7 @@ set(SOURCE_FILES
         demo/gen1/api_types.cpp
         demo/gen1/api_types.h
         demo/gen1/api.thrift
-        test/test_thrift_struct.cpp include/msgrpc/thrift_struct/thrift_codec.h include/msgrpc/thrift_struct/thrift_struct_declare.h demo/demo_service.interface include/msgrpc/thrift_struct/thrift_types.h include/msgrpc/thrift_struct/thrift_struct_define.h include/msgrpc/thrift_struct/thrift_struct_common.h demo/demo_api_define.cpp demo/demo_api_declare.h include/msgrpc/api/service_api_declare.h include/msgrpc/api/service_api_define.h test/test_zookeeper.cpp test/test_async_rpc.cpp)
+        test/test_thrift_struct.cpp include/msgrpc/thrift_struct/thrift_codec.h include/msgrpc/thrift_struct/thrift_struct_declare.h demo/demo_service.interface include/msgrpc/thrift_struct/thrift_types.h include/msgrpc/thrift_struct/thrift_struct_define.h include/msgrpc/thrift_struct/thrift_struct_common.h demo/demo_api_define.cpp demo/demo_api_declare.h include/msgrpc/api/service_api_declare.h include/msgrpc/api/service_api_define.h test/test_zookeeper.cpp test/test_async_rpc.cpp test/test_util/UdpChannel.h)
 
 add_executable(msgrpc ${SOURCE_FILES})
 

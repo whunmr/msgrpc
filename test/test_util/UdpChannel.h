@@ -11,13 +11,14 @@
 using boost::asio::ip::udp;
 
 typedef std::function<void(const char* msg, size_t len)> OnMsgFunc;
-typedef std::function<void(void)> OnChannelInitFunc;
 
 struct UdpChannel {
-    UdpChannel(unsigned short udp_port, OnChannelInitFunc on_channel_init, OnMsgFunc on_msg_func)
+    UdpChannel(unsigned short udp_port, OnMsgFunc on_msg_func)
             : io_service_(), socket_(io_service_, udp::endpoint(udp::v4(), udp_port)), on_msg_func_(on_msg_func) {
         start_receive();
-        on_channel_init();
+
+        this->send_msg_to_remote("init", udp::endpoint(udp::v4(), udp_port));
+
         io_service_.run();
     }
 

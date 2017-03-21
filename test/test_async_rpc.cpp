@@ -14,38 +14,68 @@ using namespace std::chrono;
         _(1, ResponseBar, negative_fields, RequestFoo, __VA_ARGS__)\
         _(2, ResponseBar, plus1_to_fields, RequestFoo, __VA_ARGS__)
 
-    ___as_interface(IBuzzMath)
+    ___as_interface(IBuzzMath, __with_interface_id(1))
 #endif
+
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
     template <typename T> struct Ret {};
 
+    typedef unsigned short msg_id_t;
     typedef unsigned short service_id_t; //TODO: how to deal with different service id types
 
     struct MsgChannel {
-        virtual uint32_t send_msg(const service_id_t& remote_service_id, const char* buf, size_t len) const = 0;
+        virtual uint32_t send_msg(const service_id_t& remote_service_id, msg_id_t msg_id, const char* buf, size_t len) const = 0;
     };
 
-    struct Component {
-        void initWith(MsgChannel* msg_channel) {
+    struct Config {
+        void initWith(MsgChannel* msg_channel, msgrpc::msg_id_t request_msg_id, msgrpc::msg_id_t response_msg_id) {
             instance().msg_channel_ = msg_channel;
+            request_msg_id_  = request_msg_id;
+            response_msg_id_ = response_msg_id;
         }
 
-        static inline Component& instance() {
-            static thread_local Component instance;
+        static inline Config& instance() {
+            static thread_local Config instance;
             return instance;
         }
 
         MsgChannel* msg_channel_;
+        msg_id_t request_msg_id_;
+        msg_id_t response_msg_id_;
     };
-};
+}
+
+namespace msgrpc {
+    /*TODO: using static_assert to assure name length of interface and method*/
+    const size_t k_max_interface_name_len = 40;
+    const size_t k_max_method_name_len = 40;
+
+    struct MsgHeader {
+        unsigned char  msgrpc_version_;
+        unsigned char  method_index_in_interface_;
+        unsigned short interface_index_in_service_;
+    };
+
+    struct Request : MsgHeader {
+    };
+
+    struct RpcInvokeHandler {
+        void handleInvoke(const MsgHeader& msg_header) {
+
+        }
+    };
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 #include "test_util/UdpChannel.h"
 namespace demo {
+    const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
+    const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
+
     struct UdpMsgChannel : msgrpc::MsgChannel {
-        virtual uint32_t send_msg(const msgrpc::service_id_t& remote_service_id, const char* buf, size_t len) const {
+        virtual uint32_t send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
             g_msg_channel->send_msg_to_remote(string(buf, len), udp::endpoint(udp::v4(), remote_service_id));
             return 0;
         }
@@ -78,7 +108,21 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
     }
 
     //TODO: find k_remote_service_id by interface name "IBuzzMath"
-    msgrpc::Component::instance().msg_channel_->send_msg(k_remote_service_id, (const char*)pbuf, len);
+    size_t msg_len_with_header = sizeof(msgrpc::MsgHeader) + len;
+
+    const char* mem = (const char*)malloc(msg_len_with_header);
+    if (!mem) {
+        cout << "alloc mem failed, during sending rpc request." << endl;
+        return msgrpc::Ret<ResponseBar>();
+    }
+
+    msgrpc::MsgHeader* header = (msgrpc::MsgHeader*)mem;
+    header->msgrpc_version_ = 0;
+    header->interface_index_in_service_ = 1;
+    header->method_index_in_interface_ = 1;
+    memcpy(header + 1, (const char*)pbuf, len);
+
+    msgrpc::Config::instance().msg_channel_->send_msg(k_remote_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
 
     return msgrpc::Ret<ResponseBar>();
 }
@@ -89,7 +133,7 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
 
 void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    msgrpc::Component::instance().initWith(new UdpMsgChannel());
+    msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_loacl_service_id,
         [&channel](const char* msg, size_t len) {
@@ -108,16 +152,15 @@ void local_service() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-namespace msgrpc {
-    struct RpcInvokeHandler {
-        
-    };
-}
-
 struct IBuzzMathImpl {
+    void onRpcInvoke();   //todo:remote_id
     virtual ResponseBar negative_fields(const RequestFoo&);
     virtual ResponseBar plus1_to_fields(const RequestFoo&);
 };
+
+void IBuzzMathImpl::onRpcInvoke() {
+
+}
 
 ResponseBar IBuzzMathImpl::negative_fields(const RequestFoo& req) {
     ResponseBar bar; /*TODO:change bar to inout parameter*/
@@ -139,7 +182,7 @@ ResponseBar IBuzzMathImpl::plus1_to_fields(const RequestFoo& req) {
 
 
 void remote_service() {
-    msgrpc::Component::instance().initWith(new UdpMsgChannel());
+    msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_remote_service_id,
         [&channel](const char* msg, size_t len) {
@@ -147,6 +190,18 @@ void remote_service() {
                 return;
             }
             cout << "remote received msg: " << string(msg, len) << endl;
+
+            /*TODO: should first check msg_id == msgrpc_msg_request_id */
+            if (len < sizeof(msgrpc::MsgHeader)) {
+                cout << "invalid msg: without sufficient msg header info." << endl;
+                return;
+            }
+
+            cout << (int)((msgrpc::MsgHeader*)(msg))->msgrpc_version_ << endl;
+            cout << (int)((msgrpc::MsgHeader*)(msg))->interface_index_in_service_ << endl;
+            cout << (int)((msgrpc::MsgHeader*)(msg))->method_index_in_interface_ << endl;
+
+            msg += sizeof(msgrpc::MsgHeader);
 
             RequestFoo req;
             if (!ThriftDecoder::decode(req, (uint8_t*)msg, len)) {
@@ -165,7 +220,7 @@ void remote_service() {
                 return;
             }
 
-            msgrpc::Component::instance().msg_channel_->send_msg(k_loacl_service_id, (const char*)pbuf, bar_len);
+            msgrpc::Config::instance().msg_channel_->send_msg(k_loacl_service_id, k_msgrpc_response_msg_id,(const char*)pbuf, bar_len);
             channel.close();
         }
     );

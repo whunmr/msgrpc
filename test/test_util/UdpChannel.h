@@ -12,6 +12,10 @@ using boost::asio::ip::udp;
 
 typedef std::function<void(const char* msg, size_t len)> OnMsgFunc;
 
+//TODO: extract channel interface
+struct UdpChannel;
+thread_local UdpChannel* g_msg_channel;
+
 struct UdpChannel {
     UdpChannel(unsigned short udp_port, OnMsgFunc on_msg_func)
             : io_service_(), socket_(io_service_, udp::endpoint(udp::v4(), udp_port)), on_msg_func_(on_msg_func) {
@@ -19,7 +23,13 @@ struct UdpChannel {
 
         this->send_msg_to_remote("init", udp::endpoint(udp::v4(), udp_port));
 
+        g_msg_channel = this;
+
         io_service_.run();
+    }
+
+    ~UdpChannel() {
+        g_msg_channel = nullptr;
     }
 
     void start_receive() {
@@ -39,10 +49,7 @@ struct UdpChannel {
     }
 
     void send_msg_to_sender(const std::string& msg) {
-        socket_.async_send_to(boost::asio::buffer(msg), remote_endpoint_,
-                              boost::bind( &UdpChannel::handle_send, this, msg
-                                      , boost::asio::placeholders::error
-                                      , boost::asio::placeholders::bytes_transferred));
+        return send_msg_to_remote(msg, remote_endpoint_);
     }
 
     void send_msg_to_remote(const std::string& msg, const udp::endpoint& endpoint) {

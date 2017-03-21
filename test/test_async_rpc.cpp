@@ -77,6 +77,7 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
         return msgrpc::Ret<ResponseBar>();
     }
 
+    //TODO: find k_remote_service_id by interface name "IBuzzMath"
     msgrpc::Component::instance().msg_channel_->send_msg(k_remote_service_id, (const char*)pbuf, len);
 
     return msgrpc::Ret<ResponseBar>();
@@ -88,15 +89,18 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
 
 void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-
     msgrpc::Component::instance().initWith(new UdpMsgChannel());
 
     UdpChannel channel(k_loacl_service_id,
         [&channel](const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
-                g_msg_channel->send_msg_to_remote("hello", udp::endpoint(udp::v4(), k_remote_service_id));
+
+                IBuzzMathStub buzzMath;
+                RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
+                buzzMath.negative_fields(foo);
+
             } else {
-                cout << "local received msg: " << msg << endl;
+                cout << "local received msg: " << string(msg, len) << endl;
                 channel.close();
             }
         }
@@ -104,6 +108,36 @@ void local_service() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+namespace msgrpc {
+    struct RpcInvokeHandler {
+        
+    };
+}
+
+struct IBuzzMathImpl {
+    virtual ResponseBar negative_fields(const RequestFoo&);
+    virtual ResponseBar plus1_to_fields(const RequestFoo&);
+};
+
+ResponseBar IBuzzMathImpl::negative_fields(const RequestFoo& req) {
+    ResponseBar bar; /*TODO:change bar to inout parameter*/
+    bar.__set_bara(req.get_foob());
+    if (req.__isset.foob) {
+        bar.__set_barb(req.fooa);
+    }
+    return bar;
+}
+
+ResponseBar IBuzzMathImpl::plus1_to_fields(const RequestFoo& req) {
+    ResponseBar bar;
+    bar.__set_bara(1 + req.fooa);
+    if (req.__isset.foob) {
+        bar.__set_barb(1 + req.get_foob());
+    }
+    return bar;
+}
+
+
 void remote_service() {
     msgrpc::Component::instance().initWith(new UdpMsgChannel());
 
@@ -113,8 +147,25 @@ void remote_service() {
                 return;
             }
             cout << "remote received msg: " << string(msg, len) << endl;
-            time_t now = time(0);
-            g_msg_channel->send_msg_to_sender(ctime(&now));
+
+            RequestFoo req;
+            if (!ThriftDecoder::decode(req, (uint8_t*)msg, len)) {
+                cout << "decode failed on remote side." << endl;
+                channel.close();
+                return;
+            }
+
+            IBuzzMathImpl buzzMath;
+            ResponseBar bar = buzzMath.negative_fields(req);
+
+            uint8_t* pbuf; uint32_t bar_len;
+            if (!ThriftEncoder::encode(bar, &pbuf, &bar_len)) {
+                cout << "encode failed on remtoe side." << endl;
+                channel.close();
+                return;
+            }
+
+            msgrpc::Component::instance().msg_channel_->send_msg(k_loacl_service_id, (const char*)pbuf, bar_len);
             channel.close();
         }
     );

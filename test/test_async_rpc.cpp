@@ -21,10 +21,23 @@ using namespace std::chrono;
 namespace msgrpc {
     template <typename T> struct Ret {};
 
-    typedef unsigned short service_id_t;
+    typedef unsigned short service_id_t; //TODO: how to deal with different service id types
 
     struct MsgChannel {
         virtual uint32_t send_msg(const service_id_t& remote_service_id, const char* buf, size_t len) const = 0;
+    };
+
+    struct Component {
+        void initWith(MsgChannel* msg_channel) {
+            instance().msg_channel_ = msg_channel;
+        }
+
+        static inline Component& instance() {
+            static thread_local Component instance;
+            return instance;
+        }
+
+        MsgChannel* msg_channel_;
     };
 };
 
@@ -41,6 +54,10 @@ namespace demo {
 
 ////////////////////////////////////////////////////////////////////////////////
 using namespace demo;
+
+const msgrpc::service_id_t k_remote_service_id = 2222;
+const msgrpc::service_id_t k_loacl_service_id  = 3333;
+
 struct IBuzzMath {
     virtual msgrpc::Ret<ResponseBar> negative_fields(const RequestFoo&) = 0;
     virtual msgrpc::Ret<ResponseBar> plus1_to_fields(const RequestFoo&) = 0;
@@ -60,6 +77,8 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
         return msgrpc::Ret<ResponseBar>();
     }
 
+    msgrpc::Component::instance().msg_channel_->send_msg(k_remote_service_id, (const char*)pbuf, len);
+
     return msgrpc::Ret<ResponseBar>();
 }
 
@@ -69,10 +88,13 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
 
 void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    UdpChannel channel(3333,
+
+    msgrpc::Component::instance().initWith(new UdpMsgChannel());
+
+    UdpChannel channel(k_loacl_service_id,
         [&channel](const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
-                g_msg_channel->send_msg_to_remote("hello", udp::endpoint(udp::v4(), 2222));
+                g_msg_channel->send_msg_to_remote("hello", udp::endpoint(udp::v4(), k_remote_service_id));
             } else {
                 cout << "local received msg: " << msg << endl;
                 channel.close();
@@ -83,7 +105,9 @@ void local_service() {
 
 ////////////////////////////////////////////////////////////////////////////////
 void remote_service() {
-    UdpChannel channel(2222,
+    msgrpc::Component::instance().initWith(new UdpMsgChannel());
+
+    UdpChannel channel(k_remote_service_id,
         [&channel](const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
                 return;

@@ -198,6 +198,7 @@
           <root url="file:///System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Headers" />
           <root url="file:///usr/include" />
           <root url="file:///usr/local/include" />
+          <root url="file:///usr/local/Cellar/boost/1.60.0_1/include" />
           <root url="file://$MODULE_DIR$/../../thrift-0.9.3/lib/cpp/src" />
           <root url="file://$MODULE_DIR$/../../repo/googletest/googletest/include" />
           <root url="file://$MODULE_DIR$/../../zookeeper/zookeeper-3.4.9/build/c/build/usr/include" />
@@ -378,6 +379,7 @@
           <root url="file:///System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Headers" />
           <root url="file:///usr/include" />
           <root url="file:///usr/local/include" />
+          <root url="file:///usr/local/Cellar/boost/1.60.0_1/include" />
           <root url="file://$MODULE_DIR$/../../thrift-0.9.3/lib/cpp/src" />
           <root url="file://$MODULE_DIR$/../../repo/googletest/googletest/include" />
           <root url="file://$MODULE_DIR$/../../zookeeper/zookeeper-3.4.9/build/c/build/usr/include" />

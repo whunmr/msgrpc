@@ -37,5 +37,23 @@ namespace demo {
     ___as_struct(ResponseData);
 
 
-    
+
+    #define ___fields_of_struct___RequestFoo(_, ...)         \
+        _(1, required, int8_t,  fooa,            __VA_ARGS__)\
+        _(2, optional, int16_t, foob,            __VA_ARGS__)
+    ___as_struct(RequestFoo);
+
+    #define ___fields_of_struct___ResponseBar(_, ...)        \
+        _(1, required, int8_t,  bara,            __VA_ARGS__)\
+        _(2, optional, int16_t, barb,            __VA_ARGS__)
+    ___as_struct(ResponseBar);
+
+#if 0
+    #define ___methods_of_interface___IBuzzMath(_, ...)            \
+        _(1, ResponseBar, negative_fields, RequestFoo, __VA_ARGS__)\
+        _(2, ResponseBar, plus1_to_fields, RequestFoo, __VA_ARGS__)
+
+    ___as_interface(IBuzzMath)
+#endif
+
 }

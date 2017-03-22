@@ -57,7 +57,11 @@ namespace msgrpc {
         unsigned char  msgrpc_version_;
         unsigned char  method_index_in_interface_;
         unsigned short interface_index_in_service_;
+        /*TODO: call sequence number*/
     };
+
+    /*TODO: define response header*/
+    /*response code: success, failed, not_implemented*/
 
     struct Request : MsgHeader {
     };
@@ -164,17 +168,40 @@ void local_service() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-struct IBuzzMathImpl {
-    bool onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);   //todo:remote_id
-    bool do_negative_fields(const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);
-    bool do_plus1_to_fields(const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);
+namespace msgrpc {
 
+    template<typename T>
+    struct InterfaceImplBase {
+        template<typename REQ, typename RSP>
+        bool invoke_templated_method( bool (T::*method_impl)(const REQ &, RSP &)
+                                    , const char *msg, size_t len
+                                    , uint8_t *&pout_buf, uint32_t &out_buf_len) {
+            REQ req;
+            if (!ThriftDecoder::decode(req, (uint8_t *) msg, len)) {
+                cout << "decode failed on remote side." << endl;
+                return false;
+            }
+
+            RSP rsp;
+            if (!((T*)this->*method_impl)(req, rsp)) {
+                return false;
+            }
+
+            if (!ThriftEncoder::encode(rsp, &pout_buf, &out_buf_len)) {
+                cout << "encode failed on remtoe side." << endl;
+                return false;
+            }
+
+            return true;
+        }
+    };
+}
+
+struct IBuzzMathImpl : msgrpc::InterfaceImplBase<IBuzzMathImpl> {
+    bool onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);   //todo:remote_id
+    //TODO: try to unify with stub's signature
     bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
     bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
-
-    template<typename REQ, typename RSP>
-    bool invoke_templated_method(bool (IBuzzMathImpl::*method_impl)(const REQ&, RSP&), const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);
-
 };
 
 bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
@@ -182,31 +209,21 @@ bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char*
     cout << (int)msg_header.interface_index_in_service_ << endl;
     cout << (int)msg_header.method_index_in_interface_ << endl;
 
-    this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
-    return true;
-}
+    if (msg_header.method_index_in_interface_ == 1) {
+        this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
+    } else
 
-template<typename REQ, typename RSP>
-bool IBuzzMathImpl::invoke_templated_method(bool (IBuzzMathImpl::*method_impl)(const REQ&, RSP&), const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    REQ req;
-    if (! ThriftDecoder::decode(req, (uint8_t*)msg, len)) {
-        cout << "decode failed on remote side." << endl;
-        return false;
-    }
+    if (msg_header.method_index_in_interface_ == 2) {
+        this->invoke_templated_method(&IBuzzMathImpl::plus1_to_fields, msg, len, pout_buf, out_buf_len);
+    } else
 
-    RSP rsp;
-    if (! (this->*method_impl)(req, rsp)) {
-        return false;
-    }
-
-    if (! ThriftEncoder::encode(rsp, &pout_buf, &out_buf_len)) {
-        cout << "encode failed on remtoe side." << endl;
+    {
+        /*TODO: return method not implemented code*/
         return false;
     }
 
     return true;
 }
-
 
 bool IBuzzMathImpl::negative_fields(const RequestFoo& req, ResponseBar& rsp) {
     rsp.__set_bara(req.get_foob());

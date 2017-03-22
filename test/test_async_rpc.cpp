@@ -57,6 +57,8 @@ namespace msgrpc {
         unsigned char  msgrpc_version_;
         unsigned char  method_index_in_interface_;
         unsigned short interface_index_in_service_;
+        unsigned long  sequence_no_;
+        //optional 1
         /*TODO: call sequence number*/
     };
 
@@ -172,7 +174,7 @@ namespace msgrpc {
     template<typename T>
     struct InterfaceImplBase {
         template<typename REQ, typename RSP>
-        bool invoke_templated_method( bool (T::*method_impl)(const REQ &, RSP &)
+        bool invoke_templated_method( bool (T::*method_impl)(const REQ&, RSP&)
                                     , const char *msg, size_t len
                                     , uint8_t *&pout_buf, uint32_t &out_buf_len) {
             REQ req;
@@ -199,19 +201,18 @@ namespace msgrpc {
 
 struct IBuzzMathImpl : msgrpc::InterfaceImplBase<IBuzzMathImpl> {
     bool onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);   //todo:remote_id
+
     //TODO: try to unify with stub's signature
     bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
     bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
 };
 
 bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    cout << "remote receive rpc invoke with: {" << (int)msg_header.msgrpc_version_
-         << "|" << (int)msg_header.interface_index_in_service_
-         << "|" << (int)msg_header.method_index_in_interface_
-         << "}" << endl;
+    cout << "remote receive rpc invoke with: {" << (int)msg_header.msgrpc_version_ << "|" << (int)msg_header.interface_index_in_service_ << "|" << (int)msg_header.method_index_in_interface_ << "}" << endl;
 
     if (msg_header.method_index_in_interface_ == 1) {
         this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
+        /*TODO: return remote rpc failure code.*/
     } else
 
     if (msg_header.method_index_in_interface_ == 2) {

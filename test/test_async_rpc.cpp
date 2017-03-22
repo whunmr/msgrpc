@@ -52,6 +52,7 @@ namespace msgrpc {
     const size_t k_max_interface_name_len = 40;
     const size_t k_max_method_name_len = 40;
 
+    /*TODO: consider make msgHeader encoded through thrift*/
     struct MsgHeader {
         unsigned char  msgrpc_version_;
         unsigned char  method_index_in_interface_;
@@ -63,7 +64,6 @@ namespace msgrpc {
 
     struct RpcInvokeHandler {
         void handleInvoke(const MsgHeader& msg_header) {
-
         }
     };
 }
@@ -111,6 +111,7 @@ struct IBuzzMathStub : IBuzzMath {
 
 msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
     uint8_t* pbuf; uint32_t len;
+    /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
     if (!ThriftEncoder::encode(req, &pbuf, &len)) {
         /*TODO: how to do with log*/
         cout << "encode failed." << endl;
@@ -164,13 +165,30 @@ void local_service() {
 
 ////////////////////////////////////////////////////////////////////////////////
 struct IBuzzMathImpl {
-    void onRpcInvoke();   //todo:remote_id
+    bool onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);   //todo:remote_id
     virtual ResponseBar negative_fields(const RequestFoo&);
     virtual ResponseBar plus1_to_fields(const RequestFoo&);
 };
 
-void IBuzzMathImpl::onRpcInvoke() {
+bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
+    cout << (int)msg_header.msgrpc_version_ << endl;
+    cout << (int)msg_header.interface_index_in_service_ << endl;
+    cout << (int)msg_header.method_index_in_interface_ << endl;
 
+    RequestFoo req;
+    if (!ThriftDecoder::decode(req, (uint8_t*)msg, len)) {
+        cout << "decode failed on remote side." << endl;
+        return false;
+    }
+
+    ResponseBar bar = this->negative_fields(req);
+
+    if (!ThriftEncoder::encode(bar, &pout_buf, &out_buf_len)) {
+        cout << "encode failed on remtoe side." << endl;
+        return false;
+    }
+
+    return true;
 }
 
 ResponseBar IBuzzMathImpl::negative_fields(const RequestFoo& req) {
@@ -208,30 +226,16 @@ void remote_service() {
                 return;
             }
 
-            cout << (int)((msgrpc::MsgHeader*)(msg))->msgrpc_version_ << endl;
-            cout << (int)((msgrpc::MsgHeader*)(msg))->interface_index_in_service_ << endl;
-            cout << (int)((msgrpc::MsgHeader*)(msg))->method_index_in_interface_ << endl;
-
+            auto msg_header = (msgrpc::MsgHeader*)msg;
             msg += sizeof(msgrpc::MsgHeader);
 
-            RequestFoo req;
-            if (!ThriftDecoder::decode(req, (uint8_t*)msg, len)) {
-                cout << "decode failed on remote side." << endl;
-                channel.close();
-                return;
-            }
-
             IBuzzMathImpl buzzMath;
-            ResponseBar bar = buzzMath.negative_fields(req);
+            uint8_t* pout_buf; uint32_t out_buf_len;
 
-            uint8_t* pbuf; uint32_t bar_len;
-            if (!ThriftEncoder::encode(bar, &pbuf, &bar_len)) {
-                cout << "encode failed on remtoe side." << endl;
-                channel.close();
-                return;
+            if (buzzMath.onRpcInvoke(*msg_header, msg, len - sizeof(msgrpc::MsgHeader), pout_buf, out_buf_len)) {
+                msgrpc::Config::instance().msg_channel_->send_msg(k_loacl_service_id, k_msgrpc_response_msg_id,(const char*)pout_buf, out_buf_len);
             }
 
-            msgrpc::Config::instance().msg_channel_->send_msg(k_loacl_service_id, k_msgrpc_response_msg_id,(const char*)pbuf, bar_len);
             channel.close();
         }
     );

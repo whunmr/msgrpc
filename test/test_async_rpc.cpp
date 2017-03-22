@@ -167,7 +167,10 @@ void local_service() {
 struct IBuzzMathImpl {
     bool onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);   //todo:remote_id
     bool do_negative_fields(const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);
-    bool do_plus1_to_fields(const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {/*TODO:*/ return false;}
+    bool do_plus1_to_fields(const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);
+
+    bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
+    bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
 };
 
 bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
@@ -176,24 +179,22 @@ bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char*
     cout << (int)msg_header.method_index_in_interface_ << endl;
 
     this->do_negative_fields(msg, len, pout_buf, out_buf_len);
-
     return true;
 }
 
 bool IBuzzMathImpl::do_negative_fields(const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
     RequestFoo req;
-    if (!ThriftDecoder::decode(req, (uint8_t*)msg, len)) {
+    if (! ThriftDecoder::decode(req, (uint8_t*)msg, len)) {
         cout << "decode failed on remote side." << endl;
         return false;
     }
 
-    ResponseBar bar; /*TODO:change bar to inout parameter*/
-    bar.__set_bara(req.get_foob());
-    if (req.__isset.foob) {
-        bar.__set_barb(req.fooa);
+    ResponseBar rsp; /*TODO:change bar to inout parameter*/
+    if (! this->negative_fields(req, rsp)) {
+        return false;
     }
 
-    if (!ThriftEncoder::encode(bar, &pout_buf, &out_buf_len)) {
+    if (! ThriftEncoder::encode(rsp, &pout_buf, &out_buf_len)) {
         cout << "encode failed on remtoe side." << endl;
         return false;
     }
@@ -201,15 +202,43 @@ bool IBuzzMathImpl::do_negative_fields(const char* msg, size_t len, uint8_t*& po
     return true;
 }
 
-//ResponseBar IBuzzMathImpl::do_plus1_to_fields(const RequestFoo&, ResponseBar& bar) {
-//    ResponseBar bar;
-//    bar.__set_bara(1 + req.fooa);
-//    if (req.__isset.foob) {
-//        bar.__set_barb(1 + req.get_foob());
-//    }
-//    return bar;
-//}
+bool IBuzzMathImpl::do_plus1_to_fields(const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
+    RequestFoo req;
+    if (!ThriftDecoder::decode(req, (uint8_t*)msg, len)) {
+        cout << "decode failed on remote side." << endl;
+        return false;
+    }
 
+    ResponseBar rsp; /*TODO:change bar to inout parameter*/
+    if (! this->negative_fields(req, rsp)) {
+        return false;
+    }
+
+    if (!ThriftEncoder::encode(rsp, &pout_buf, &out_buf_len)) {
+        cout << "encode failed on remtoe side." << endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool IBuzzMathImpl::negative_fields(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_bara(req.get_foob());
+    if (req.__isset.foob) {
+        rsp.__set_barb(req.fooa);
+    }
+    return true;
+}
+
+bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_bara(1 + req.fooa);
+    if (req.__isset.foob) {
+        rsp.__set_barb(1 + req.get_foob());
+    }
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void remote_service() {
     msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
@@ -229,10 +258,9 @@ void remote_service() {
             auto msg_header = (msgrpc::MsgHeader*)msg;
             msg += sizeof(msgrpc::MsgHeader);
 
+            /*TODO: search interface implementation instance to handle tbis rpc request*/
             IBuzzMathImpl buzzMath;
-
             uint8_t* pout_buf; uint32_t out_buf_len;
-
             if (buzzMath.onRpcInvoke(*msg_header, msg, len - sizeof(msgrpc::MsgHeader), pout_buf, out_buf_len)) {
                 /*TODO: send out msg with msgheader*/
                 msgrpc::Config::instance().msg_channel_->send_msg(k_loacl_service_id, k_msgrpc_response_msg_id,(const char*)pout_buf, out_buf_len);

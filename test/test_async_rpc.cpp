@@ -3,7 +3,7 @@
 #include <thread>
 #include <chrono>
 #include <msgrpc/thrift_struct/thrift_codec.h>
-
+#include <type_traits>
 using namespace std;
 using namespace std::chrono;
 
@@ -13,7 +13,6 @@ using namespace std::chrono;
     #define ___methods_of_interface___IBuzzMath(_, ...)            \
         _(1, ResponseBar, negative_fields, RequestFoo, __VA_ARGS__)\
         _(2, ResponseBar, plus1_to_fields, RequestFoo, __VA_ARGS__)
-
     ___as_interface(IBuzzMath, __with_interface_id(1))
 #endif
 
@@ -52,24 +51,33 @@ namespace msgrpc {
     const size_t k_max_interface_name_len = 40;
     const size_t k_max_method_name_len = 40;
 
-    /*TODO: consider make msgHeader encoded through thrift*/
+    ////////////////////////////////////////////////////////////////////////////
     struct MsgHeader {
-        unsigned char  msgrpc_version_;
-        unsigned char  method_index_in_interface_;
-        unsigned short interface_index_in_service_;
-        unsigned long  sequence_no_;
+        unsigned char  msgrpc_version_ = {0};
+        unsigned char  method_index_in_interface_ = {0};
+        unsigned short interface_index_in_service_ = {0};
+        //TODO: unsigned char  feature_id_in_service_ = {0};
+        //TODO: TLV encoded varient length options
+        //unsigned long  sequence_no_;
         //optional 1
         /*TODO: call sequence number*/
     };
 
-    /*TODO: define response header*/
-    /*response code: success, failed, not_implemented*/
-
-    struct Request : MsgHeader {
+    /*TODO: consider make msgHeader encoded through thrift*/
+    struct ReqMsgHeader : MsgHeader {
     };
 
+    const unsigned short k_rpc_result_succeeded = 0;
+    const unsigned short k_rpc_result_failed = 1;
+    const unsigned short k_rpc_result_not_implemented = 2;
+
+    struct RspMsgHeader : MsgHeader {
+        unsigned short rpc_result_ = {k_rpc_result_succeeded};
+    };
+
+    ////////////////////////////////////////////////////////////////////////////
     struct RpcInvokeHandler {
-        void handleInvoke(const MsgHeader& msg_header) {
+        void handleInvoke(const ReqMsgHeader& msg_header) {
         }
     };
 }
@@ -102,7 +110,7 @@ namespace demo {
 using namespace demo;
 
 const msgrpc::service_id_t k_remote_service_id = 2222;
-const msgrpc::service_id_t k_loacl_service_id  = 3333;
+const msgrpc::service_id_t k_local_service_id  = 3333;
 
 struct IBuzzMath {
     virtual msgrpc::Ret<ResponseBar> negative_fields(const RequestFoo&) = 0;
@@ -125,7 +133,7 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
     }
 
     //TODO: find k_remote_service_id by interface name "IBuzzMath"
-    size_t msg_len_with_header = sizeof(msgrpc::MsgHeader) + len;
+    size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
 
     char* mem = (char*)malloc(msg_len_with_header);
     if (!mem) {
@@ -133,7 +141,7 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
         return msgrpc::Ret<ResponseBar>();
     }
 
-    auto header = (msgrpc::MsgHeader*)mem;
+    auto header = (msgrpc::ReqMsgHeader*)mem;
     header->msgrpc_version_ = 0;
     header->interface_index_in_service_ = 1;
     header->method_index_in_interface_ = 1;
@@ -153,14 +161,12 @@ void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
-    UdpChannel channel(k_loacl_service_id,
+    UdpChannel channel(k_local_service_id,
         [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
-
                 IBuzzMathStub buzzMath;
                 RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
                 buzzMath.negative_fields(foo);
-
             } else {
                 cout << "local received msg: " << string(msg, len) << endl;
                 channel.close();
@@ -185,7 +191,7 @@ namespace msgrpc {
 
             RSP rsp;
             if (! ((T*)this->*method_impl)(req, rsp)) {
-                //TODO: return remote rpc handling failed.
+                //TODO: log
                 return false;
             }
 
@@ -200,29 +206,34 @@ namespace msgrpc {
 }
 
 struct IBuzzMathImpl : msgrpc::InterfaceImplBase<IBuzzMathImpl> {
-    bool onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);   //todo:remote_id
+    bool onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len);   //todo:remote_id
 
     //TODO: try to unify with stub's signature
     bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
     bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
 };
 
-bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
+bool IBuzzMathImpl::onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) {
     cout << "remote receive rpc invoke with: {" << (int)msg_header.msgrpc_version_ << "|" << (int)msg_header.interface_index_in_service_ << "|" << (int)msg_header.method_index_in_interface_ << "}" << endl;
+    bool ret = false;
 
     if (msg_header.method_index_in_interface_ == 1) {
-        this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
-        /*TODO: return remote rpc failure code.*/
+        ret = this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
     } else
 
     if (msg_header.method_index_in_interface_ == 2) {
-        this->invoke_templated_method(&IBuzzMathImpl::plus1_to_fields, msg, len, pout_buf, out_buf_len);
+        ret = this->invoke_templated_method(&IBuzzMathImpl::plus1_to_fields, msg, len, pout_buf, out_buf_len);
     } else
 
     {
-        /*TODO: return method not implemented code*/
+        rsp_header.rpc_result_ = msgrpc::k_rpc_result_not_implemented;
         return false;
     }
+
+    if (! ret) {
+        rsp_header.rpc_result_ = msgrpc::k_rpc_result_failed;
+    }
+
     return true;
 }
 
@@ -254,20 +265,35 @@ void remote_service() {
             cout << "remote received msg with length: " << len << endl;
 
             /*TODO: should first check msg_id == msgrpc_msg_request_id */
-            if (len < sizeof(msgrpc::MsgHeader)) {
+            if (len < sizeof(msgrpc::ReqMsgHeader)) {
                 cout << "invalid msg: without sufficient msg header info." << endl;
                 return;
             }
 
-            auto msg_header = (msgrpc::MsgHeader*)msg;
-            msg += sizeof(msgrpc::MsgHeader);
+            auto* req_header = (msgrpc::ReqMsgHeader*)msg;
+            msg += sizeof(msgrpc::ReqMsgHeader);
 
-            /*TODO: search interface implementation instance to handle tbis rpc request*/
+            /*TODO: search interface implementation instance to handle tbis  request*/
+
+            msgrpc::RspMsgHeader rsp_header;
+            rsp_header.msgrpc_version_ = req_header->msgrpc_version_;
+            rsp_header.interface_index_in_service_ = req_header->interface_index_in_service_;
+            rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
+
             IBuzzMathImpl buzzMath;
             uint8_t* pout_buf; uint32_t out_buf_len;
-            if (buzzMath.onRpcInvoke(*msg_header, msg, len - sizeof(msgrpc::MsgHeader), pout_buf, out_buf_len)) {
-                /*TODO: send out msg with msgheader*/
-                msgrpc::Config::instance().msg_channel_->send_msg(k_loacl_service_id, k_msgrpc_response_msg_id,(const char*)pout_buf, out_buf_len);
+
+            if (buzzMath.onRpcInvoke(*req_header, msg, len - sizeof(msgrpc::ReqMsgHeader), rsp_header, pout_buf, out_buf_len)) {
+                size_t rsp_len_with_header = sizeof(rsp_header) + out_buf_len;
+                char* mem = (char*)malloc(rsp_len_with_header);
+                if (mem != nullptr) {
+                    memcpy(mem, &rsp_header, sizeof(rsp_header));
+                    memcpy(mem + sizeof(rsp_header), pout_buf, out_buf_len);
+                    msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, mem, rsp_len_with_header);
+                }
+                free(mem);
+            } else {
+                //TODO: only send back rsp_header if rpc handling failed.
             }
 
             channel.close();

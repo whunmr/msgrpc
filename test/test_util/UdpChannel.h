@@ -10,7 +10,7 @@
 #include <boost/asio.hpp>
 using boost::asio::ip::udp;
 
-typedef std::function<void(const char* msg, size_t len)> OnMsgFunc;
+typedef std::function<void(msgrpc::msg_id_t msg_id, const char* msg, size_t len)> OnMsgFunc;
 
 //TODO: extract channel interface
 struct UdpChannel;
@@ -21,7 +21,7 @@ struct UdpChannel {
             : io_service_(), socket_(io_service_, udp::endpoint(udp::v4(), udp_port)), on_msg_func_(on_msg_func) {
         start_receive();
 
-        this->send_msg_to_remote("init", udp::endpoint(udp::v4(), udp_port));
+        this->send_msg_to_remote("00init", udp::endpoint(udp::v4(), udp_port)); //00 means leading msgrpc::msg_id_t
 
         g_msg_channel = this;
 
@@ -40,7 +40,8 @@ struct UdpChannel {
 
     void handle_receive(const boost::system::error_code& error, std::size_t bytes_transferred) {
         if (!error || error == boost::asio::error::message_size) {
-            on_msg_func_(recv_buffer_.data(), bytes_transferred);
+            msgrpc::msg_id_t* msg_id = (msgrpc::msg_id_t*)recv_buffer_.data();
+            on_msg_func_(*msg_id, (const char*)(msg_id + 1), bytes_transferred - sizeof(msgrpc::msg_id_t));
 
             if (!close_channel_) {
                 start_receive();

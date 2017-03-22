@@ -76,7 +76,17 @@ namespace demo {
 
     struct UdpMsgChannel : msgrpc::MsgChannel {
         virtual uint32_t send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
-            g_msg_channel->send_msg_to_remote(string(buf, len), udp::endpoint(udp::v4(), remote_service_id));
+            size_t msg_len_with_msgid = sizeof(msgrpc::msg_id_t) + len;
+            char* mem = (char*)malloc(msg_len_with_msgid);
+            if (mem) {
+                *(msgrpc::msg_id_t*)(mem) = msg_id;
+                memcpy(mem + sizeof(msgrpc::msg_id_t), buf, len);
+                cout << "send msg len: " << msg_len_with_msgid << endl;
+                g_msg_channel->send_msg_to_remote(string(mem, msg_len_with_msgid), udp::endpoint(udp::v4(), remote_service_id));
+                free(mem);
+            } else {
+                cout << "send msg failed: allocation failure." << endl;
+            }
             return 0;
         }
     };
@@ -110,20 +120,21 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
     //TODO: find k_remote_service_id by interface name "IBuzzMath"
     size_t msg_len_with_header = sizeof(msgrpc::MsgHeader) + len;
 
-    const char* mem = (const char*)malloc(msg_len_with_header);
+    char* mem = (char*)malloc(msg_len_with_header);
     if (!mem) {
         cout << "alloc mem failed, during sending rpc request." << endl;
         return msgrpc::Ret<ResponseBar>();
     }
 
-    msgrpc::MsgHeader* header = (msgrpc::MsgHeader*)mem;
+    auto header = (msgrpc::MsgHeader*)mem;
     header->msgrpc_version_ = 0;
     header->interface_index_in_service_ = 1;
     header->method_index_in_interface_ = 1;
     memcpy(header + 1, (const char*)pbuf, len);
 
+    cout << "stub sending msg with length: " << msg_len_with_header << endl;
     msgrpc::Config::instance().msg_channel_->send_msg(k_remote_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
-
+    free(mem);
     return msgrpc::Ret<ResponseBar>();
 }
 
@@ -136,7 +147,7 @@ void local_service() {
     msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_loacl_service_id,
-        [&channel](const char* msg, size_t len) {
+        [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
 
                 IBuzzMathStub buzzMath;
@@ -185,11 +196,11 @@ void remote_service() {
     msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_remote_service_id,
-        [&channel](const char* msg, size_t len) {
+        [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
                 return;
             }
-            cout << "remote received msg: " << string(msg, len) << endl;
+            cout << "remote received msg with length: " << len << endl;
 
             /*TODO: should first check msg_id == msgrpc_msg_request_id */
             if (len < sizeof(msgrpc::MsgHeader)) {

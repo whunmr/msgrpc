@@ -113,7 +113,7 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
     uint8_t* pbuf; uint32_t len;
     /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
     if (!ThriftEncoder::encode(req, &pbuf, &len)) {
-        /*TODO: how to do with log*/
+        /*TODO: how to do with log, maybe should extract logging interface*/
         cout << "encode failed." << endl;
         return msgrpc::Ret<ResponseBar>();
     }
@@ -171,6 +171,10 @@ struct IBuzzMathImpl {
 
     bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
     bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
+
+    template<typename REQ, typename RSP>
+    bool invoke_templated_method(bool (IBuzzMathImpl::*method_impl)(const REQ&, RSP&), const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len);
+
 };
 
 bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
@@ -178,19 +182,20 @@ bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char*
     cout << (int)msg_header.interface_index_in_service_ << endl;
     cout << (int)msg_header.method_index_in_interface_ << endl;
 
-    this->do_negative_fields(msg, len, pout_buf, out_buf_len);
+    this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
     return true;
 }
 
-bool IBuzzMathImpl::do_negative_fields(const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    RequestFoo req;
+template<typename REQ, typename RSP>
+bool IBuzzMathImpl::invoke_templated_method(bool (IBuzzMathImpl::*method_impl)(const REQ&, RSP&), const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
+    REQ req;
     if (! ThriftDecoder::decode(req, (uint8_t*)msg, len)) {
         cout << "decode failed on remote side." << endl;
         return false;
     }
 
-    ResponseBar rsp; /*TODO:change bar to inout parameter*/
-    if (! this->negative_fields(req, rsp)) {
+    RSP rsp;
+    if (! (this->*method_impl)(req, rsp)) {
         return false;
     }
 
@@ -202,25 +207,6 @@ bool IBuzzMathImpl::do_negative_fields(const char* msg, size_t len, uint8_t*& po
     return true;
 }
 
-bool IBuzzMathImpl::do_plus1_to_fields(const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    RequestFoo req;
-    if (!ThriftDecoder::decode(req, (uint8_t*)msg, len)) {
-        cout << "decode failed on remote side." << endl;
-        return false;
-    }
-
-    ResponseBar rsp; /*TODO:change bar to inout parameter*/
-    if (! this->negative_fields(req, rsp)) {
-        return false;
-    }
-
-    if (!ThriftEncoder::encode(rsp, &pout_buf, &out_buf_len)) {
-        cout << "encode failed on remtoe side." << endl;
-        return false;
-    }
-
-    return true;
-}
 
 bool IBuzzMathImpl::negative_fields(const RequestFoo& req, ResponseBar& rsp) {
     rsp.__set_bara(req.get_foob());

@@ -1,3 +1,5 @@
+/*TODO: add define service name field, such as ___define_service(demo, ___version(1.0.3)) */
+
 namespace demo {
     ___api_version(1.0.3)
 
@@ -53,6 +55,8 @@ namespace demo {
         _(2, ResponseBar, plus1_to_fields, RequestFoo, __VA_ARGS__)
 
     ___as_interface(IBuzzMath, __with_interface_id(1))
+
+    /*TODO: interface uniqueness checking*/
 #endif
 
 }

@@ -169,7 +169,6 @@ void local_service() {
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
-
     template<typename T>
     struct InterfaceImplBase {
         template<typename REQ, typename RSP>
@@ -177,17 +176,18 @@ namespace msgrpc {
                                     , const char *msg, size_t len
                                     , uint8_t *&pout_buf, uint32_t &out_buf_len) {
             REQ req;
-            if (!ThriftDecoder::decode(req, (uint8_t *) msg, len)) {
+            if (! ThriftDecoder::decode(req, (uint8_t *) msg, len)) {
                 cout << "decode failed on remote side." << endl;
                 return false;
             }
 
             RSP rsp;
-            if (!((T*)this->*method_impl)(req, rsp)) {
+            if (! ((T*)this->*method_impl)(req, rsp)) {
+                //TODO: return remote rpc handling failed.
                 return false;
             }
 
-            if (!ThriftEncoder::encode(rsp, &pout_buf, &out_buf_len)) {
+            if (! ThriftEncoder::encode(rsp, &pout_buf, &out_buf_len)) {
                 cout << "encode failed on remtoe side." << endl;
                 return false;
             }
@@ -205,9 +205,10 @@ struct IBuzzMathImpl : msgrpc::InterfaceImplBase<IBuzzMathImpl> {
 };
 
 bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char* msg, size_t len, uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    cout << (int)msg_header.msgrpc_version_ << endl;
-    cout << (int)msg_header.interface_index_in_service_ << endl;
-    cout << (int)msg_header.method_index_in_interface_ << endl;
+    cout << "remote receive rpc invoke with: {" << (int)msg_header.msgrpc_version_
+         << "|" << (int)msg_header.interface_index_in_service_
+         << "|" << (int)msg_header.method_index_in_interface_
+         << "}" << endl;
 
     if (msg_header.method_index_in_interface_ == 1) {
         this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
@@ -221,7 +222,6 @@ bool IBuzzMathImpl::onRpcInvoke(const msgrpc::MsgHeader& msg_header, const char*
         /*TODO: return method not implemented code*/
         return false;
     }
-
     return true;
 }
 

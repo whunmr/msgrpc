@@ -4,8 +4,8 @@
 namespace msgrpc {
 
     template<typename T>
-    struct Singleton {
-        virtual ~Singleton() {}
+    struct ThreadLocalSingleton {
+        virtual ~ThreadLocalSingleton() {}
 
         static T &instance() {
             static thread_local T t;
@@ -13,6 +13,16 @@ namespace msgrpc {
         }
     };
 
+
+    template<typename T>
+    struct Singleton {
+        virtual ~Singleton() {}
+
+        static T &instance() {
+            static T t;
+            return t;
+        }
+    };
 }
 
 #endif //MSGRPC_SINGLETON_H

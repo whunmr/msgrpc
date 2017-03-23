@@ -52,9 +52,9 @@ namespace msgrpc {
     typedef uint16_t iface_index_t;
 
     struct MsgHeader {
-        uint8_t           msgrpc_version_ = {0};
-        method_index_t    method_index_in_interface_ = {0};
-        iface_index_t interface_index_in_service_ = {0};
+        uint8_t         msgrpc_version_ = {0};
+        method_index_t  method_index_in_interface_ = {0};
+        iface_index_t   iface_index_in_service_ = {0};
 
         //TODO: unsigned char  feature_id_in_service_ = {0};
         //TODO: TLV encoded varient length options
@@ -69,7 +69,8 @@ namespace msgrpc {
 
     const unsigned short k_rpc_result_succeeded = 0;
     const unsigned short k_rpc_result_failed = 1;
-    const unsigned short k_rpc_result_not_implemented = 2;
+    const unsigned short k_rpc_result_method_not_found = 2;
+    const unsigned short k_rpc_result_iface_not_found = 3;
 
     struct RspMsgHeader : MsgHeader {
         unsigned short rpc_result_ = {k_rpc_result_succeeded};
@@ -137,7 +138,7 @@ msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
 
     auto header = (msgrpc::ReqMsgHeader*)mem;
     header->msgrpc_version_ = 0;
-    header->interface_index_in_service_ = 1;
+    header->iface_index_in_service_ = 1;
     header->method_index_in_interface_ = 1;
     memcpy(header + 1, (const char*)pbuf, len);
 
@@ -183,21 +184,25 @@ namespace msgrpc {
     struct IfaceRepository : msgrpc::Singleton<IfaceRepository> {
         void add_iface_impl(iface_index_t ii, IfaceImplBase* iface) {
             assert(iface != nullptr && "interface implementation can not be null");
-            assert(iface_id_to_ptr_.find(ii) == iface_id_to_ptr_.end() && "interface can only register once");
-            iface_id_to_ptr_[ii] = iface;
+            assert(___m.find(ii) == ___m.end() && "interface can only register once");
+            ___m[ii] = iface;
         }
 
         IfaceImplBase* get_iface_impl_by(iface_index_t ii) {
-            auto iter = iface_id_to_ptr_.find(ii);
-            return iter == iface_id_to_ptr_.end() ? nullptr : iter->second;
+            auto iter = ___m.find(ii);
+            return iter == ___m.end() ? nullptr : iter->second;
         }
 
       private:
-        std::map<iface_index_t, IfaceImplBase*> iface_id_to_ptr_;
+        std::map<iface_index_t, IfaceImplBase*> ___m;
     };
 
-    template<typename T>
+    template<typename T, iface_index_t iface_index>
     struct InterfaceImplBaseT : IfaceImplBase {
+        InterfaceImplBaseT() {
+            IfaceRepository::instance().add_iface_impl(iface_index, this);
+        }
+
         template<typename REQ, typename RSP>
         bool invoke_templated_method( bool (T::*method_impl)(const REQ&, RSP&)
                                     , const char *msg, size_t len
@@ -226,7 +231,7 @@ namespace msgrpc {
 
 
 
-struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl> {
+struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
     //TODO: 2, auto register to impl repository.
 
     //TODO: try to unify with stub's signature
@@ -236,8 +241,11 @@ struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl> {
     virtual bool onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) override;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+IBuzzMathImpl buzzMath;
+
 bool IBuzzMathImpl::onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    cout << "remote receive rpc invoke with: {" << (int)msg_header.msgrpc_version_ << "|" << (int)msg_header.interface_index_in_service_ << "|" << (int)msg_header.method_index_in_interface_ << "}" << endl;
+    cout << "remote receive rpc invoke with: {" << (int)msg_header.msgrpc_version_ << "|" << (int)msg_header.iface_index_in_service_ << "|" << (int)msg_header.method_index_in_interface_ << "}" << endl;
     bool ret = false;
 
     if (msg_header.method_index_in_interface_ == 1) {
@@ -249,7 +257,7 @@ bool IBuzzMathImpl::onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const ch
     } else
 
     {
-        rsp_header.rpc_result_ = msgrpc::k_rpc_result_not_implemented;
+        rsp_header.rpc_result_ = msgrpc::k_rpc_result_method_not_found;
         return false;
     }
 
@@ -260,6 +268,7 @@ bool IBuzzMathImpl::onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const ch
     return true;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 bool IBuzzMathImpl::negative_fields(const RequestFoo& req, ResponseBar& rsp) {
     rsp.__set_bara(req.get_foob());
     if (req.__isset.foob) {
@@ -277,45 +286,59 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-struct RpcReqMsgHandler {
-    static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-        cout << "remote received msg with length: " << len << endl;
-        assert(msg_id == k_msgrpc_request_msg_id && "invalid msg id for rpc");
+namespace msgrpc {
+    struct RpcReqMsgHandler {
+        static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
+            cout << "remote received msg with length: " << len << endl;
+            assert(msg_id == k_msgrpc_request_msg_id && "invalid msg id for rpc");
 
-        if (len < sizeof(msgrpc::ReqMsgHeader)) {
-            cout << "invalid msg: without sufficient msg header info." << endl;
-            return;
+            if (len < sizeof(msgrpc::ReqMsgHeader)) {
+                cout << "invalid msg: without sufficient msg header info." << endl;
+                return;
+            }
+
+            auto *req_header = (msgrpc::ReqMsgHeader *) msg;
+            msg += sizeof(msgrpc::ReqMsgHeader);
+
+            msgrpc::RspMsgHeader rsp_header;
+            rsp_header.msgrpc_version_ = req_header->msgrpc_version_;
+            rsp_header.iface_index_in_service_ = req_header->iface_index_in_service_;
+            rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
+
+            /*TODO: 1,search interface implementation instance to handle this request*/
+            uint8_t *pout_buf;
+            uint32_t out_buf_len;
+
+            IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
+            if (iface == nullptr) {
+                rsp_header.rpc_result_ = k_rpc_result_iface_not_found;
+                msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
+                return;
+            }
+
+            bool ret = iface->onRpcInvoke(*req_header, msg, len - sizeof(msgrpc::ReqMsgHeader), rsp_header, pout_buf, out_buf_len);
+            if (ret) {
+                return send_msg_with_header(rsp_header, pout_buf, out_buf_len);
+            } else {
+                msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
+            }
+
+            //TODO: using pipelined processor to handling input/output msgheader and rpc statistics.
         }
 
-        auto* req_header = (msgrpc::ReqMsgHeader*)msg;
-        msg += sizeof(msgrpc::ReqMsgHeader);
-
-        msgrpc::RspMsgHeader rsp_header;
-        rsp_header.msgrpc_version_ = req_header->msgrpc_version_;
-        rsp_header.interface_index_in_service_ = req_header->interface_index_in_service_;
-        rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
-
-        /*TODO: 1,search interface implementation instance to handle this request*/
-        IBuzzMathImpl buzzMath;
-        uint8_t* pout_buf; uint32_t out_buf_len;
-
-        if (buzzMath.onRpcInvoke(*req_header, msg, len - sizeof(msgrpc::ReqMsgHeader), rsp_header, pout_buf, out_buf_len)) {
+        static void send_msg_with_header(RspMsgHeader &rsp_header, const uint8_t *pout_buf, uint32_t out_buf_len) {
             size_t rsp_len_with_header = sizeof(rsp_header) + out_buf_len;
-            char* mem = (char*)malloc(rsp_len_with_header);
+            char *mem = (char *) malloc(rsp_len_with_header);
             if (mem != nullptr) {
                 memcpy(mem, &rsp_header, sizeof(rsp_header));
                 memcpy(mem + sizeof(rsp_header), pout_buf, out_buf_len);
                 /*TODO: replace k_local_service_id to sender id*/
-                msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, mem, rsp_len_with_header);
+                Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, mem, rsp_len_with_header);
+                free(mem);
             }
-            free(mem);
-        } else {
-            cout << "not implemented method" << endl; //TODO: using pipelined processor to handling input/output msgheader and rpc statistics.
-            msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, (const char*)&rsp_header, sizeof(rsp_header));
         }
-    }
-};
-
+    };
+}
 
 void remote_service() {
     msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
@@ -326,7 +349,7 @@ void remote_service() {
                 return;
             }
 
-            RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+            msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
             channel.close();
         }
     );

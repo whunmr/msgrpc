@@ -22,7 +22,7 @@ protected:
     //boost::shared_ptr<TJSONProtocol> protocol_;
 };
 
-struct ThriftEncoder : ThriftCodecBase, msgrpc::Singleton<ThriftEncoder> {
+struct ThriftEncoder : ThriftCodecBase, msgrpc::ThreadLocalSingleton<ThriftEncoder> {
     ThriftEncoder() : should_reset_to_default_size_(false) {}
 
     template<typename T>
@@ -60,7 +60,7 @@ private:
 };
 
 
-struct ThriftDecoder : ThriftCodecBase, msgrpc::Singleton<ThriftDecoder> {
+struct ThriftDecoder : ThriftCodecBase, msgrpc::ThreadLocalSingleton<ThriftDecoder> {
     template<typename T>
     static bool decode(T& ___struct, uint8_t* buf, uint32_t len) {
         ThriftDecoder::instance().mem_buf_->resetBuffer(buf, len, apache::thrift::transport::TMemoryBuffer::MemoryPolicy::OBSERVE);

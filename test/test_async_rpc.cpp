@@ -230,10 +230,62 @@ namespace msgrpc {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+namespace msgrpc {
+    struct RpcReqMsgHandler {
+        static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
+            cout << "remote received msg with length: " << len << endl;
+            assert(msg_id == k_msgrpc_request_msg_id && "invalid msg id for rpc");
+
+            if (len < sizeof(msgrpc::ReqMsgHeader)) {
+                cout << "invalid msg: without sufficient msg header info." << endl;
+                return;
+            }
+
+            auto *req_header = (msgrpc::ReqMsgHeader *) msg;
+            msg += sizeof(msgrpc::ReqMsgHeader);
+
+            msgrpc::RspMsgHeader rsp_header;
+            rsp_header.msgrpc_version_ = req_header->msgrpc_version_;
+            rsp_header.iface_index_in_service_ = req_header->iface_index_in_service_;
+            rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
+
+            uint8_t *pout_buf;
+            uint32_t out_buf_len;
+
+            IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
+            if (iface == nullptr) {
+                rsp_header.rpc_result_ = k_rpc_result_iface_not_found;
+                msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
+                return;
+            }
+
+            bool ret = iface->onRpcInvoke(*req_header, msg, len - sizeof(msgrpc::ReqMsgHeader), rsp_header, pout_buf, out_buf_len);
+            if (ret) {
+                return send_msg_with_header(rsp_header, pout_buf, out_buf_len);
+            } else {
+                msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
+            }
+
+            //TODO: using pipelined processor to handling input/output msgheader and rpc statistics.
+        }
+
+        static void send_msg_with_header(RspMsgHeader &rsp_header, const uint8_t *pout_buf, uint32_t out_buf_len) {
+            size_t rsp_len_with_header = sizeof(rsp_header) + out_buf_len;
+            char *mem = (char *) malloc(rsp_len_with_header);
+            if (mem != nullptr) {
+                memcpy(mem, &rsp_header, sizeof(rsp_header));
+                memcpy(mem + sizeof(rsp_header), pout_buf, out_buf_len);
+                /*TODO: replace k_local_service_id to sender id*/
+                Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, mem, rsp_len_with_header);
+                free(mem);
+            }
+        }
+    };
+}
+////////////////////////////////////////////////////////////////////////////////
 
 struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
-    //TODO: 2, auto register to impl repository.
-
     //TODO: try to unify with stub's signature
     bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
     bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
@@ -283,61 +335,6 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
         rsp.__set_barb(1 + req.get_foob());
     }
     return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-namespace msgrpc {
-    struct RpcReqMsgHandler {
-        static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            cout << "remote received msg with length: " << len << endl;
-            assert(msg_id == k_msgrpc_request_msg_id && "invalid msg id for rpc");
-
-            if (len < sizeof(msgrpc::ReqMsgHeader)) {
-                cout << "invalid msg: without sufficient msg header info." << endl;
-                return;
-            }
-
-            auto *req_header = (msgrpc::ReqMsgHeader *) msg;
-            msg += sizeof(msgrpc::ReqMsgHeader);
-
-            msgrpc::RspMsgHeader rsp_header;
-            rsp_header.msgrpc_version_ = req_header->msgrpc_version_;
-            rsp_header.iface_index_in_service_ = req_header->iface_index_in_service_;
-            rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
-
-            /*TODO: 1,search interface implementation instance to handle this request*/
-            uint8_t *pout_buf;
-            uint32_t out_buf_len;
-
-            IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
-            if (iface == nullptr) {
-                rsp_header.rpc_result_ = k_rpc_result_iface_not_found;
-                msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
-                return;
-            }
-
-            bool ret = iface->onRpcInvoke(*req_header, msg, len - sizeof(msgrpc::ReqMsgHeader), rsp_header, pout_buf, out_buf_len);
-            if (ret) {
-                return send_msg_with_header(rsp_header, pout_buf, out_buf_len);
-            } else {
-                msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
-            }
-
-            //TODO: using pipelined processor to handling input/output msgheader and rpc statistics.
-        }
-
-        static void send_msg_with_header(RspMsgHeader &rsp_header, const uint8_t *pout_buf, uint32_t out_buf_len) {
-            size_t rsp_len_with_header = sizeof(rsp_header) + out_buf_len;
-            char *mem = (char *) malloc(rsp_len_with_header);
-            if (mem != nullptr) {
-                memcpy(mem, &rsp_header, sizeof(rsp_header));
-                memcpy(mem + sizeof(rsp_header), pout_buf, out_buf_len);
-                /*TODO: replace k_local_service_id to sender id*/
-                Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, mem, rsp_len_with_header);
-                free(mem);
-            }
-        }
-    };
 }
 
 void remote_service() {

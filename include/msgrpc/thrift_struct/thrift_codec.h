@@ -1,22 +1,15 @@
 #ifndef MSGRPC_THRIFT_CODEC_H_H
 #define MSGRPC_THRIFT_CODEC_H_H
 
+#include <msgrpc/util/singleton.h>
+
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/protocol/TJSONProtocol.h>
 #include <thrift/transport/TSocket.h>
 #include <thrift/transport/TTransportUtils.h>
 
 ////////////////////////////////////////////////////////////////////////////////
-
-template<typename T>
-struct Singleton {
-    virtual ~Singleton() { }
-
-    static T& instance() {
-        static thread_local T t;
-        return t;
-    }
-};
+//TODO: adding namespace
 
 struct ThriftCodecBase {
     ThriftCodecBase() : mem_buf_(new apache::thrift::transport::TMemoryBuffer())
@@ -29,7 +22,7 @@ protected:
     //boost::shared_ptr<TJSONProtocol> protocol_;
 };
 
-struct ThriftEncoder : ThriftCodecBase, Singleton<ThriftEncoder> {
+struct ThriftEncoder : ThriftCodecBase, msgrpc::Singleton<ThriftEncoder> {
     ThriftEncoder() : should_reset_to_default_size_(false) {}
 
     template<typename T>
@@ -67,7 +60,7 @@ private:
 };
 
 
-struct ThriftDecoder : ThriftCodecBase, Singleton<ThriftDecoder> {
+struct ThriftDecoder : ThriftCodecBase, msgrpc::Singleton<ThriftDecoder> {
     template<typename T>
     static bool decode(T& ___struct, uint8_t* buf, uint32_t len) {
         ThriftDecoder::instance().mem_buf_->resetBuffer(buf, len, apache::thrift::transport::TMemoryBuffer::MemoryPolicy::OBSERVE);

@@ -48,10 +48,14 @@ namespace msgrpc {
 
 namespace msgrpc {
 
+    typedef uint8_t  method_index_t;
+    typedef uint16_t iface_index_t;
+
     struct MsgHeader {
-        unsigned char  msgrpc_version_ = {0};
-        unsigned char  method_index_in_interface_ = {0};
-        unsigned short interface_index_in_service_ = {0};
+        uint8_t           msgrpc_version_ = {0};
+        method_index_t    method_index_in_interface_ = {0};
+        iface_index_t interface_index_in_service_ = {0};
+
         //TODO: unsigned char  feature_id_in_service_ = {0};
         //TODO: TLV encoded varient length options
         //unsigned long  sequence_no_;
@@ -69,12 +73,6 @@ namespace msgrpc {
 
     struct RspMsgHeader : MsgHeader {
         unsigned short rpc_result_ = {k_rpc_result_succeeded};
-    };
-
-    ////////////////////////////////////////////////////////////////////////////
-    struct RpcInvokeHandler {
-        void handleInvoke(const ReqMsgHeader& msg_header) {
-        }
     };
 }
 
@@ -172,9 +170,34 @@ void local_service() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+#include <msgrpc/util/singleton.h>
+
 namespace msgrpc {
+
+
+    struct IfaceImplBase {
+        virtual bool onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) = 0;
+    };
+
+    struct IfaceRepository : msgrpc::Singleton<IfaceRepository> {
+        void add_iface_impl(iface_index_t ii, IfaceImplBase* iface) {
+            assert(iface != nullptr && "interface implementation can not be null");
+            assert(iface_id_to_ptr_.find(ii) == iface_id_to_ptr_.end() && "interface can only register once");
+            iface_id_to_ptr_[ii] = iface;
+        }
+
+        IfaceImplBase* get_iface_impl_by(iface_index_t ii) {
+            auto iter = iface_id_to_ptr_.find(ii);
+            return iter == iface_id_to_ptr_.end() ? nullptr : iter->second;
+        }
+
+      private:
+        std::map<iface_index_t, IfaceImplBase*> iface_id_to_ptr_;
+    };
+
     template<typename T>
-    struct InterfaceImplBase {
+    struct InterfaceImplBaseT : IfaceImplBase {
         template<typename REQ, typename RSP>
         bool invoke_templated_method( bool (T::*method_impl)(const REQ&, RSP&)
                                     , const char *msg, size_t len
@@ -201,12 +224,16 @@ namespace msgrpc {
     };
 }
 
-struct IBuzzMathImpl : msgrpc::InterfaceImplBase<IBuzzMathImpl> {
-    bool onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len);   //todo:remote_id
+
+
+struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl> {
+    //TODO: 2, auto register to impl repository.
 
     //TODO: try to unify with stub's signature
     bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
     bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
+
+    virtual bool onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) override;
 };
 
 bool IBuzzMathImpl::onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) {
@@ -263,12 +290,12 @@ struct RpcReqMsgHandler {
         auto* req_header = (msgrpc::ReqMsgHeader*)msg;
         msg += sizeof(msgrpc::ReqMsgHeader);
 
-        /*TODO: search interface implementation instance to handle this request*/
         msgrpc::RspMsgHeader rsp_header;
         rsp_header.msgrpc_version_ = req_header->msgrpc_version_;
         rsp_header.interface_index_in_service_ = req_header->interface_index_in_service_;
         rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
 
+        /*TODO: 1,search interface implementation instance to handle this request*/
         IBuzzMathImpl buzzMath;
         uint8_t* pout_buf; uint32_t out_buf_len;
 
@@ -283,7 +310,7 @@ struct RpcReqMsgHandler {
             }
             free(mem);
         } else {
-            cout << "not implemented method" << endl;
+            cout << "not implemented method" << endl; //TODO: using pipelined processor to handling input/output msgheader and rpc statistics.
             msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, (const char*)&rsp_header, sizeof(rsp_header));
         }
     }

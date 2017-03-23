@@ -12,7 +12,6 @@ using boost::asio::ip::udp;
 
 typedef std::function<void(msgrpc::msg_id_t msg_id, const char* msg, size_t len)> OnMsgFunc;
 
-//TODO: extract channel interface
 struct UdpChannel;
 thread_local UdpChannel* g_msg_channel;
 

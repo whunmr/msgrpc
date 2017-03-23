@@ -8,15 +8,6 @@ using namespace std;
 using namespace std::chrono;
 
 #include "demo/demo_api_declare.h"
-
-#if 0
-    #define ___methods_of_interface___IBuzzMath(_, ...)            \
-        _(1, ResponseBar, negative_fields, RequestFoo, __VA_ARGS__)\
-        _(2, ResponseBar, plus1_to_fields, RequestFoo, __VA_ARGS__)
-    ___as_interface(IBuzzMath, __with_interface_id(1))
-#endif
-
-
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
     template <typename T> struct Ret {};
@@ -67,13 +58,15 @@ namespace msgrpc {
     struct ReqMsgHeader : MsgHeader {
     };
 
-    const unsigned short k_rpc_result_succeeded = 0;
-    const unsigned short k_rpc_result_failed = 1;
-    const unsigned short k_rpc_result_method_not_found = 2;
-    const unsigned short k_rpc_result_iface_not_found = 3;
-
+    enum class RpcResult : unsigned short {
+        succeeded = 0
+        , failed  = 1
+        , method_not_found = 2
+        , iface_not_found =  3
+    };
+    
     struct RspMsgHeader : MsgHeader {
-        unsigned short rpc_result_ = {k_rpc_result_succeeded};
+        RpcResult rpc_result_ = { RpcResult::succeeded };
     };
 }
 
@@ -113,67 +106,6 @@ struct IBuzzMath {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-struct IBuzzMathStub : IBuzzMath {
-    virtual msgrpc::Ret<ResponseBar> negative_fields(const RequestFoo&);
-    virtual msgrpc::Ret<ResponseBar> plus1_to_fields(const RequestFoo&);
-};
-
-msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
-    uint8_t* pbuf; uint32_t len;
-    /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
-    if (!ThriftEncoder::encode(req, &pbuf, &len)) {
-        /*TODO: how to do with log, maybe should extract logging interface*/
-        cout << "encode failed." << endl;
-        return msgrpc::Ret<ResponseBar>();
-    }
-
-    //TODO: find k_remote_service_id by interface name "IBuzzMath"
-    size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
-
-    char* mem = (char*)malloc(msg_len_with_header);
-    if (!mem) {
-        cout << "alloc mem failed, during sending rpc request." << endl;
-        return msgrpc::Ret<ResponseBar>();
-    }
-
-    auto header = (msgrpc::ReqMsgHeader*)mem;
-    header->msgrpc_version_ = 0;
-    header->iface_index_in_service_ = 1;
-    header->method_index_in_interface_ = 1;
-    memcpy(header + 1, (const char*)pbuf, len);
-
-    cout << "stub sending msg with length: " << msg_len_with_header << endl;
-    msgrpc::Config::instance().msg_channel_->send_msg(k_remote_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
-    free(mem);
-    return msgrpc::Ret<ResponseBar>();
-}
-
-msgrpc::Ret<ResponseBar> IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
-    return msgrpc::Ret<ResponseBar>();
-}
-
-void local_service() {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
-
-    UdpChannel channel(k_local_service_id,
-        [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-            if (0 == strcmp(msg, "init")) {
-                IBuzzMathStub buzzMath;
-                RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
-                buzzMath.negative_fields(foo);
-            } else {
-                cout << "local received msg: " << string(msg, len) << endl;
-                channel.close();
-            }
-        }
-    );
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-#include <msgrpc/util/singleton.h>
-
 namespace msgrpc {
 
 
@@ -255,7 +187,7 @@ namespace msgrpc {
 
             IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
             if (iface == nullptr) {
-                rsp_header.rpc_result_ = k_rpc_result_iface_not_found;
+                rsp_header.rpc_result_ = RpcResult::iface_not_found;
                 msgrpc::Config::instance().msg_channel_->send_msg(k_local_service_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
                 return;
             }
@@ -284,40 +216,37 @@ namespace msgrpc {
     };
 }
 ////////////////////////////////////////////////////////////////////////////////
-
 struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
-    //TODO: try to unify with stub's signature
     bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
     bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
 
-    virtual bool onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) override;
+    virtual bool onRpcInvoke(const msgrpc::ReqMsgHeader& req_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 IBuzzMathImpl buzzMath;
 
-bool IBuzzMathImpl::onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    cout << "remote receive rpc invoke with: {" << (int)msg_header.msgrpc_version_ << "|" << (int)msg_header.iface_index_in_service_ << "|" << (int)msg_header.method_index_in_interface_ << "}" << endl;
+bool IBuzzMathImpl::onRpcInvoke(const msgrpc::ReqMsgHeader& req_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) {
     bool ret = false;
 
-    if (msg_header.method_index_in_interface_ == 1) {
+    if (req_header.method_index_in_interface_ == 1) {
         ret = this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
     } else
 
-    if (msg_header.method_index_in_interface_ == 2) {
+    if (req_header.method_index_in_interface_ == 2) {
         ret = this->invoke_templated_method(&IBuzzMathImpl::plus1_to_fields, msg, len, pout_buf, out_buf_len);
     } else
 
     {
-        rsp_header.rpc_result_ = msgrpc::k_rpc_result_method_not_found;
+        rsp_header.rpc_result_ = msgrpc::RpcResult::method_not_found;
         return false;
     }
 
     if (! ret) {
-        rsp_header.rpc_result_ = msgrpc::k_rpc_result_failed;
+        rsp_header.rpc_result_ = msgrpc::RpcResult::failed;
     }
 
-    return true;
+    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -337,6 +266,7 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
     return true;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 void remote_service() {
     msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
@@ -348,6 +278,72 @@ void remote_service() {
 
             msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
             channel.close();
+        }
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+#if 0
+    #define ___methods_of_interface___IBuzzMath(_, ...)            \
+        _(1, ResponseBar, negative_fields, RequestFoo, __VA_ARGS__)\
+        _(2, ResponseBar, plus1_to_fields, RequestFoo, __VA_ARGS__)
+    ___as_interface(IBuzzMath, __with_interface_id(1))
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+struct IBuzzMathStub : IBuzzMath {
+    virtual msgrpc::Ret<ResponseBar> negative_fields(const RequestFoo&);
+    virtual msgrpc::Ret<ResponseBar> plus1_to_fields(const RequestFoo&);
+};
+
+msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
+    uint8_t* pbuf; uint32_t len;
+    /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
+    if (!ThriftEncoder::encode(req, &pbuf, &len)) {
+        /*TODO: how to do with log, maybe should extract logging interface*/
+        cout << "encode failed." << endl;
+        return msgrpc::Ret<ResponseBar>();
+    }
+
+    //TODO: find k_remote_service_id by interface name "IBuzzMath"
+    size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
+
+    char* mem = (char*)malloc(msg_len_with_header);
+    if (!mem) {
+        cout << "alloc mem failed, during sending rpc request." << endl;
+        return msgrpc::Ret<ResponseBar>();
+    }
+
+    auto header = (msgrpc::ReqMsgHeader*)mem;
+    header->msgrpc_version_ = 0;
+    header->iface_index_in_service_ = 1;
+    header->method_index_in_interface_ = 1;
+    memcpy(header + 1, (const char*)pbuf, len);
+
+    cout << "stub sending msg with length: " << msg_len_with_header << endl;
+    msgrpc::Config::instance().msg_channel_->send_msg(k_remote_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
+    free(mem);
+    return msgrpc::Ret<ResponseBar>();
+}
+
+msgrpc::Ret<ResponseBar> IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
+    return msgrpc::Ret<ResponseBar>();
+}
+
+void local_service() {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+
+    UdpChannel channel(k_local_service_id,
+        [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+            if (0 == strcmp(msg, "init")) {
+                IBuzzMathStub buzzMath;
+                RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
+                buzzMath.negative_fields(foo);
+            } else {
+                cout << "local received msg: " << string(msg, len) << endl;
+                channel.close();
+            }
         }
     );
 }

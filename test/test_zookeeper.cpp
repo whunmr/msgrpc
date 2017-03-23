@@ -26,7 +26,7 @@ zhandle_t*  init(const char *hostPort) {
     return zookeeper_init(hostPort, main_watcher, 15000, 0, 0, 0);
 }
 
-TEST(async_rpc, should_able_to_connect_to_zookeeper) {
+TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
     zhandle_t* zk = init("localhost:2181");
     EXPECT_TRUE(zk != nullptr);
     sleep(1);

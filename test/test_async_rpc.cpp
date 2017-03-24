@@ -270,21 +270,7 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
     return true;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-void remote_service() {
-    msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
-    UdpChannel channel(k_remote_service_id,
-        [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-            if (0 == strcmp(msg, "init")) {
-                return;
-            }
-
-            msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
-            channel.close();
-        }
-    );
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 #if 0
@@ -341,7 +327,6 @@ struct IBuzzMathStub : msgrpc::RpcStubBase {
     virtual void plus1_to_fields(const RequestFoo&);
 };
 
-//TODO: extract command codes into base class, only left data from macros
 void IBuzzMathStub::negative_fields(const RequestFoo& req) {
     encode_request_and_send(1, 1, req);
 }
@@ -365,6 +350,22 @@ void local_service() {
                 cout << "local received msg: " << string(msg, len) << endl;
                 channel.close();
             }
+        }
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void remote_service() {
+    msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+
+    UdpChannel channel(k_remote_service_id,
+        [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+            if (0 == strcmp(msg, "init")) {
+               return;
+            }
+
+            msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+            channel.close();
         }
     );
 }

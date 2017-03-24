@@ -46,7 +46,6 @@ namespace msgrpc {
         uint8_t         msgrpc_version_ = {0};
         method_index_t  method_index_in_interface_ = {0};
         iface_index_t   iface_index_in_service_ = {0};
-
         //TODO: unsigned char  feature_id_in_service_ = {0};
         //TODO: TLV encoded varient length options
         //unsigned long  sequence_no_;
@@ -64,7 +63,7 @@ namespace msgrpc {
         , method_not_found = 2
         , iface_not_found =  3
     };
-    
+
     struct RspMsgHeader : MsgHeader {
         RpcResult rpc_result_ = { RpcResult::succeeded };
     };
@@ -100,6 +99,7 @@ using namespace demo;
 const msgrpc::service_id_t k_remote_service_id = 2222;
 const msgrpc::service_id_t k_local_service_id  = 3333;
 
+//TODO: unify interface of stub and implement.
 struct IBuzzMath {
     virtual msgrpc::Ret<ResponseBar> negative_fields(const RequestFoo&) = 0;
     virtual msgrpc::Ret<ResponseBar> plus1_to_fields(const RequestFoo&) = 0;
@@ -215,7 +215,9 @@ namespace msgrpc {
         }
     };
 }
+
 ////////////////////////////////////////////////////////////////////////////////
+//---------------- generate this part by macros set:
 struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
     bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
     bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
@@ -224,6 +226,7 @@ struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+//---------------- generate this part by macros set: interface_implement_define.h
 IBuzzMathImpl buzzMath;
 
 bool IBuzzMathImpl::onRpcInvoke(const msgrpc::ReqMsgHeader& req_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) {
@@ -250,6 +253,7 @@ bool IBuzzMathImpl::onRpcInvoke(const msgrpc::ReqMsgHeader& req_header, const ch
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//---------------- implement interface in here:
 bool IBuzzMathImpl::negative_fields(const RequestFoo& req, ResponseBar& rsp) {
     rsp.__set_bara(req.get_foob());
     if (req.__isset.foob) {
@@ -296,6 +300,7 @@ struct IBuzzMathStub : IBuzzMath {
     virtual msgrpc::Ret<ResponseBar> plus1_to_fields(const RequestFoo&);
 };
 
+//TODO: extract command codes into base class, only left data from macros
 msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
     uint8_t* pbuf; uint32_t len;
     /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/

@@ -295,46 +295,62 @@ void remote_service() {
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-struct IBuzzMathStub : IBuzzMath {
-    virtual msgrpc::Ret<ResponseBar> negative_fields(const RequestFoo&);
-    virtual msgrpc::Ret<ResponseBar> plus1_to_fields(const RequestFoo&);
+namespace msgrpc {
+    struct RpcStubBase {
+        //TODO: split into .h and .cpp
+        void send_rpc_request_buf(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const uint8_t *pbuf, uint32_t len) const {
+            size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
+
+            char *mem = (char *) malloc(msg_len_with_header);
+            if (!mem) {
+                cout << "alloc mem failed, during sending rpc request." << endl;
+                return;
+            }
+
+            auto header = (msgrpc::ReqMsgHeader *) mem;
+            header->msgrpc_version_ = 0;
+            header->iface_index_in_service_ = iface_index;
+            header->method_index_in_interface_ = method_index;
+            memcpy(header + 1, (const char *) pbuf, len);
+
+            cout << "stub sending msg with length: " << msg_len_with_header << endl;
+            //TODO: find k_remote_service_id by interface name "IBuzzMath"
+            msgrpc::Config::instance().msg_channel_->send_msg(k_remote_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
+            free(mem);
+        }
+
+        template<typename REQ>
+        void encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const REQ &req) const {
+            uint8_t* pbuf;
+            uint32_t len;
+            /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
+            if (!ThriftEncoder::encode(req, &pbuf, &len)) {
+                /*TODO: how to do with log, maybe should extract logging interface*/
+                cout << "encode failed." << endl;
+                return;
+            }
+
+            send_rpc_request_buf(iface_index, method_index, pbuf, len);
+        };
+    };
+}
+////////////////////////////////////////////////////////////////////////////////
+//-----------generate by:  declare and define stub macros
+struct IBuzzMathStub : msgrpc::RpcStubBase {
+    virtual void negative_fields(const RequestFoo&);
+    virtual void plus1_to_fields(const RequestFoo&);
 };
 
 //TODO: extract command codes into base class, only left data from macros
-msgrpc::Ret<ResponseBar> IBuzzMathStub::negative_fields(const RequestFoo& req) {
-    uint8_t* pbuf; uint32_t len;
-    /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
-    if (!ThriftEncoder::encode(req, &pbuf, &len)) {
-        /*TODO: how to do with log, maybe should extract logging interface*/
-        cout << "encode failed." << endl;
-        return msgrpc::Ret<ResponseBar>();
-    }
-
-    //TODO: find k_remote_service_id by interface name "IBuzzMath"
-    size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
-
-    char* mem = (char*)malloc(msg_len_with_header);
-    if (!mem) {
-        cout << "alloc mem failed, during sending rpc request." << endl;
-        return msgrpc::Ret<ResponseBar>();
-    }
-
-    auto header = (msgrpc::ReqMsgHeader*)mem;
-    header->msgrpc_version_ = 0;
-    header->iface_index_in_service_ = 1;
-    header->method_index_in_interface_ = 1;
-    memcpy(header + 1, (const char*)pbuf, len);
-
-    cout << "stub sending msg with length: " << msg_len_with_header << endl;
-    msgrpc::Config::instance().msg_channel_->send_msg(k_remote_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
-    free(mem);
-    return msgrpc::Ret<ResponseBar>();
+void IBuzzMathStub::negative_fields(const RequestFoo& req) {
+    encode_request_and_send(1, 1, req);
 }
 
-msgrpc::Ret<ResponseBar> IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
-    return msgrpc::Ret<ResponseBar>();
+void IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
+    encode_request_and_send(1, 2, req);
 }
 
+////////////////////////////////////////////////////////////////////////////////
 void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
@@ -364,4 +380,5 @@ TEST(async_rpc, should_able_to__auto__register_rpc_interface__after__application
 
     local_thread.join();
     remote_thread.join();
-};
+}
+

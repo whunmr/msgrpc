@@ -16,6 +16,7 @@ namespace msgrpc {
     typedef unsigned short service_id_t; //TODO: how to deal with different service id types
 
     struct MsgChannel {
+        //TODO: extract common channel interface
         virtual uint32_t send_msg(const service_id_t& remote_service_id, msg_id_t msg_id, const char* buf, size_t len) const = 0;
     };
 
@@ -99,15 +100,19 @@ using namespace demo;
 const msgrpc::service_id_t k_remote_service_id = 2222;
 const msgrpc::service_id_t k_local_service_id  = 3333;
 
-//TODO: unify interface of stub and implement.
-struct IBuzzMath {
-    virtual msgrpc::Ret<ResponseBar> negative_fields(const RequestFoo&) = 0;
-    virtual msgrpc::Ret<ResponseBar> plus1_to_fields(const RequestFoo&) = 0;
-};
+namespace msgrpc {
+    struct RpcSequenceId : msgrpc::ThreadLocalSingleton<RpcSequenceId> {
+        uint32_t get() {
+            return sequence_id_++;
+        }
+
+        private:
+            uint32_t sequence_id_ = {0};
+    };
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
-
 
     struct IfaceImplBase {
         virtual bool onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) = 0;
@@ -249,13 +254,24 @@ namespace msgrpc {
             if (!ThriftEncoder::encode(req, &pbuf, &len)) {
                 /*TODO: how to do with log, maybe should extract logging interface*/
                 cout << "encode failed." << endl;
-                return;
+                return; //TODO: return false;
             }
 
             send_rpc_request_buf(iface_index, method_index, pbuf, len);
         };
     };
 }
+
+////////////////////////////////////////////////////////////////////////////////
+#define declare_interface_on_consumer
+#define  define_interface_on_consumer
+#define declare_interface_on_provider
+#define  define_interface_on_provider
+//TODO: unify interface of stub and implement.
+struct IBuzzMath {
+    virtual msgrpc::Ret<ResponseBar> negative_fields(const RequestFoo&) = 0;
+    virtual msgrpc::Ret<ResponseBar> plus1_to_fields(const RequestFoo&) = 0;
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
@@ -312,14 +328,6 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-#if 0
-    #define ___methods_of_interface___IBuzzMath(_, ...)            \
-        _(1, ResponseBar, negative_fields, RequestFoo, __VA_ARGS__)\
-        _(2, ResponseBar, plus1_to_fields, RequestFoo, __VA_ARGS__)
-    ___as_interface(IBuzzMath, __with_interface_id(1))
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct IBuzzMathStub : msgrpc::RpcStubBase {
     virtual void negative_fields(const RequestFoo&);
@@ -335,6 +343,8 @@ void IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+
 void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
@@ -342,11 +352,18 @@ void local_service() {
     UdpChannel channel(k_local_service_id,
         [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
-                IBuzzMathStub buzzMath;
-                RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
-                buzzMath.negative_fields(foo);
+                RequestFoo foo;
+                foo.fooa = 97;
+                foo.__set_foob(98);
+
+
+                //TODO: handle rpc result
+                IBuzzMathStub stub;
+                stub.negative_fields(foo);
+
+
             } else {
-                cout << "local received msg: " << string(msg, len) << endl;
+                cout << "local received msg>>>>>>>: " << string(msg, len) << endl;
                 channel.close();
             }
         }
@@ -371,10 +388,6 @@ void remote_service() {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST(async_rpc, should_able_to__auto__register_rpc_interface__after__application_startup) {
-    demo::RequestFoo req;
-    req.fooa = 1;
-    req.__set_foob(2);
-
     std::thread local_thread(local_service);
     std::thread remote_thread(remote_service);
 

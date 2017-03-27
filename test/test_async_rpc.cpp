@@ -4,6 +4,8 @@
 #include <chrono>
 #include <msgrpc/thrift_struct/thrift_codec.h>
 #include <type_traits>
+#include <future>
+
 using namespace std;
 using namespace std::chrono;
 
@@ -39,14 +41,27 @@ namespace msgrpc {
 }
 
 namespace msgrpc {
+    typedef uint32_t rpc_sequence_id_t;
+    struct RpcSequenceId : msgrpc::ThreadLocalSingleton<RpcSequenceId> {
+        rpc_sequence_id_t get() {
+            return sequence_id_++;
+        }
+
+    private:
+        rpc_sequence_id_t sequence_id_ = {0};
+    };
+}
+
+namespace msgrpc {
 
     typedef uint8_t  method_index_t;
     typedef uint16_t iface_index_t;
 
     struct MsgHeader {
-        uint8_t         msgrpc_version_ = {0};
-        method_index_t  method_index_in_interface_ = {0};
-        iface_index_t   iface_index_in_service_ = {0};
+        uint8_t           msgrpc_version_ = {0};
+        method_index_t    method_index_in_interface_ = {0};
+        iface_index_t     iface_index_in_service_ = {0};
+        rpc_sequence_id_t sequence_id_;
         //TODO: unsigned char  feature_id_in_service_ = {0};
         //TODO: TLV encoded varient length options
         //unsigned long  sequence_no_;
@@ -100,16 +115,6 @@ using namespace demo;
 const msgrpc::service_id_t k_remote_service_id = 2222;
 const msgrpc::service_id_t k_local_service_id  = 3333;
 
-namespace msgrpc {
-    struct RpcSequenceId : msgrpc::ThreadLocalSingleton<RpcSequenceId> {
-        uint32_t get() {
-            return sequence_id_++;
-        }
-
-        private:
-            uint32_t sequence_id_ = {0};
-    };
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
@@ -185,6 +190,7 @@ namespace msgrpc {
             rsp_header.msgrpc_version_ = req_header->msgrpc_version_;
             rsp_header.iface_index_in_service_ = req_header->iface_index_in_service_;
             rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
+            rsp_header.sequence_id_ = req_header->sequence_id_;
 
             uint8_t *pout_buf;
             uint32_t out_buf_len;
@@ -238,6 +244,7 @@ namespace msgrpc {
             header->msgrpc_version_ = 0;
             header->iface_index_in_service_ = iface_index;
             header->method_index_in_interface_ = method_index;
+            header->sequence_id_ = RpcSequenceId::instance().get();
             memcpy(header + 1, (const char *) pbuf, len);
 
             cout << "stub sending msg with length: " << msg_len_with_header << endl;
@@ -328,6 +335,26 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//typedef std::function<void()> RspHandlerFunc;
+
+namespace msgrpc {
+    struct RpcRspDispatcher {
+        static void handle_rpc_response(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
+            cout << "local received msg----------->: " << string(msg, len) << endl;
+            //TODO: set response into response_cell and call binded functions of the response_cell
+
+            //todo:print out sequence id
+            if (len < sizeof(RspMsgHeader)) {
+                cout << "ERROR: invalid rsp msg" << endl;
+                return;
+            }
+
+            auto* rsp_header = (RspMsgHeader*)msg;
+            cout << "                   sequence_id: " << rsp_header->sequence_id_ << endl;
+        }
+    };
+}
+////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct IBuzzMathStub : msgrpc::RpcStubBase {
     virtual void negative_fields(const RequestFoo&);
@@ -342,8 +369,15 @@ void IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
     encode_request_and_send(1, 2, req);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+void invokeRpc() {
+    RequestFoo foo;
+    foo.fooa = 97;
+    foo.__set_foob(98);
 
+    //TODO: handle rpc result
+    IBuzzMathStub stub;
+    stub.negative_fields(foo);
+}
 
 void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -352,18 +386,12 @@ void local_service() {
     UdpChannel channel(k_local_service_id,
         [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
-                RequestFoo foo;
-                foo.fooa = 97;
-                foo.__set_foob(98);
-
-
-                //TODO: handle rpc result
-                IBuzzMathStub stub;
-                stub.negative_fields(foo);
-
-
+                invokeRpc();
+            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+                msgrpc::RpcRspDispatcher::handle_rpc_response(msg_id, msg, len);
+                channel.close();
             } else {
-                cout << "local received msg>>>>>>>: " << string(msg, len) << endl;
+                cout << "local received msg:" << string(msg, len) << endl;
                 channel.close();
             }
         }

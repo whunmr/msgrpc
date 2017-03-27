@@ -398,7 +398,14 @@ void invokeRpc() {
 
     IBuzzMathStub stub;
     stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
-        cout << "sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+
+        IBuzzMathStub stub;
+        stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
+            cout << "[2] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+
+            UdpChannel::closeAllUdpSockets();
+        });
     });
 }
 
@@ -412,10 +419,8 @@ void local_service() {
                 invokeRpc();
             } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
                 msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
-                channel.close();
             } else {
                 cout << "local received msg:" << string(msg, len) << endl;
-                channel.close();
             }
         }
     );
@@ -432,7 +437,6 @@ void remote_service() {
             }
 
             msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
-            channel.close();
         }
     );
 }

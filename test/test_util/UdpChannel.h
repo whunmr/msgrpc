@@ -24,6 +24,8 @@ struct UdpChannel {
 
         g_msg_channel = this;
 
+        sockets_.push_back(&socket_);
+
         io_service_.run();
     }
 
@@ -42,9 +44,7 @@ struct UdpChannel {
             msgrpc::msg_id_t* msg_id = (msgrpc::msg_id_t*)recv_buffer_.data();
             on_msg_func_(*msg_id, (const char*)(msg_id + 1), bytes_transferred - sizeof(msgrpc::msg_id_t));
 
-            if (!close_channel_) {
-                start_receive();
-            }
+            start_receive();
         }
     }
 
@@ -63,18 +63,21 @@ struct UdpChannel {
         if (error) { cout << "msg send failed." << endl; }
     }
 
-    void close() {
-        close_channel_ = true;
+    static void closeAllUdpSockets() {
+        for (auto s : sockets_) {
+            s->close();
+        }
     }
 
+    static std::vector<udp::socket*> sockets_;
     boost::asio::io_service io_service_;
     udp::socket socket_;
     OnMsgFunc on_msg_func_;
-    bool close_channel_ = { false };
 
     udp::endpoint remote_endpoint_;
     boost::array<char, 10240> recv_buffer_;
 };
 
+std::vector<udp::socket*> UdpChannel::sockets_;
 
 #endif //MSGRPC_UDPCHANNEL_H

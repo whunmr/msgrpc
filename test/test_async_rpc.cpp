@@ -23,7 +23,7 @@ namespace msgrpc {
     };
 
     struct Config {
-        void initWith(MsgChannel* msg_channel, msgrpc::msg_id_t request_msg_id, msgrpc::msg_id_t response_msg_id) {
+        void init_with(MsgChannel *msg_channel, msgrpc::msg_id_t request_msg_id, msgrpc::msg_id_t response_msg_id) {
             instance().msg_channel_ = msg_channel;
             request_msg_id_  = request_msg_id;
             response_msg_id_ = response_msg_id;
@@ -404,14 +404,20 @@ void invokeRpc() {
         stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
             cout << "[2] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
 
-            UdpChannel::closeAllUdpSockets();
+            IBuzzMathStub stub;
+            stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
+                cout << "[3] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+
+                UdpChannel::cloes_all_channels();
+            });
+
         });
     });
 }
 
 void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+    msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_local_service_id,
         [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
@@ -428,7 +434,7 @@ void local_service() {
 
 ////////////////////////////////////////////////////////////////////////////////
 void remote_service() {
-    msgrpc::Config::instance().initWith(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+    msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_remote_service_id,
         [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {

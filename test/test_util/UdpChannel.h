@@ -63,7 +63,7 @@ struct UdpChannel {
         if (error) { cout << "msg send failed." << endl; }
     }
 
-    static void closeAllUdpSockets() {
+    static void cloes_all_channels() {
         for (auto s : sockets_) {
             s->close();
         }

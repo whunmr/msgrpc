@@ -64,6 +64,7 @@ namespace msgrpc {
         rpc_sequence_id_t sequence_id_;
         //TODO: unsigned char  feature_id_in_service_ = {0};
         //TODO: TLV encoded varient length options
+        //TODO: if not encoded/decode, how to deal hton and ntoh
         //unsigned long  sequence_no_;
         //optional 1
         /*TODO: call sequence number*/
@@ -231,7 +232,7 @@ namespace msgrpc {
 namespace msgrpc {
     struct RpcStubBase {
         //TODO: split into .h and .cpp
-        void send_rpc_request_buf(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const uint8_t *pbuf, uint32_t len) const {
+        void send_rpc_request_buf(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const uint8_t *pbuf, uint32_t len, rpc_sequence_id_t seq_id) const {
             size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
 
             char *mem = (char *) malloc(msg_len_with_header);
@@ -244,7 +245,7 @@ namespace msgrpc {
             header->msgrpc_version_ = 0;
             header->iface_index_in_service_ = iface_index;
             header->method_index_in_interface_ = method_index;
-            header->sequence_id_ = RpcSequenceId::instance().get();
+            header->sequence_id_ = seq_id;
             memcpy(header + 1, (const char *) pbuf, len);
 
             cout << "stub sending msg with length: " << msg_len_with_header << endl;
@@ -254,7 +255,7 @@ namespace msgrpc {
         }
 
         template<typename REQ>
-        void encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const REQ &req) const {
+        void encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const REQ &req, rpc_sequence_id_t seq_id) const {
             uint8_t* pbuf;
             uint32_t len;
             /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
@@ -264,7 +265,7 @@ namespace msgrpc {
                 return; //TODO: return false;
             }
 
-            send_rpc_request_buf(iface_index, method_index, pbuf, len);
+            send_rpc_request_buf(iface_index, method_index, pbuf, len, seq_id);
         };
     };
 }
@@ -335,7 +336,6 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//typedef std::function<void()> RspHandlerFunc;
 namespace msgrpc {
 
     typedef std::function<void(RspMsgHeader*, const char* msg, size_t len)> RpcRspHandlerFunc;
@@ -352,7 +352,7 @@ namespace msgrpc {
 
             //todo:print out sequence id
             if (len < sizeof(RspMsgHeader)) {
-                cout << "ERROR: invalid rsp msg" << endl;
+                cout << "WARNING: invalid rsp msg" << endl;
                 return;
             }
 
@@ -360,6 +360,13 @@ namespace msgrpc {
             cout << "                   sequence_id: " << rsp_header->sequence_id_ << endl;
 
             //TODO: try find and invoke rsp handler by sequence_id_
+            auto iter = id_func_map_.find(rsp_header->sequence_id_);
+            if (iter == id_func_map_.end()) {
+                cout << "WARNING: can not find rsp handler" << endl;
+                return;
+            }
+
+            (iter->second)(rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
         }
 
         std::map<rpc_sequence_id_t, RpcRspHandlerFunc> id_func_map_;
@@ -368,16 +375,20 @@ namespace msgrpc {
 ////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct IBuzzMathStub : msgrpc::RpcStubBase {
-    virtual void negative_fields(const RequestFoo&);
-    virtual void plus1_to_fields(const RequestFoo&);
+    virtual void negative_fields(const RequestFoo&, msgrpc::RpcRspHandlerFunc callback);
+    virtual void plus1_to_fields(const RequestFoo&, msgrpc::RpcRspHandlerFunc callback);
 };
 
-void IBuzzMathStub::negative_fields(const RequestFoo& req) {
-    encode_request_and_send(1, 1, req);
+void IBuzzMathStub::negative_fields(const RequestFoo& req, msgrpc::RpcRspHandlerFunc callback) {
+    auto seq_id = msgrpc::RpcSequenceId::instance().get();
+    msgrpc::RpcRspDispatcher::instance().register_rsp_Handler(seq_id, callback);
+    encode_request_and_send(1, 1, req, seq_id);
 }
 
-void IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
-    encode_request_and_send(1, 2, req);
+void IBuzzMathStub::plus1_to_fields(const RequestFoo& req, msgrpc::RpcRspHandlerFunc callback) {
+    auto seq_id = msgrpc::RpcSequenceId::instance().get();
+    msgrpc::RpcRspDispatcher::instance().register_rsp_Handler(seq_id, callback);
+    encode_request_and_send(1, 2, req, seq_id);
 }
 
 void invokeRpc() {
@@ -386,7 +397,9 @@ void invokeRpc() {
     foo.__set_foob(98);
 
     IBuzzMathStub stub;
-    stub.negative_fields(foo);
+    stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
+        cout << "sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+    });
 }
 
 void local_service() {

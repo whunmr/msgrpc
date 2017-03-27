@@ -336,10 +336,17 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
 
 ////////////////////////////////////////////////////////////////////////////////
 //typedef std::function<void()> RspHandlerFunc;
-
 namespace msgrpc {
-    struct RpcRspDispatcher {
-        static void handle_rpc_response(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
+
+    typedef std::function<void(RspMsgHeader*, const char* msg, size_t len)> RpcRspHandlerFunc;
+
+    struct RpcRspDispatcher : msgrpc::Singleton<RpcRspDispatcher> {
+        void register_rsp_Handler(rpc_sequence_id_t sequence_id, RpcRspHandlerFunc func) {
+            assert(id_func_map_.find(sequence_id) == id_func_map_.end() && "should register with unique id.");
+            id_func_map_[sequence_id] = func;
+        }
+
+        void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
             cout << "local received msg----------->: " << string(msg, len) << endl;
             //TODO: set response into response_cell and call binded functions of the response_cell
 
@@ -351,7 +358,11 @@ namespace msgrpc {
 
             auto* rsp_header = (RspMsgHeader*)msg;
             cout << "                   sequence_id: " << rsp_header->sequence_id_ << endl;
+
+            //TODO: try find and invoke rsp handler by sequence_id_
         }
+
+        std::map<rpc_sequence_id_t, RpcRspHandlerFunc> id_func_map_;
     };
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -374,7 +385,6 @@ void invokeRpc() {
     foo.fooa = 97;
     foo.__set_foob(98);
 
-    //TODO: handle rpc result
     IBuzzMathStub stub;
     stub.negative_fields(foo);
 }
@@ -388,7 +398,7 @@ void local_service() {
             if (0 == strcmp(msg, "init")) {
                 invokeRpc();
             } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                msgrpc::RpcRspDispatcher::handle_rpc_response(msg_id, msg, len);
+                msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
                 channel.close();
             } else {
                 cout << "local received msg:" << string(msg, len) << endl;

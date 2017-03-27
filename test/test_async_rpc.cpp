@@ -227,12 +227,50 @@ namespace msgrpc {
     };
 }
 
+////////////////////////////////////////////////////////////////////////////////
+namespace msgrpc {
+
+    typedef std::function<void(RspMsgHeader*, const char* msg, size_t len)> RpcRspHandlerFunc;
+
+    struct RpcRspDispatcher : msgrpc::Singleton<RpcRspDispatcher> {
+        void register_rsp_Handler(rpc_sequence_id_t sequence_id, RpcRspHandlerFunc func) {
+            assert(id_func_map_.find(sequence_id) == id_func_map_.end() && "should register with unique id.");
+            id_func_map_[sequence_id] = func;
+        }
+
+        void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
+            cout << "local received msg----------->: " << string(msg, len) << endl;
+            //TODO: set response into response_cell and call binded functions of the response_cell
+
+            //todo:print out sequence id
+            if (len < sizeof(RspMsgHeader)) {
+                cout << "WARNING: invalid rsp msg" << endl;
+                return;
+            }
+
+            auto* rsp_header = (RspMsgHeader*)msg;
+            cout << "                   sequence_id: " << rsp_header->sequence_id_ << endl;
+
+            //TODO: try find and invoke rsp handler by sequence_id_
+            auto iter = id_func_map_.find(rsp_header->sequence_id_);
+            if (iter == id_func_map_.end()) {
+                cout << "WARNING: can not find rsp handler" << endl;
+                return;
+            }
+
+            (iter->second)(rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
+        }
+
+        std::map<rpc_sequence_id_t, RpcRspHandlerFunc> id_func_map_;
+    };
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
+
     struct RpcStubBase {
         //TODO: split into .h and .cpp
-        void send_rpc_request_buf(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const uint8_t *pbuf, uint32_t len, rpc_sequence_id_t seq_id) const {
+        void send_rpc_request_buf(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const uint8_t *pbuf, uint32_t len, RpcRspHandlerFunc callback) const {
             size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
 
             char *mem = (char *) malloc(msg_len_with_header);
@@ -240,6 +278,9 @@ namespace msgrpc {
                 cout << "alloc mem failed, during sending rpc request." << endl;
                 return;
             }
+
+            auto seq_id = msgrpc::RpcSequenceId::instance().get();
+            msgrpc::RpcRspDispatcher::instance().register_rsp_Handler(seq_id, callback);
 
             auto header = (msgrpc::ReqMsgHeader *) mem;
             header->msgrpc_version_ = 0;
@@ -255,7 +296,7 @@ namespace msgrpc {
         }
 
         template<typename REQ>
-        void encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const REQ &req, rpc_sequence_id_t seq_id) const {
+        void encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const REQ &req, RpcRspHandlerFunc callback) const {
             uint8_t* pbuf;
             uint32_t len;
             /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
@@ -265,7 +306,7 @@ namespace msgrpc {
                 return; //TODO: return false;
             }
 
-            send_rpc_request_buf(iface_index, method_index, pbuf, len, seq_id);
+            send_rpc_request_buf(iface_index, method_index, pbuf, len, callback);
         };
     };
 }
@@ -336,43 +377,6 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-namespace msgrpc {
-
-    typedef std::function<void(RspMsgHeader*, const char* msg, size_t len)> RpcRspHandlerFunc;
-
-    struct RpcRspDispatcher : msgrpc::Singleton<RpcRspDispatcher> {
-        void register_rsp_Handler(rpc_sequence_id_t sequence_id, RpcRspHandlerFunc func) {
-            assert(id_func_map_.find(sequence_id) == id_func_map_.end() && "should register with unique id.");
-            id_func_map_[sequence_id] = func;
-        }
-
-        void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            cout << "local received msg----------->: " << string(msg, len) << endl;
-            //TODO: set response into response_cell and call binded functions of the response_cell
-
-            //todo:print out sequence id
-            if (len < sizeof(RspMsgHeader)) {
-                cout << "WARNING: invalid rsp msg" << endl;
-                return;
-            }
-
-            auto* rsp_header = (RspMsgHeader*)msg;
-            cout << "                   sequence_id: " << rsp_header->sequence_id_ << endl;
-
-            //TODO: try find and invoke rsp handler by sequence_id_
-            auto iter = id_func_map_.find(rsp_header->sequence_id_);
-            if (iter == id_func_map_.end()) {
-                cout << "WARNING: can not find rsp handler" << endl;
-                return;
-            }
-
-            (iter->second)(rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
-        }
-
-        std::map<rpc_sequence_id_t, RpcRspHandlerFunc> id_func_map_;
-    };
-}
-////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct IBuzzMathStub : msgrpc::RpcStubBase {
     virtual void negative_fields(const RequestFoo&, msgrpc::RpcRspHandlerFunc callback);
@@ -380,15 +384,11 @@ struct IBuzzMathStub : msgrpc::RpcStubBase {
 };
 
 void IBuzzMathStub::negative_fields(const RequestFoo& req, msgrpc::RpcRspHandlerFunc callback) {
-    auto seq_id = msgrpc::RpcSequenceId::instance().get();
-    msgrpc::RpcRspDispatcher::instance().register_rsp_Handler(seq_id, callback);
-    encode_request_and_send(1, 1, req, seq_id);
+    encode_request_and_send(1, 1, req, callback);
 }
 
 void IBuzzMathStub::plus1_to_fields(const RequestFoo& req, msgrpc::RpcRspHandlerFunc callback) {
-    auto seq_id = msgrpc::RpcSequenceId::instance().get();
-    msgrpc::RpcRspDispatcher::instance().register_rsp_Handler(seq_id, callback);
-    encode_request_and_send(1, 2, req, seq_id);
+    encode_request_and_send(1, 2, req, callback);
 }
 
 void invokeRpc() {

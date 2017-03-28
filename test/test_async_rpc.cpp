@@ -48,6 +48,7 @@ namespace msgrpc {
         }
 
     private:
+        //TODO: using atomic int
         rpc_sequence_id_t sequence_id_ = {0};
     };
 }
@@ -121,7 +122,10 @@ const msgrpc::service_id_t k_local_service_id  = 3333;
 namespace msgrpc {
 
     struct IfaceImplBase {
-        virtual bool onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) = 0;
+        virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
+                                , const char* msg, size_t len
+                                , msgrpc::RspMsgHeader& rsp_header
+                                , uint8_t*& pout_buf, uint32_t& out_buf_len) = 0;
     };
 
     struct IfaceRepository : msgrpc::Singleton<IfaceRepository> {
@@ -239,10 +243,7 @@ namespace msgrpc {
         }
 
         void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            cout << "local received msg----------->: " << string(msg, len) << endl;
-            //TODO: set response into response_cell and call binded functions of the response_cell
-
-            //todo:print out sequence id
+            cout << "DEBUG: local received msg----------->: " << string(msg, len) << endl;
             if (len < sizeof(RspMsgHeader)) {
                 cout << "WARNING: invalid rsp msg" << endl;
                 return;
@@ -251,7 +252,6 @@ namespace msgrpc {
             auto* rsp_header = (RspMsgHeader*)msg;
             cout << "                   sequence_id: " << rsp_header->sequence_id_ << endl;
 
-            //TODO: try find and invoke rsp handler by sequence_id_
             auto iter = id_func_map_.find(rsp_header->sequence_id_);
             if (iter == id_func_map_.end()) {
                 cout << "WARNING: can not find rsp handler" << endl;
@@ -270,7 +270,8 @@ namespace msgrpc {
 
     struct RpcStubBase {
         //TODO: split into .h and .cpp
-        void send_rpc_request_buf(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const uint8_t *pbuf, uint32_t len, RpcRspHandlerFunc callback) const {
+        void send_rpc_request_buf( msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index
+                                 , const uint8_t *pbuf, uint32_t len, RpcRspHandlerFunc callback) const {
             size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
 
             char *mem = (char *) malloc(msg_len_with_header);
@@ -296,7 +297,8 @@ namespace msgrpc {
         }
 
         template<typename REQ>
-        void encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const REQ &req, RpcRspHandlerFunc callback) const {
+        void encode_request_and_send( msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index
+                                    , const REQ &req, RpcRspHandlerFunc callback) const {
             uint8_t* pbuf;
             uint32_t len;
             /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
@@ -312,31 +314,39 @@ namespace msgrpc {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//TODO: define following macros:
 #define declare_interface_on_consumer
 #define  define_interface_on_consumer
 #define declare_interface_on_provider
 #define  define_interface_on_provider
-//TODO: unify interface of stub and implement.
-struct IBuzzMath {
-    virtual msgrpc::Ret<ResponseBar> negative_fields(const RequestFoo&) = 0;
-    virtual msgrpc::Ret<ResponseBar> plus1_to_fields(const RequestFoo&) = 0;
+
+#define define_mock_rpc_interface_provider as_following:
+struct MockIBuzzMathImpl : msgrpc::InterfaceImplBaseT<MockIBuzzMathImpl, 1> {
+    bool negative_fields(const RequestFoo &req, ResponseBar &rsp) {return true; }
+    bool plus1_to_fields(const RequestFoo &req, ResponseBar &rsp) {return false;}
 };
 
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
 struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
     bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
     bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
 
-    virtual bool onRpcInvoke(const msgrpc::ReqMsgHeader& req_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) override;
+    virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
+                            , const char* msg, size_t len
+                            , msgrpc::RspMsgHeader& rsp_header
+                            , uint8_t*& pout_buf, uint32_t& out_buf_len) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set: interface_implement_define.h
 IBuzzMathImpl buzzMath;
 
-bool IBuzzMathImpl::onRpcInvoke(const msgrpc::ReqMsgHeader& req_header, const char* msg, size_t len, msgrpc::RspMsgHeader& rsp_header, uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    bool ret = false;
+bool IBuzzMathImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
+                               , size_t len, msgrpc::RspMsgHeader& rsp_header
+                               , uint8_t*& pout_buf, uint32_t& out_buf_len) {
+    bool ret;
 
     if (req_header.method_index_in_interface_ == 1) {
         ret = this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
@@ -377,6 +387,7 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct IBuzzMathStub : msgrpc::RpcStubBase {
     virtual void negative_fields(const RequestFoo&, msgrpc::RpcRspHandlerFunc callback);
@@ -391,28 +402,111 @@ void IBuzzMathStub::plus1_to_fields(const RequestFoo& req, msgrpc::RpcRspHandler
     encode_request_and_send(1, 2, req, callback);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+template<typename RSP>
+struct RspHandler {
+    void operator()(msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len) {
+        RSP req;
+        if (!ThriftDecoder::decode(req, (uint8_t *) msg, len)) {
+            cout << "WARNING: decode failed on remote side." << endl;
+            return;
+        }
+    }
+};
+
 void invokeRpc() {
-    RequestFoo foo;
-    foo.fooa = 97;
-    foo.__set_foob(98);
+    RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
+
+    //auto prepare_param = []() -> RequestFoo { RequestFoo foo; foo.fooa = 97; foo.__set_foob(98); return foo; };
 
     IBuzzMathStub stub;
-    stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
-        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
 
-        IBuzzMathStub stub;
-        stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
-            cout << "[2] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
 
-            IBuzzMathStub stub;
-            stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
-                cout << "[3] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
 
-                UdpChannel::cloes_all_channels();
-            });
 
-        });
-    });
+
+#if 0
+    ___cell(c1,  ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(5s), ___retry(3times)), transform_rpc_c1)
+        ___cell(c21, ___rpc(___with_selector(IBuzzMath, my_selector), negative_fields, foo, ___timeout(3s)), transform_rpc_c21)
+            ___cell(c22, ___depends(c21), ___rpc(___with_selector(IBuzzMath, my_selector), compensation_actions, transform_c21, ___timeout(3s)), transform_rpc_c22)
+    ___cell(c2, ___depends(c21, c22), ___logic(func_trans_c21_c22))
+    ___cell(c3, ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(5s), ___retry(3times)), transform_rpc_c3)
+
+    ___cell(timera, ___timer(3s), on_timer_a)
+
+    ___cell(y, ___depends(c1, c2, c3, timera), transform_y)
+
+        ___cell(z, )
+
+#endif
+
+#if 0
+    ___cell(Y
+           , ___timer(A)
+           , ___concurrent( ___cell(c1, ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(5s), ___retry(3times)), combine_func_c1)
+                          , ___cell(c2,
+                                        ___cell(c21, ___rpc(___with_selector(IBuzzMath, my_selector), negative_fields, foo, ___timeout(3s)), combine_func_c2)
+                                       ,___cell(c22, ___rpc(___with_selector(IBuzzMath, my_selector), negative_fields, foo, ___timeout(3s)), )
+                                       ,
+                                   )
+                          )
+           )
+
+
+#endif
+
+
+#if 0
+    ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(5s))
+
+#endif
+
+#if 0
+    ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(5s), ___retry(3times),
+         ___on_rsp(Rsp<ResponseBar>, handle_rsp___and___call_rpc___of___service_x___interface_y___method_z),
+         ___on_timeout(...)
+    )
+
+    ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(3s),
+         ___on_rsp(Rsp<ResponseBar>, handle_rsp___and___call_rpc___of___service_x___interface_y___method_z),
+         ___on_timeout(...)
+    )
+#endif
+
+#if 0
+    //___rpc to random_one, all_service_instances, with_customized_service_selector
+    ___rpc(___one_of(IBuzzMath), negative_fields, foo) {
+        ___on(Ret<ResponseBar>, handle_rsp___and___call_rpc___of___service_x___interface_y___method_z)
+        ___on_timeout(seconds(3), do_nothing)
+    }
+
+    ___rpc(___all_of(IBuzzMath), negative_fields, foo) {
+    }
+
+    ___rpc(___with_selector(IBuzzMath, my_selector), negative_fields, foo) {
+    }
+#endif
+
+    UdpChannel::close_all_channels();
+//    stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
+//        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+//        UdpChannel::close_all_channels();
+//    });
+//
+//    stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
+//        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+//
+//        stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
+//            cout << "[2] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+//
+//            stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
+//                cout << "[3] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+//
+//                UdpChannel::close_all_channels();
+//            });
+//        });
+//    });
 }
 
 void local_service() {
@@ -420,7 +514,7 @@ void local_service() {
     msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_local_service_id,
-        [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+        [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
                 invokeRpc();
             } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
@@ -437,7 +531,7 @@ void remote_service() {
     msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_remote_service_id,
-        [&channel](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+        [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
                return;
             }

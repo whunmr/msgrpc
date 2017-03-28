@@ -417,96 +417,12 @@ struct RspHandler {
 
 void invokeRpc() {
     RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
-
-    //auto prepare_param = []() -> RequestFoo { RequestFoo foo; foo.fooa = 97; foo.__set_foob(98); return foo; };
-
     IBuzzMathStub stub;
 
-
-
-
-
-#if 0
-    ___cell(c1,  ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(5s), ___retry(3times)), transform_rpc_c1)
-        ___cell(c21, ___rpc(___with_selector(IBuzzMath, my_selector), negative_fields, foo, ___timeout(3s)), transform_rpc_c21)
-            ___cell(c22, ___depends(c21), ___rpc(___with_selector(IBuzzMath, my_selector), compensation_actions, transform_c21, ___timeout(3s)), transform_rpc_c22)
-    ___cell(c2, ___depends(c21, c22), ___logic(func_trans_c21_c22))
-    ___cell(c3, ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(5s), ___retry(3times)), transform_rpc_c3)
-
-    ___cell(timera, ___timer(3s), on_timer_a)
-
-    ___cell(y, ___depends(c1, c2, c3, timera), transform_y)
-
-        ___cell(z, )
-
-#endif
-
-#if 0
-    ___cell(Y
-           , ___timer(A)
-           , ___concurrent( ___cell(c1, ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(5s), ___retry(3times)), combine_func_c1)
-                          , ___cell(c2,
-                                        ___cell(c21, ___rpc(___with_selector(IBuzzMath, my_selector), negative_fields, foo, ___timeout(3s)), combine_func_c2)
-                                       ,___cell(c22, ___rpc(___with_selector(IBuzzMath, my_selector), negative_fields, foo, ___timeout(3s)), )
-                                       ,
-                                   )
-                          )
-           )
-
-
-#endif
-
-
-#if 0
-    ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(5s))
-
-#endif
-
-#if 0
-    ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(5s), ___retry(3times),
-         ___on_rsp(Rsp<ResponseBar>, handle_rsp___and___call_rpc___of___service_x___interface_y___method_z),
-         ___on_timeout(...)
-    )
-
-    ___rpc(___one_of(IBuzzMath), negative_fields, foo, ___timeout(3s),
-         ___on_rsp(Rsp<ResponseBar>, handle_rsp___and___call_rpc___of___service_x___interface_y___method_z),
-         ___on_timeout(...)
-    )
-#endif
-
-#if 0
-    //___rpc to random_one, all_service_instances, with_customized_service_selector
-    ___rpc(___one_of(IBuzzMath), negative_fields, foo) {
-        ___on(Ret<ResponseBar>, handle_rsp___and___call_rpc___of___service_x___interface_y___method_z)
-        ___on_timeout(seconds(3), do_nothing)
-    }
-
-    ___rpc(___all_of(IBuzzMath), negative_fields, foo) {
-    }
-
-    ___rpc(___with_selector(IBuzzMath, my_selector), negative_fields, foo) {
-    }
-#endif
-
-    UdpChannel::close_all_channels();
-//    stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
-//        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
-//        UdpChannel::close_all_channels();
-//    });
-//
-//    stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
-//        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
-//
-//        stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
-//            cout << "[2] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
-//
-//            stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
-//                cout << "[3] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
-//
-//                UdpChannel::close_all_channels();
-//            });
-//        });
-//    });
+    stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
+        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+        UdpChannel::close_all_channels();
+    });
 }
 
 void local_service() {

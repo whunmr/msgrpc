@@ -407,22 +407,30 @@ void IBuzzMathStub::plus1_to_fields(const RequestFoo& req, msgrpc::RpcRspHandler
 template<typename RSP>
 struct RspHandler {
     void operator()(msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len) {
-        RSP req;
-        if (!ThriftDecoder::decode(req, (uint8_t *) msg, len)) {
+        RSP rsp;
+        if (!ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
             cout << "WARNING: decode failed on remote side." << endl;
             return;
         }
+
+        handleRsp(rsp_header, rsp);
+    }
+
+    void handleRsp(msgrpc::RspMsgHeader* rsp_header, RSP& rsp) {
+        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+        UdpChannel::close_all_channels();
     }
 };
 
-void invokeRpc() {
+void init_rpc() {
     RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
     IBuzzMathStub stub;
 
-    stub.negative_fields(foo, [&](msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len){
-        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
-        UdpChannel::close_all_channels();
-    });
+    RspHandler<ResponseBar> handler;
+    stub.negative_fields(foo, handler);
+
+    //___rpc(stub.negative_fields(foo)) {
+    //};
 }
 
 void local_service() {
@@ -432,7 +440,7 @@ void local_service() {
     UdpChannel channel(k_local_service_id,
         [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
-                invokeRpc();
+                init_rpc();
             } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
                 msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
             } else {

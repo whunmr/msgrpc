@@ -2,6 +2,16 @@
 #include <gtest/gtest.h>
 using namespace std;
 
+
+////////////////////////////////////////////////////////////////////////////////
+// rc <---- rpc_result
+// rd <---- rpc_result
+// a <---- (b <--- rc) && (rd)
+TEST(async_rpc, test_______________aaa) {
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
 void init_test();
 
 TEST(async_rpc, test_dummy_future) {
@@ -28,7 +38,6 @@ struct RspC {
     int rspc_value;
 };
 
-
 template<typename T>
 struct Cell {
     typedef std::function<void(T&)> callback_type;
@@ -37,7 +46,6 @@ struct Cell {
     T value_;
 
     void set_value(T& t) {
-        //TODO: invoke callback
         if (callback_)
             callback_(t);
     }
@@ -48,7 +56,6 @@ struct Cell {
         } else {
             callback_ = callback;
         }
-
     }
 
     callback_type callback_;
@@ -62,33 +69,29 @@ struct BuzzMath {
 Cell<RspC> result_cell_of_c;
 
 struct CccMath {
-    Cell<RspC> next_prime_number_async(const Req &req_value) {
-//        RspC rsp_c;
-//        rsp_c.rspc_value = 32;
-//        auto rsp_ret = Cell<RspC>();
-//        rsp_ret.value_ = rsp_c;
-//        rsp_ret.has_value_ = true;
-        //return Cell<RspC>();
+    Cell<RspC> c_next_prime_value(const Req &req_value) {
         return result_cell_of_c;
     }
 };
 
-Cell<Rsp> BuzzMath::next_prime_number_async(const Req &req_value) {
-    Cell<Rsp> result;
-    ////B ----> C
+Cell<Rsp> result_of_b;
 
-    //interface_on_c.method_x(111);
+
+
+Cell<Rsp> BuzzMath::next_prime_number_async(const Req &req_value) {
     CccMath cccMath;
-    result_cell_of_c = cccMath.next_prime_number_async(req_value);
+    result_cell_of_c = cccMath.c_next_prime_value(req_value);
     result_cell_of_c.bind(
         [](RspC& rsp_c){
             cout << "got result of rsp_c, value:" << rsp_c.rspc_value << endl;
-
-            
+            Rsp rsp_b {rsp_c.rspc_value * 2};
+            result_of_b.set_value(rsp_b);
         }
     );
 
-    return result;
+
+
+    return result_of_b;
 }
 
 Cell<Rsp> BuzzMath::next_prime_number_sync(const Req &req_value) {
@@ -112,21 +115,16 @@ void init_test() {
         }
     );
 
-    Cell<Rsp> rpc_ret_async = buzz.next_prime_number_async(req);
-    rpc_ret_async.bind(
-        [](Rsp &) {
-            cout << "in callback" << endl;
+    result_of_b = buzz.next_prime_number_async(req);
+    result_of_b.bind(
+        [](Rsp& rsp) {
+            cout << "in callback of B: got value:" << rsp.rsp_value << endl;
         }
     );
 
     RspC rsp_c {22};
     result_cell_of_c.set_value(rsp_c);
-    //C---------->B (msg)
-    //Rsp rsp; rsp.rsp_value = 31;
-    //TODO: 1 find rpc_ret_async
-    //rpc_ret_async.set_value(rsp);
-
-    //TODO: timeout
 }
 
 //TODO: get/generate context_id from msg
+

@@ -464,7 +464,7 @@ void remote_service() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST(async_rpc, should_able_to__auto__register_rpc_interface__after__application_startup) {
+TEST(async_rpc, DISABLED__should_able_to__auto__register_rpc_interface__after__application_startup) {
     std::thread local_thread(local_service);
     std::thread remote_thread(remote_service);
 

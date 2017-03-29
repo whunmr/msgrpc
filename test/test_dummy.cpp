@@ -15,12 +15,12 @@ struct Updatable {
 };
 
 template<typename T>
-struct CellX {
+struct Cell {
     bool has_value_ {false};
     T value_;
 
     void set_value(T&& value) {
-        cout << "binded to value:" << value << endl;
+        cout << "cell got value:" << value << endl;
         value_ = std::move(value);
         has_value_ = true;
 
@@ -43,9 +43,7 @@ struct CellX {
 };
 
 template<typename VT, typename... T>
-struct DerivedCell : CellX<VT>, Updatable {
-    using bind_type = decltype(std::bind(std::declval<std::function<boost::optional<VT>(T...)>>(),std::declval<T>()...));
-
+struct DerivedCell : Cell<VT>, Updatable {
     DerivedCell(std::function<boost::optional<VT>(T...)> logic, T&&... args)
         : bind_(logic, std::forward<T>(args)...) {
         call_each_args(std::forward<T>(args)...);
@@ -62,52 +60,57 @@ struct DerivedCell : CellX<VT>, Updatable {
         c->register_listener(this);
     }
 
-    bind_type bind_;
-
     void update() override {
-        if (! CellX<VT>::has_value_) {
+        if (! Cell<VT>::has_value_) {
             auto value = bind_();
             if (value) {
-                CellX<VT>::set_value(std::move(value.value()));
+                Cell<VT>::set_value(std::move(value.value()));
             }
         }
     }
+
+    using bind_type = decltype(std::bind(std::declval<std::function<boost::optional<VT>(T...)>>(),std::declval<T>()...));
+    bind_type bind_;
+
 };
 
-template <typename VT, typename F, typename... Args>
-DerivedCell<VT, Args...> make_derived_cell(F&& f, Args&&... args) {
-    return DerivedCell<VT, Args...>(std::forward<F>(f), std::forward<Args>(args)...);
+template <typename F, typename... Args>
+auto make_cell(F &&f, Args &&... args) -> DerivedCell<typename decltype(f(args...))::value_type, Args...> {
+    return DerivedCell<typename decltype(f(args...))::value_type, Args...>(std::forward<F>(f), std::forward<Args>(args)...);
 }
 
-boost::optional<int> derive_logic_from_a_to_b(CellX<int> *a) {
-    if (!a->has_value_) { return {}; }
-    cout << " a ---> b   :";
-    return boost::make_optional(a->value_ * 3);
+boost::optional<int> derive_logic_from_a_to_b(Cell<int> *a) {
+    if (a->has_value_) {
+        cout << " a ---> b" << endl;
+        return boost::make_optional(a->value_ * 3);
+    }
+    return {};
 }
 
-boost::optional<int> derive_logic_from_b_to_c(CellX<int>* b) {
-    if (!b->has_value_) { return {}; }
-    cout << " b ---> c   :";
-    return boost::make_optional(b->value_ + 1);
+boost::optional<int> derive_logic_from_b_to_c(Cell<int>* b) {
+    if (b->has_value_) {
+        cout << " b ---> c" << endl;
+        return boost::make_optional(b->value_ + 1);
+    }
+    return {};
 }
 
-boost::optional<int> derive_logic_from_a_and_f_to_e(CellX<int> *a, CellX<int> *f) {
-    if ( !a->has_value_ || !f->has_value_) { return {}; }
-    cout << " a&c ---> e  :";
-    cout << " derive value of e from a and c, a:" << a->value_ << " c:" << f->value_ << endl;
-    cout << "  a_has_value:" << a->has_value_ << endl;
-    cout << "  c_has_value:" << f->has_value_ << endl;
-    return boost::make_optional(a->value_ + f->value_);
+boost::optional<int> derive_logic_from_a_and_f_to_e(Cell<int> *a, Cell<int> *f) {
+    if ( a->has_value_ && f->has_value_) {
+        cout << " a&c ---> e:" << " derive value of e from a and c, a:" << a->value_ << " c:" << f->value_ << endl;
+        return boost::make_optional(a->value_ + f->value_);
+    }
+    return {};
 }
 
 TEST(async_rpc, test_______________000) {
-    CellX<int> a;
-    CellX<int> f;
+    Cell<int> a;
+    Cell<int> f;
 
-    auto b = make_derived_cell<int>(derive_logic_from_a_to_b, &a);
-    auto c = make_derived_cell<int>(derive_logic_from_b_to_c, &b);
-
-    auto e = make_derived_cell<int>(derive_logic_from_a_and_f_to_e, &a, &f);
+    auto b = make_cell(derive_logic_from_a_to_b, &a);
+    auto c = make_cell(derive_logic_from_b_to_c, &b);
+    auto e = make_cell(derive_logic_from_a_and_f_to_e, &a, &f);
+    auto g = make_cell(derive_logic_from_a_and_f_to_e, &a, &f);
 
     a.set_value(33);
     f.set_value(11);
@@ -127,52 +130,35 @@ TEST(async_rpc, test_dummy_future) {
     init_test();
 };
 
-#if 0
-//A  -->  B  -->  C
-          B  -->  D
-  A  <--  B
-
-//X  -->  A  --> B
-#endif
-
 struct Req {
     int req_value;
 };
 
 struct Rsp {
     int rsp_value;
+    friend ostream& operator<<(ostream& os, const Rsp& dt);
 };
+
+ostream& operator<<(ostream& os, const Rsp& rsp)
+{
+    os << rsp.rsp_value;
+    return os;
+}
 
 struct RspC {
     int rspc_value;
+    friend ostream& operator<<(ostream& os, const RspC& dt);
 };
 
-template<typename T>
-struct Cell {
-    typedef std::function<void(T&)> callback_type;
-
-    bool has_value_ {false};
-    T value_;
-
-    void set_value(T& t) {
-        if (callback_)
-            callback_(t);
-    }
-
-    void bind(callback_type callback) {
-        if (this->has_value_) {
-            callback(value_);
-        } else {
-            callback_ = callback;
-        }
-    }
-
-    callback_type callback_;
-};
+ostream& operator<<(ostream& os, const RspC& rsp)
+{
+    os << rsp.rspc_value;
+    return os;
+}
 
 struct BuzzMath {
     Cell<Rsp> next_prime_number_sync(const Req &req_value);
-    Cell<Rsp> next_prime_number_async(const Req &req_value);
+    Cell<Rsp>& next_prime_number_async(const Req &req_value);
 };
 
 Cell<RspC> result_cell_of_c;
@@ -185,19 +171,20 @@ struct CccMath {
 
 Cell<Rsp> result_of_b;
 
+boost::optional<Rsp> derive_b_from_c_result(Cell<RspC>* rsp_c) {
+    if (rsp_c->has_value_) {
+        Rsp rsp_b {rsp_c->value_.rspc_value * 5};
+        return boost::make_optional(rsp_b);
+    }
+    return {};
+}
 
-Cell<Rsp> BuzzMath::next_prime_number_async(const Req &req_value) {
+Cell<Rsp>& BuzzMath::next_prime_number_async(const Req &req_value) {
     CccMath cccMath;
     result_cell_of_c = cccMath.c_next_prime_value(req_value);
-    result_cell_of_c.bind(
-        [](RspC& rsp_c){
-            cout << "got result of rsp_c, value:" << rsp_c.rspc_value << endl;
-            Rsp rsp_b {rsp_c.rspc_value * 2};
-            result_of_b.set_value(rsp_b);
-        }
-    );
 
-    return result_of_b;
+    static auto e = make_cell(derive_b_from_c_result, &result_cell_of_c);
+    return e;
 }
 
 Cell<Rsp> BuzzMath::next_prime_number_sync(const Req &req_value) {
@@ -212,25 +199,17 @@ Cell<Rsp> BuzzMath::next_prime_number_sync(const Req &req_value) {
 
 void init_test() {
     BuzzMath buzz;
-    Req req = {23};
 
+    Req req = {23};
     Cell<Rsp> rpc_ret = buzz.next_prime_number_sync(req);
-    rpc_ret.bind(
-        [](Rsp &) {
-            cout << "B buzz.next_prime_number_sync: send result msg to sender." << endl;
-        }
-    );
+    if (rpc_ret.has_value_) {
+        cout << "B buzz.next_prime_number_sync: send result msg to sender." << endl;
+    }
 
     result_of_b = buzz.next_prime_number_async(req);
-    result_of_b.bind(
-        [](Rsp& rsp) {
-            cout << "in callback of B: got value:" << rsp.rsp_value << endl;
-        }
-    );
 
-    RspC rsp_c {22};
-    result_cell_of_c.set_value(rsp_c);
+    RspC rsp_c {11};
+    result_cell_of_c.set_value(std::move(rsp_c));
 }
 
 //TODO: get/generate context_id from msg
-

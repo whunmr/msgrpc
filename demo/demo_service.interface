@@ -59,6 +59,13 @@ namespace demo {
     /*TODO: interface uniqueness checking*/
 #endif
 
+#if 0
+    #define ___fields_of_event___UserAttachedEvent(_, ...)   \
+        _(1,  required, int32_t,      pet_id,    __VA_ARGS__)\
+        _(2,  required, std::string,  pet_name,  __VA_ARGS__)
+
+    ___as_event(UserAttachedEvent)
+#endif
 
 #if 0
     ___define_feature(example_feature1, 1)

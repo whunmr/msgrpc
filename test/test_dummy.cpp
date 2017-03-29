@@ -1,13 +1,97 @@
 #include <iostream>
 #include <gtest/gtest.h>
+#include <list>
+
 using namespace std;
 
+////////////////////////////////////////////////////////////////////////////////
+// a <--- func <---- b
+
+struct Updatable {
+    virtual void update() = 0;
+};
+
+
+template<typename T>
+struct CellX {
+    bool has_value_ {false};
+    T value_;
+
+    void set_value(T&& value) {
+        cout << "binded to value:" << value << endl;
+
+        value_ = std::move(value);
+        has_value_ = true;
+
+        evaluate_all_derived_cells();
+    }
+
+    void evaluate_all_derived_cells() {
+        for (auto u : updatables_) {
+            if (u != nullptr) {
+                u->update();
+            }
+        }
+    }
+
+    void register_listener(Updatable* updatable) {
+        updatables_.push_back(updatable);
+    }
+
+    std::list<Updatable*> updatables_;
+};
+
+template<typename VT, typename... T>
+struct DerivedCell : CellX<VT>, Updatable {
+    using bind_type = decltype(std::bind(std::declval<std::function<VT(T...)>>(),std::declval<T>()...));
+
+    DerivedCell(std::function<VT(T...)> logic, T&&... args)
+        : bind_(logic, std::forward<T>(args)...) {
+
+        call_each_args(std::forward<T>(args)...);
+    }
+
+    template<typename C, typename... Ts>
+    void call_each_args(C&& c, Ts&&... args) {
+        c->register_listener(this);
+        call_each_args(std::forward<Ts>(args)...);
+    }
+
+    template<typename C>
+    void call_each_args(C&& c) {
+        c->register_listener(this);
+    }
+
+    bind_type bind_;
+
+    void update() override {
+        CellX<VT>::set_value(bind_());
+    }
+};
+
+template <typename VT, typename F, typename... Args>
+DerivedCell<VT, Args...> make_derived_cell(F&& f, Args&&... args)
+{
+    return DerivedCell<VT, Args...>(std::forward<F>(f), std::forward<Args>(args)...);
+}
+
+int derive_logic_from_b_to_a(CellX<int>* a) {
+    return a->value_ * 3;
+}
+
+TEST(async_rpc, test_______________000) {
+    CellX<int> a;
+
+    auto b = make_derived_cell<int>(derive_logic_from_b_to_a, &a);
+
+    a.set_value(33);
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // rc <---- rpc_result
 // rd <---- rpc_result
 // a <---- (b <--- rc) && (rd)
-TEST(async_rpc, test_______________aaa) {
+TEST(async_rpc, test_______________001) {
 
 };
 
@@ -88,8 +172,6 @@ Cell<Rsp> BuzzMath::next_prime_number_async(const Req &req_value) {
             result_of_b.set_value(rsp_b);
         }
     );
-
-
 
     return result_of_b;
 }

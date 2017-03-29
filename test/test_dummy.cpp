@@ -11,7 +11,6 @@ struct Updatable {
     virtual void update() = 0;
 };
 
-
 template<typename T>
 struct CellX {
     bool has_value_ {false};
@@ -19,7 +18,6 @@ struct CellX {
 
     void set_value(T&& value) {
         cout << "binded to value:" << value << endl;
-
         value_ = std::move(value);
         has_value_ = true;
 
@@ -47,7 +45,6 @@ struct DerivedCell : CellX<VT>, Updatable {
 
     DerivedCell(std::function<VT(T...)> logic, T&&... args)
         : bind_(logic, std::forward<T>(args)...) {
-
         call_each_args(std::forward<T>(args)...);
     }
 
@@ -65,7 +62,9 @@ struct DerivedCell : CellX<VT>, Updatable {
     bind_type bind_;
 
     void update() override {
-        CellX<VT>::set_value(bind_());
+        if (! CellX<VT>::has_value_) {
+            CellX<VT>::set_value(std::move(bind_()));
+        }
     }
 };
 
@@ -75,14 +74,31 @@ DerivedCell<VT, Args...> make_derived_cell(F&& f, Args&&... args)
     return DerivedCell<VT, Args...>(std::forward<F>(f), std::forward<Args>(args)...);
 }
 
-int derive_logic_from_b_to_a(CellX<int>* a) {
+int derive_logic_from_a_to_b(CellX<int> *a) {
+    cout << " a ---> b   :";
     return a->value_ * 3;
+}
+
+int derive_logic_from_b_to_c(CellX<int>* b) {
+    cout << " b ---> c   :";
+    return b->value_ + 1;
+}
+
+int derive_logic_from_a_and_c_to_e(CellX<int>* a, CellX<int>* c) {
+    cout << " a&c ---> e  :";
+    cout << "derive value of e from a and c, a:" << a->value_ << " c:" << c->value_ << endl;
+    cout << "  a_has_value:" << a->has_value_ << endl;
+    cout << "  c_has_value:" << c->has_value_ << endl;
+    return a->value_ + c->value_;
 }
 
 TEST(async_rpc, test_______________000) {
     CellX<int> a;
 
-    auto b = make_derived_cell<int>(derive_logic_from_b_to_a, &a);
+    auto b = make_derived_cell<int>(derive_logic_from_a_to_b, &a);
+    auto c = make_derived_cell<int>(derive_logic_from_b_to_c, &b);
+
+    auto e = make_derived_cell<int>(derive_logic_from_a_and_c_to_e, &a, &c);
 
     a.set_value(33);
 };
@@ -92,7 +108,6 @@ TEST(async_rpc, test_______________000) {
 // rd <---- rpc_result
 // a <---- (b <--- rc) && (rd)
 TEST(async_rpc, test_______________001) {
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -159,7 +174,6 @@ struct CccMath {
 };
 
 Cell<Rsp> result_of_b;
-
 
 
 Cell<Rsp> BuzzMath::next_prime_number_async(const Req &req_value) {

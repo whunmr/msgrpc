@@ -100,7 +100,7 @@ namespace demo {
             if (mem) {
                 *(msgrpc::msg_id_t*)(mem) = msg_id;
                 memcpy(mem + sizeof(msgrpc::msg_id_t), buf, len);
-                cout << "send msg len: " << msg_len_with_msgid << endl;
+                //cout << "send msg len: " << msg_len_with_msgid << endl;
                 g_msg_channel->send_msg_to_remote(string(mem, msg_len_with_msgid), udp::endpoint(udp::v4(), remote_service_id));
                 free(mem);
             } else {
@@ -180,7 +180,7 @@ namespace msgrpc {
 namespace msgrpc {
     struct RpcReqMsgHandler {
         static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            cout << "remote received msg with length: " << len << endl;
+            //cout << "remote received msg with length: " << len << endl;
             assert(msg_id == k_msgrpc_request_msg_id && "invalid msg id for rpc");
 
             if (len < sizeof(msgrpc::ReqMsgHeader)) {
@@ -243,14 +243,14 @@ namespace msgrpc {
         }
 
         void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            cout << "DEBUG: local received msg----------->: " << string(msg, len) << endl;
+            //cout << "DEBUG: local received msg----------->: " << string(msg, len) << endl;
             if (len < sizeof(RspMsgHeader)) {
                 cout << "WARNING: invalid rsp msg" << endl;
                 return;
             }
 
             auto* rsp_header = (RspMsgHeader*)msg;
-            cout << "                   sequence_id: " << rsp_header->sequence_id_ << endl;
+            //cout << "                   sequence_id: " << rsp_header->sequence_id_ << endl;
 
             auto iter = id_func_map_.find(rsp_header->sequence_id_);
             if (iter == id_func_map_.end()) {
@@ -290,7 +290,7 @@ namespace msgrpc {
             header->sequence_id_ = seq_id;
             memcpy(header + 1, (const char *) pbuf, len);
 
-            cout << "stub sending msg with length: " << msg_len_with_header << endl;
+            //cout << "stub sending msg with length: " << msg_len_with_header << endl;
             //TODO: find k_remote_service_id by interface name "IBuzzMath"
             msgrpc::Config::instance().msg_channel_->send_msg(k_remote_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
             free(mem);
@@ -383,6 +383,7 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
     if (req.__isset.foob) {
         rsp.__set_barb(1 + req.get_foob());
     }
+
     return true;
 }
 
@@ -428,9 +429,6 @@ void init_rpc() {
 
     RspHandler<ResponseBar> handler;
     stub.negative_fields(foo, handler);
-
-    //___rpc(stub.negative_fields(foo)) {
-    //};
 }
 
 void local_service() {

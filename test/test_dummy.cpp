@@ -1,11 +1,14 @@
-#include <iostream>
 #include <gtest/gtest.h>
+
+#include <iostream>
 #include <list>
+#include <boost/optional.hpp>
 
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////
 // a <--- func <---- b
+//TODO: using std::move during cell value assignment.  by adding trace log in constructor to find out times of copy construction.
 
 struct Updatable {
     virtual void update() = 0;
@@ -41,9 +44,9 @@ struct CellX {
 
 template<typename VT, typename... T>
 struct DerivedCell : CellX<VT>, Updatable {
-    using bind_type = decltype(std::bind(std::declval<std::function<VT(T...)>>(),std::declval<T>()...));
+    using bind_type = decltype(std::bind(std::declval<std::function<boost::optional<VT>(T...)>>(),std::declval<T>()...));
 
-    DerivedCell(std::function<VT(T...)> logic, T&&... args)
+    DerivedCell(std::function<boost::optional<VT>(T...)> logic, T&&... args)
         : bind_(logic, std::forward<T>(args)...) {
         call_each_args(std::forward<T>(args)...);
     }
@@ -63,44 +66,51 @@ struct DerivedCell : CellX<VT>, Updatable {
 
     void update() override {
         if (! CellX<VT>::has_value_) {
-            CellX<VT>::set_value(std::move(bind_()));
+            auto value = bind_();
+            if (value) {
+                CellX<VT>::set_value(std::move(value.value()));
+            }
         }
     }
 };
 
 template <typename VT, typename F, typename... Args>
-DerivedCell<VT, Args...> make_derived_cell(F&& f, Args&&... args)
-{
+DerivedCell<VT, Args...> make_derived_cell(F&& f, Args&&... args) {
     return DerivedCell<VT, Args...>(std::forward<F>(f), std::forward<Args>(args)...);
 }
 
-int derive_logic_from_a_to_b(CellX<int> *a) {
+boost::optional<int> derive_logic_from_a_to_b(CellX<int> *a) {
+    if (!a->has_value_) { return {}; }
     cout << " a ---> b   :";
-    return a->value_ * 3;
+    return boost::make_optional(a->value_ * 3);
 }
 
-int derive_logic_from_b_to_c(CellX<int>* b) {
+boost::optional<int> derive_logic_from_b_to_c(CellX<int>* b) {
+    if (!b->has_value_) { return {}; }
     cout << " b ---> c   :";
-    return b->value_ + 1;
+    return boost::make_optional(b->value_ + 1);
 }
 
-int derive_logic_from_a_and_c_to_e(CellX<int>* a, CellX<int>* c) {
+boost::optional<int> derive_logic_from_a_and_f_to_e(CellX<int> *a, CellX<int> *f) {
+    if ( !a->has_value_ || !f->has_value_) { return {}; }
     cout << " a&c ---> e  :";
-    cout << "derive value of e from a and c, a:" << a->value_ << " c:" << c->value_ << endl;
+    cout << " derive value of e from a and c, a:" << a->value_ << " c:" << f->value_ << endl;
     cout << "  a_has_value:" << a->has_value_ << endl;
-    cout << "  c_has_value:" << c->has_value_ << endl;
-    return a->value_ + c->value_;
+    cout << "  c_has_value:" << f->has_value_ << endl;
+    return boost::make_optional(a->value_ + f->value_);
 }
 
 TEST(async_rpc, test_______________000) {
     CellX<int> a;
+    CellX<int> f;
 
     auto b = make_derived_cell<int>(derive_logic_from_a_to_b, &a);
     auto c = make_derived_cell<int>(derive_logic_from_b_to_c, &b);
 
-    auto e = make_derived_cell<int>(derive_logic_from_a_and_c_to_e, &a, &c);
+    auto e = make_derived_cell<int>(derive_logic_from_a_and_f_to_e, &a, &f);
 
     a.set_value(33);
+    f.set_value(11);
 };
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,6 +1,6 @@
 #ifndef MSGRPC_CELL_H
 #define MSGRPC_CELL_H
-#include <list>
+#include <vector>
 #include <boost/optional.hpp>
 
 #include <iostream> //TODO:remove
@@ -14,8 +14,12 @@ namespace msgrpc {
         virtual void update() = 0;
     };
 
+    struct CellBase {
+        virtual ~CellBase() {}
+    };
+
     template<typename T>
-    struct Cell {
+    struct Cell : CellBase {
         bool has_value_{false};
         T value_;
 
@@ -28,9 +32,9 @@ namespace msgrpc {
         }
 
         void evaluate_all_derived_cells() {
-            for (auto u : updatables_) {
-                if (u != nullptr) {
-                    u->update();
+            for (int i = 0; i < updatables_.size(); ++i) {
+                if (updatables_[i] != nullptr) {
+                    updatables_[i]->update();
                 }
             }
         }
@@ -39,7 +43,7 @@ namespace msgrpc {
             updatables_.push_back(updatable);
         }
 
-        std::list<Updatable *> updatables_;
+        std::vector<Updatable *> updatables_;
     };
 
     template<typename VT, typename... T>

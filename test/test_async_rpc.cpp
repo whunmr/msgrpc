@@ -479,9 +479,6 @@ TEST(async_rpc, should_able_to__auto__register_rpc_interface__after__application
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-
-
 #include "msgrpc/frp/cell.h"
 
 using namespace std;
@@ -515,6 +512,21 @@ ___def_si(SimpleAsyncSI) {
 #endif
 
 namespace msgrpc {
+    struct RpcContext {
+        ~RpcContext() {
+            for (auto* cell: cell_list_) {
+                delete cell;
+            }
+        }
+
+        void add_cell_to_release(CellBase* cell) {
+            cell_list_.push_back(cell);
+        }
+
+        std::list<CellBase*> cell_list_;
+    };
+
+
     struct RpcRspCellSink {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) = 0;
     };
@@ -532,27 +544,33 @@ namespace msgrpc {
             Cell<T>::set_value(std::move(rsp));
             return true;
         }
+
+        void set_binded_context(RpcContext* context) {
+            context_ = context;
+        }
+
+        RpcContext* context_;
     };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 using namespace demo;
-RpcRspCell<ResponseBar> cell_c;
 
 struct ServiceC {
-    RpcRspCell<ResponseBar>& calculate_next_prime_value(const RequestFoo& req_value) {
-        return cell_c;
+    RpcRspCell<ResponseBar>* calculate_next_prime_value(const RequestFoo& req_value) {
+        return new RpcRspCell<ResponseBar>();
     }
 };
 
 struct SimpleAsyncSI {
     RpcRspCell<ResponseBar>& run(const RequestFoo& req) {
-        cout << "input req: " << req << endl;
+        RpcContext* ctxt = new RpcContext();
 
-        ServiceC serviceC;
-        RpcRspCell<ResponseBar>& rspc = serviceC.calculate_next_prime_value(req);
+        RpcRspCell<ResponseBar>* rspc = ServiceC().calculate_next_prime_value(req);
+        ctxt->add_cell_to_release(rspc);
 
-        return rspc;
+        rspc->set_binded_context(ctxt);
+        return *rspc;
     }
 } simple_service_interaction;
 
@@ -563,8 +581,11 @@ TEST(async_rpc, should_support__simple__async__service_interaction____as_service
     RpcRspCell<ResponseBar>& rsp = simple_service_interaction.run(req_from_a);
 
     auto derivedAction = derive_action(
-            [](RpcRspCell<ResponseBar> *bar) -> void {
+            [](RpcRspCell<ResponseBar> *r) -> void {
                 cout << "send data back to original requseter." << endl;
+                if (r->context_) {
+                    delete r->context_;
+                }
             }, &rsp
     );
 
@@ -579,6 +600,6 @@ TEST(async_rpc, should_support__simple__async__service_interaction____as_service
     }
 
     rsp.set_rpc_rsp(&h, (const char*)pbuf, len);
-
-    EXPECT_EQ(101, rsp.value_.bara);
 };
+
+///////////////////////////////////////////////////////////////////////////////////////////

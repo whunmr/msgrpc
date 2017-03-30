@@ -20,13 +20,13 @@ namespace msgrpc {
 
     template<typename T>
     struct Cell : CellBase {
-        bool has_value_{false};
+        bool cell_has_value_{false};
         T value_;
 
         void set_value(T&& value) {
             std::cout << "cell got value:" << value << std::endl;
             value_ = std::move(value);
-            has_value_ = true;
+            cell_has_value_ = true;
 
             evaluate_all_derived_cells();
         }
@@ -46,75 +46,6 @@ namespace msgrpc {
         std::vector<Updatable *> updatables_;
     };
 
-    template<typename VT, typename... T>
-    struct DerivedCell : Cell<VT>, Updatable {
-        DerivedCell(std::function<boost::optional<VT>(T...)> logic, T &&... args)
-                : bind_(logic, std::forward<T>(args)...) {
-            call_each_args(std::forward<T>(args)...);
-        }
-
-        template<typename C, typename... Ts>
-        void call_each_args(C &&c, Ts &&... args) {
-            c->register_listener(this);
-            call_each_args(std::forward<Ts>(args)...);
-        }
-
-        template<typename C>
-        void call_each_args(C &&c) {
-            c->register_listener(this);
-        }
-
-        void update() override {
-            if (!Cell<VT>::has_value_) {
-                auto value = bind_();
-                if (value) {
-                    Cell<VT>::set_value(std::move(value.value()));
-                }
-            }
-        }
-
-        using bind_type = decltype(std::bind(std::declval<std::function<boost::optional<VT>(T...)>>(),
-                                             std::declval<T>()...));
-        bind_type bind_;
-
-    };
-
-    template<typename VT, typename... T>
-    struct DerivedAction : Updatable {
-        DerivedAction(std::function<VT(T...)> logic, T &&... args) : bind_(logic, std::forward<T>(args)...) {
-            call_each_args(std::forward<T>(args)...);
-        }
-
-        template<typename C, typename... Ts>
-        void call_each_args(C &&c, Ts &&... args) {
-            c->register_listener(this);
-            call_each_args(std::forward<Ts>(args)...);
-        }
-
-        template<typename C>
-        void call_each_args(C &&c) {
-            c->register_listener(this);
-        }
-
-        void update() override {
-            bind_();
-        }
-
-        using bind_type = decltype(std::bind(std::declval<std::function<VT(T...)>>(), std::declval<T>()...));
-        bind_type bind_;
-
-    };
-
-    template<typename F, typename... Args>
-    auto derive_cell(F &&f, Args &&... args) -> DerivedCell<typename decltype(f(args...))::value_type, Args...> {
-        return DerivedCell<typename decltype(f(args...))::value_type, Args...>(std::forward<F>(f),
-                                                                               std::forward<Args>(args)...);
-    }
-
-    template<typename F, typename... Args>
-    auto derive_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(args...)), Args...> {
-        return DerivedAction<decltype(f(args...)), Args...>(std::forward<F>(f), std::forward<Args>(args)...);
-    }
 
 }
 

@@ -330,12 +330,19 @@ namespace msgrpc {
     };
 
 
-    struct RpcRspCellSink {
+    template<typename T>
+    struct RpcCellBase : Cell<T> {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) = 0;
+
+        void set_binded_context(RpcContext* context) {
+            context_ = context;
+        }
+
+        RpcContext* context_;
     };
 
     template<typename T>
-    struct RpcRspCell : RpcRspCellSink, Cell<T> {
+    struct RpcRspCell : RpcCellBase<T> {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
             T rsp;
             if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
@@ -347,13 +354,112 @@ namespace msgrpc {
             Cell<T>::set_value(std::move(rsp));
             return true;
         }
+    };
 
-        void set_binded_context(RpcContext* context) {
-            context_ = context;
+    template<typename VT, typename... T>
+    struct DerivedAction : Updatable {
+        DerivedAction(std::function<VT(T...)> logic, T &&... args) : bind_(logic, std::forward<T>(args)...) {
+            call_each_args(std::forward<T>(args)...);
         }
 
-        RpcContext* context_;
+        template<typename C, typename... Ts>
+        void call_each_args(C &&c, Ts &&... args) {
+            c->register_listener(this);
+            call_each_args(std::forward<Ts>(args)...);
+        }
+
+        template<typename C>
+        void call_each_args(C &&c) {
+            c->register_listener(this);
+        }
+
+        void update() override {
+            bind_();
+        }
+
+        using bind_type = decltype(std::bind(std::declval<std::function<VT(T...)>>(), std::declval<T>()...));
+        bind_type bind_;
+
     };
+
+
+    template<typename F, typename... Args>
+    auto derive_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(args...)), Args...> {
+        return DerivedAction<decltype(f(args...)), Args...>(std::forward<F>(f), std::forward<Args>(args)...);
+    }
+
+    template<typename VT, typename... T>
+    struct DerivedCell : RpcCellBase<VT>, Updatable {
+        DerivedCell(std::function<boost::optional<VT>(T...)> logic, T &&... args)
+                : bind_(logic, std::forward<T>(args)...) {
+            call_each_args(std::forward<T>(args)...);
+        }
+
+        template<typename C, typename... Ts>
+        void call_each_args(C &&c, Ts &&... args) {
+            c->register_listener(this);
+            call_each_args(std::forward<Ts>(args)...);
+        }
+
+        template<typename C>
+        void call_each_args(C &&c) {
+            c->register_listener(this);
+        }
+
+        void update() override {
+            if (!Cell<VT>::cell_has_value_) {
+                auto value = bind_();
+                if (value) {
+                    Cell<VT>::set_value(std::move(value.value()));
+                }
+            }
+        }
+
+        virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
+            VT rsp;
+            if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
+                cout << "decode failed on remote side." << endl;
+                return false;
+            }
+
+            //TODO: handle msg header status
+            RpcCellBase<VT>::set_value(std::move(rsp));
+            return true;
+        }
+
+        using bind_type = decltype(std::bind(std::declval<std::function<boost::optional<VT>(T...)>>(), std::declval<T>()...));
+        bind_type bind_;
+    };
+
+    template<typename F, typename... Args>
+    auto derive_cell(F &&f, Args &&... args) -> DerivedCell<typename decltype(f(args...))::value_type, Args...>* {
+        return new DerivedCell<typename decltype(f(args...))::value_type, Args...>(std::forward<F>(f),
+                                                                               std::forward<Args>(args)...);
+    }
+
+//    template<typename VT, typename... T>   //TODO: switch VT and T
+//    struct DerivedRpcRspCell : RpcRspCellBase, RpcCellBase, DerivedCell<VT, T...> {
+//        DerivedRpcRspCell(std::function<boost::optional<VT>(T...)> logic, T&&... args)
+//            : DerivedCell<VT, T...>(logic, std::forward<T>(args)...) {
+//        }
+//
+//        virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
+//            VT rsp;
+//            if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
+//                cout << "decode failed on remote side." << endl;
+//                return false;
+//            }
+//
+//            //TODO: handle msg header status
+//            DerivedCell<VT>::set_value(std::move(rsp));
+//            return true;
+//        }
+//    };
+//
+//    template<typename F, typename... Args>
+//    auto derive_rpc_result_cell(F &&f, Args &&... args) -> DerivedRpcRspCell<typename decltype(f(args...))::value_type, Args...>* {
+//        return new DerivedRpcRspCell<typename decltype(f(args...))::value_type, Args...>(std::forward<F>(f), std::forward<Args>(args)...);
+//    }
 
 }
 
@@ -559,15 +665,41 @@ struct ServiceC {
     }
 };
 
+
+struct ServiceD {
+    RpcRspCell<ResponseBar>* calculate_ddd(const RequestFoo& req_value) {
+        return new RpcRspCell<ResponseBar>();
+    }
+};
+
+
+RpcRspCell<ResponseBar>* rspc;
+RpcRspCell<ResponseBar>* rspd;
+
 struct SimpleAsyncSI {
-    RpcRspCell<ResponseBar>& run(const RequestFoo& req) {
+    RpcCellBase<ResponseBar>& run(const RequestFoo& req) {
         RpcContext* ctxt = new RpcContext();
 
-        RpcRspCell<ResponseBar>* rspc = ServiceC().calculate_next_prime_value(req);
+        rspc = ServiceC().calculate_next_prime_value(req);
         ctxt->add_cell_to_release(rspc);
 
-        rspc->set_binded_context(ctxt);
-        return *rspc;
+        rspd = ServiceD().calculate_ddd(req);
+        ctxt->add_cell_to_release(rspd);
+
+        auto si_result = derive_cell(
+            [](Cell<ResponseBar>* c, Cell<ResponseBar>* d) -> boost::optional<ResponseBar> {
+                if (c->cell_has_value_ && d->cell_has_value_) {
+                    ResponseBar bar;
+                    bar.bara = (c->value_.bara + d->value_.bara) / 2;
+                    return boost::make_optional(bar);
+                }
+                return {};
+            },  rspc, rspd
+        );
+        ctxt->add_cell_to_release(si_result);
+
+        si_result->set_binded_context(ctxt);
+        return *si_result;
     }
 } simple_service_interaction;
 
@@ -575,11 +707,11 @@ TEST(async_rpc, should_support__simple__async__service_interaction____as_service
     RequestFoo req_from_a;
     req_from_a.fooa = 100;
 
-    RpcRspCell<ResponseBar>& rsp = simple_service_interaction.run(req_from_a);
+    RpcCellBase<ResponseBar>& rsp = simple_service_interaction.run(req_from_a);
 
     auto derivedAction = derive_action(
-        [](RpcRspCell<ResponseBar> *r) -> void {
-            cout << "send data back to original requseter." << endl;
+        [](RpcCellBase<ResponseBar>* r) -> void {
+            cout << "----------------->>>> send data back to original requseter." << endl;
             if (r->context_) {
                 delete r->context_;
             }
@@ -595,6 +727,16 @@ TEST(async_rpc, should_support__simple__async__service_interaction____as_service
         cout << "encode failed." << endl;
         return;
     }
+    rspc->set_rpc_rsp(&h, (const char*)pbuf, len);
 
-    rsp.set_rpc_rsp(&h, (const char*)pbuf, len);
+    ResponseBar bar2;
+    bar2.bara = 103;
+    uint8_t* pbuf2;
+    uint32_t len2;
+    if (!ThriftEncoder::encode(bar2, &pbuf2, &len2)) {
+        cout << "encode failed." << endl;
+        return;
+    }
+
+    rspd->set_rpc_rsp(&h, (const char*)pbuf2, len2);
 };

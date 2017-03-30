@@ -6,7 +6,7 @@ using namespace std;
 using namespace msgrpc;
 
 boost::optional<int> derive_logic_from_a_to_b(Cell<int> *a) {
-    if (a->has_value_) {
+    if (a->cell_has_value_) {
         cout << " a ---> b" << endl;
         return boost::make_optional(a->value_ * 3);
     }
@@ -14,7 +14,7 @@ boost::optional<int> derive_logic_from_a_to_b(Cell<int> *a) {
 }
 
 boost::optional<int> derive_logic_from_b_to_c(Cell<int>* b) {
-    if (b->has_value_) {
+    if (b->cell_has_value_) {
         cout << " b ---> c" << endl;
         return boost::make_optional(b->value_ + 1);
     }
@@ -22,7 +22,7 @@ boost::optional<int> derive_logic_from_b_to_c(Cell<int>* b) {
 }
 
 boost::optional<int> derive_logic_from_a_and_f_to_e(Cell<int> *a, Cell<int> *f) {
-    if ( a->has_value_ && f->has_value_) {
+    if ( a->cell_has_value_ && f->cell_has_value_) {
         cout << " a&c ---> e:" << " derive value of e from a and c, a:" << a->value_ << " c:" << f->value_ << endl;
         return boost::make_optional(a->value_ + f->value_);
     }
@@ -33,13 +33,13 @@ TEST(async_rpc, test_______________000) {
     Cell<int> a;
     Cell<int> f;
 
-    auto b = derive_cell(derive_logic_from_a_to_b, &a);
-    auto c = derive_cell(derive_logic_from_b_to_c, &b);
-    auto e = derive_cell(derive_logic_from_a_and_f_to_e, &a, &f);
-    auto g = derive_cell(derive_logic_from_a_and_f_to_e, &a, &f);
-
-    a.set_value(33);
-    f.set_value(11);
+//    auto b = derive_cell(derive_logic_from_a_to_b, &a);
+//    auto c = derive_cell(derive_logic_from_b_to_c, &b);
+//    auto e = derive_cell(derive_logic_from_a_and_f_to_e, &a, &f);
+//    auto g = derive_cell(derive_logic_from_a_and_f_to_e, &a, &f);
+//
+//    a.set_value(33);
+//    f.set_value(11);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +91,7 @@ struct CccMath {
 Cell<Rsp> result_of_b;
 
 boost::optional<Rsp> derive_b_from_c_result(Cell<RspC>* rsp_c) {
-    if (rsp_c->has_value_) {
+    if (rsp_c->cell_has_value_) {
         Rsp rsp_b {rsp_c->value_.rspc_value * 5};
         return boost::make_optional(rsp_b);
     }
@@ -102,7 +102,7 @@ Cell<Rsp>& BuzzMath::next_prime_number_async(const Req &req_value) {
     CccMath cccMath;
     rpc_rsp_c = cccMath.c_next_prime_value(req_value);
 
-    static auto e = derive_cell(derive_b_from_c_result, &rpc_rsp_c);
+    static auto e = Cell<Rsp>(); //derive_cell(derive_b_from_c_result, &rpc_rsp_c);
     return e;
 }
 
@@ -111,7 +111,7 @@ Cell<Rsp> BuzzMath::next_prime_number_sync(const Req &req_value) {
 
     Cell<Rsp> rsp_ret = Cell<Rsp>();
     rsp_ret.value_ = rsp;
-    rsp_ret.has_value_ = true;
+    rsp_ret.cell_has_value_ = true;
 
     return rsp_ret;
 }
@@ -121,7 +121,7 @@ void init_test() {
 
     Req req = {23};
     Cell<Rsp> rpc_ret = buzz.next_prime_number_sync(req);
-    if (rpc_ret.has_value_) {
+    if (rpc_ret.cell_has_value_) {
         cout << "B buzz.next_prime_number_sync: send result msg to sender." << endl;
     }
 

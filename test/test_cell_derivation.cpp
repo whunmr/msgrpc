@@ -33,10 +33,10 @@ TEST(async_rpc, test_______________000) {
     Cell<int> a;
     Cell<int> f;
 
-    auto b = make_cell(derive_logic_from_a_to_b, &a);
-    auto c = make_cell(derive_logic_from_b_to_c, &b);
-    auto e = make_cell(derive_logic_from_a_and_f_to_e, &a, &f);
-    auto g = make_cell(derive_logic_from_a_and_f_to_e, &a, &f);
+    auto b = derive_cell(derive_logic_from_a_to_b, &a);
+    auto c = derive_cell(derive_logic_from_b_to_c, &b);
+    auto e = derive_cell(derive_logic_from_a_and_f_to_e, &a, &f);
+    auto g = derive_cell(derive_logic_from_a_and_f_to_e, &a, &f);
 
     a.set_value(33);
     f.set_value(11);
@@ -80,11 +80,11 @@ struct BuzzMath {
     Cell<Rsp>& next_prime_number_async(const Req &req_value);
 };
 
-Cell<RspC> result_cell_of_c;
+Cell<RspC> rpc_rsp_c;
 
 struct CccMath {
     Cell<RspC> c_next_prime_value(const Req &req_value) {
-        return result_cell_of_c;
+        return rpc_rsp_c;
     }
 };
 
@@ -100,9 +100,9 @@ boost::optional<Rsp> derive_b_from_c_result(Cell<RspC>* rsp_c) {
 
 Cell<Rsp>& BuzzMath::next_prime_number_async(const Req &req_value) {
     CccMath cccMath;
-    result_cell_of_c = cccMath.c_next_prime_value(req_value);
+    rpc_rsp_c = cccMath.c_next_prime_value(req_value);
 
-    static auto e = make_cell(derive_b_from_c_result, &result_cell_of_c);
+    static auto e = derive_cell(derive_b_from_c_result, &rpc_rsp_c);
     return e;
 }
 
@@ -128,7 +128,5 @@ void init_test() {
     result_of_b = buzz.next_prime_number_async(req);
 
     RspC rsp_c {11};
-    result_cell_of_c.set_value(std::move(rsp_c));
+    rpc_rsp_c.set_value(std::move(rsp_c));
 }
-
-//TODO: get/generate context_id from msg

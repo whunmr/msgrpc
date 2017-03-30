@@ -464,7 +464,7 @@ void remote_service() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST(async_rpc, DISABLED__should_able_to__auto__register_rpc_interface__after__application_startup) {
+TEST(async_rpc, should_able_to__auto__register_rpc_interface__after__application_startup) {
     std::thread local_thread(local_service);
     std::thread remote_thread(remote_service);
 
@@ -472,3 +472,113 @@ TEST(async_rpc, DISABLED__should_able_to__auto__register_rpc_interface__after__a
     remote_thread.join();
 }
 
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+#include "msgrpc/frp/cell.h"
+
+using namespace std;
+using namespace msgrpc;
+////////////////////////////////////////////////////////////////////////////////
+
+//A --> B
+//A <-- B
+
+#if 0
+___def_service_interaction() {
+} simple_service_interaction;
+#endif
+TEST(async_rpc, should_support__simple__sync__service_interaction) {
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+//  1     +1  2
+//A --> B --> C
+//
+//      4  +2
+//      B <-- C
+//
+//7  +3
+//A <-- B
+
+#if 0
+___def_si(SimpleAsyncSI) {
+} simple_service_interaction;
+#endif
+
+namespace msgrpc {
+    struct RpcRspCellSink {
+        virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) = 0;
+    };
+
+    template<typename T>
+    struct RpcRspCell : RpcRspCellSink, Cell<T> {
+        virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
+            T rsp;
+            if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
+                cout << "decode failed on remote side." << endl;
+                return false;
+            }
+
+            //TODO: handle msg header status
+            Cell<T>::set_value(std::move(rsp));
+            return true;
+        }
+    };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+using namespace demo;
+RpcRspCell<ResponseBar> cell_c;
+
+struct ServiceC {
+    RpcRspCell<ResponseBar>& calculate_next_prime_value(const RequestFoo& req_value) {
+        return cell_c;
+    }
+};
+
+struct SimpleAsyncSI {
+    RpcRspCell<ResponseBar>& run(const RequestFoo& req) {
+        cout << "input req: " << req << endl;
+
+        ServiceC serviceC;
+        RpcRspCell<ResponseBar>& rspc = serviceC.calculate_next_prime_value(req);
+
+        return rspc;
+    }
+} simple_service_interaction;
+
+TEST(async_rpc, should_support__simple__async__service_interaction____as_service_B) {
+    RequestFoo req_from_a;
+    req_from_a.fooa = 100;
+
+    RpcRspCell<ResponseBar>& rsp = simple_service_interaction.run(req_from_a);
+
+    auto derivedAction = derive_action(
+            [](RpcRspCell<ResponseBar> *bar) -> void {
+                cout << "send data back to original requseter." << endl;
+            }, &rsp
+    );
+
+    RspMsgHeader h;
+    ResponseBar bar;
+    bar.bara = 101;
+    uint8_t* pbuf;
+    uint32_t len;
+    if (!ThriftEncoder::encode(bar, &pbuf, &len)) {
+        cout << "encode failed." << endl;
+        return;
+    }
+
+    rsp.set_rpc_rsp(&h, (const char*)pbuf, len);
+
+    EXPECT_EQ(101, rsp.value_.bara);
+};

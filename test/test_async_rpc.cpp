@@ -3,6 +3,7 @@
 #include <thread>
 #include <chrono>
 #include <msgrpc/thrift_struct/thrift_codec.h>
+#include <msgrpc/frp/cell.h>
 #include <type_traits>
 #include <future>
 
@@ -311,6 +312,49 @@ namespace msgrpc {
             send_rpc_request_buf(iface_index, method_index, pbuf, len, callback);
         };
     };
+
+
+    ////////////////////////////////////////////////////////////////////////////////
+    struct RpcContext {
+        ~RpcContext() {
+            for (auto* cell: cell_list_) {
+                delete cell;
+            }
+        }
+
+        void add_cell_to_release(CellBase* cell) {
+            cell_list_.push_back(cell);
+        }
+
+        std::list<CellBase*> cell_list_;
+    };
+
+
+    struct RpcRspCellSink {
+        virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) = 0;
+    };
+
+    template<typename T>
+    struct RpcRspCell : RpcRspCellSink, Cell<T> {
+        virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
+            T rsp;
+            if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
+                cout << "decode failed on remote side." << endl;
+                return false;
+            }
+
+            //TODO: handle msg header status
+            Cell<T>::set_value(std::move(rsp));
+            return true;
+        }
+
+        void set_binded_context(RpcContext* context) {
+            context_ = context;
+        }
+
+        RpcContext* context_;
+    };
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -472,14 +516,9 @@ TEST(async_rpc, should_able_to__auto__register_rpc_interface__after__application
     remote_thread.join();
 }
 
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-#include "msgrpc/frp/cell.h"
 
 using namespace std;
 using namespace msgrpc;
@@ -511,48 +550,6 @@ ___def_si(SimpleAsyncSI) {
 } simple_service_interaction;
 #endif
 
-namespace msgrpc {
-    struct RpcContext {
-        ~RpcContext() {
-            for (auto* cell: cell_list_) {
-                delete cell;
-            }
-        }
-
-        void add_cell_to_release(CellBase* cell) {
-            cell_list_.push_back(cell);
-        }
-
-        std::list<CellBase*> cell_list_;
-    };
-
-
-    struct RpcRspCellSink {
-        virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) = 0;
-    };
-
-    template<typename T>
-    struct RpcRspCell : RpcRspCellSink, Cell<T> {
-        virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
-            T rsp;
-            if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
-                cout << "decode failed on remote side." << endl;
-                return false;
-            }
-
-            //TODO: handle msg header status
-            Cell<T>::set_value(std::move(rsp));
-            return true;
-        }
-
-        void set_binded_context(RpcContext* context) {
-            context_ = context;
-        }
-
-        RpcContext* context_;
-    };
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 using namespace demo;
 
@@ -581,12 +578,12 @@ TEST(async_rpc, should_support__simple__async__service_interaction____as_service
     RpcRspCell<ResponseBar>& rsp = simple_service_interaction.run(req_from_a);
 
     auto derivedAction = derive_action(
-            [](RpcRspCell<ResponseBar> *r) -> void {
-                cout << "send data back to original requseter." << endl;
-                if (r->context_) {
-                    delete r->context_;
-                }
-            }, &rsp
+        [](RpcRspCell<ResponseBar> *r) -> void {
+            cout << "send data back to original requseter." << endl;
+            if (r->context_) {
+                delete r->context_;
+            }
+        }, &rsp
     );
 
     RspMsgHeader h;
@@ -601,5 +598,3 @@ TEST(async_rpc, should_support__simple__async__service_interaction____as_service
 
     rsp.set_rpc_rsp(&h, (const char*)pbuf, len);
 };
-
-///////////////////////////////////////////////////////////////////////////////////////////

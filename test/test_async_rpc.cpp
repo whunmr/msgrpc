@@ -68,9 +68,6 @@ namespace msgrpc {
         //TODO: unsigned char  feature_id_in_service_ = {0};
         //TODO: TLV encoded varient length options
         //TODO: if not encoded/decode, how to deal hton and ntoh
-        //unsigned long  sequence_no_;
-        //optional 1
-        /*TODO: call sequence number*/
     };
 
     /*TODO: consider make msgHeader encoded through thrift*/
@@ -102,7 +99,6 @@ namespace demo {
             if (mem) {
                 *(msgrpc::msg_id_t*)(mem) = msg_id;
                 memcpy(mem + sizeof(msgrpc::msg_id_t), buf, len);
-                //cout << "send msg len: " << msg_len_with_msgid << endl;
                 g_msg_channel->send_msg_to_remote(string(mem, msg_len_with_msgid), udp::endpoint(udp::v4(), remote_service_id));
                 free(mem);
             } else {
@@ -182,7 +178,6 @@ namespace msgrpc {
 namespace msgrpc {
     struct RpcReqMsgHandler {
         static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            //cout << "remote received msg with length: " << len << endl;
             assert(msg_id == k_msgrpc_request_msg_id && "invalid msg id for rpc");
 
             if (len < sizeof(msgrpc::ReqMsgHeader)) {
@@ -252,13 +247,14 @@ namespace msgrpc {
     template<typename T>
     struct RpcRspCell : RpcCell<T> {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
+            //TODO: handle msg header status
+
             T rsp;
             if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
                 cout << "decode failed on remote side." << endl;
                 return false;
             }
 
-            //TODO: handle msg header status
             Cell<T>::set_value(std::move(rsp));
             return true;
         }
@@ -450,12 +446,6 @@ namespace msgrpc {
 #define declare_interface_on_provider
 #define  define_interface_on_provider
 
-#define define_mock_rpc_interface_provider as_following:
-struct MockIBuzzMathImpl : msgrpc::InterfaceImplBaseT<MockIBuzzMathImpl, 1> {
-    bool negative_fields(const RequestFoo &req, ResponseBar &rsp) {return true; }
-    bool plus1_to_fields(const RequestFoo &req, ResponseBar &rsp) {return false;}
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
 struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
@@ -471,7 +461,6 @@ struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set: interface_implement_define.h
 IBuzzMathImpl buzzMath;
-
 bool IBuzzMathImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
         , size_t len, msgrpc::RspMsgHeader& rsp_header
         , uint8_t*& pout_buf, uint32_t& out_buf_len) {
@@ -549,13 +538,8 @@ namespace msgrpc {
     };
 }
 
-void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) {
-    //cout << "1 ----------------->>>> write db." << endl;
-};
-
-void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) {
-    //cout << "2 ----------------->>>> save_log." << endl;
-};
+void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) { cout << "1/2 ----------------->>>> write db." << endl; };
+void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) { cout << "2/2 ----------------->>>> save_log." << endl; };
 
 struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
@@ -571,17 +555,19 @@ struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
 } simple_rpc_service_interaction;
 
 
-void init_rpc() {
+void local_main() {
     RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
 
     msgrpc::RpcCell<ResponseBar> *rsp_cell = simple_rpc_service_interaction.run(foo);
 
     if (rsp_cell != nullptr) {
-        derive_final_action( [](msgrpc::RpcCell<ResponseBar> *r) -> void { UdpChannel::close_all_channels(); }
-                           , rsp_cell);
+        derive_final_action([](msgrpc::RpcCell<ResponseBar> *r) { UdpChannel::close_all_channels(); }, rsp_cell);
     }
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     msgrpc::Config::instance().init_with(&UdpMsgChannel::instance(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
@@ -589,7 +575,11 @@ void local_service() {
     UdpChannel channel(k_local_service_id,
         [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
-               return init_rpc();
+               return local_main();
+            }
+
+            if (msg_id == msgrpc::Config::instance().request_msg_id_) {
+                return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
             }
 
             if (msg_id == msgrpc::Config::instance().response_msg_id_) {
@@ -607,10 +597,17 @@ void remote_service() {
 
     UdpChannel channel(k_remote_service_id,
         [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-           if (0 == strcmp(msg, "init")) {
+            if (0 == strcmp(msg, "init")) {
                return;
-           }
-           msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+            }
+
+            if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+                return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
+            }
+
+            if (msg_id == msgrpc::Config::instance().request_msg_id_) {
+                return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+            }
         }
     );
 }

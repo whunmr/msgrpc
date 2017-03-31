@@ -94,7 +94,7 @@ namespace demo {
     const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
     const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
 
-    struct UdpMsgChannel : msgrpc::MsgChannel {
+    struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::Singleton<UdpMsgChannel> {
         virtual bool send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
             size_t msg_len_with_msgid = sizeof(msgrpc::msg_id_t) + len;
             char* mem = (char*)malloc(msg_len_with_msgid);
@@ -307,9 +307,9 @@ namespace msgrpc {
         void call_each_args(C &&c) {
             c->register_listener(this);
 
-            if (c->context_) {
-                c->context_->track_item_to_release(this);
-            }
+            //if (c->context_) {
+            //    c->context_->track_item_to_release(this);
+            //}
 
             if (is_final_action_) {
                 assert(c->context_ != nullptr && "to release context, should bind not null context to final action.");
@@ -672,16 +672,34 @@ msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::plus1_to_fields(const RequestFoo
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) {
+    cout << "1 ----------------->>>> write db." << endl;
+};
+
+void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) {
+    cout << "2 ----------------->>>> save_log." << endl;
+};
+
 struct SimpleRpcAsyncSI {
     msgrpc::RpcCell<ResponseBar>* run(const RequestFoo& req) {
         msgrpc::RpcContext* ctxt = new msgrpc::RpcContext();
 
-        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub().negative_fields(req);
-            ctxt->track_item_to_release(rsp_cell);
+        msgrpc::RpcCell<ResponseBar>* rsp_cell = do_run(req, ctxt);
 
         rsp_cell->set_binded_context(ctxt);
         return rsp_cell;
     }
+
+    msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) {
+        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub().negative_fields(req);
+        ctxt->track_item_to_release(rsp_cell);
+
+        ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp_cell));
+        ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_to_log, rsp_cell));
+
+        return rsp_cell;
+    }
+
 } simple_rpc_service_interaction;
 
 void init_rpc() {
@@ -690,24 +708,17 @@ void init_rpc() {
     //TODO: check nullptr
     msgrpc::RpcCell<ResponseBar>* rsp_cell = simple_rpc_service_interaction.run(foo);
 
-    auto derivedAction1 = msgrpc::derive_action(
-            [](msgrpc::RpcCell<ResponseBar>* r) -> void {
-                cout << "1 ----------------->>>> send data back to original requseter." << endl;
-            }, rsp_cell
-    );
-
     auto derivedAction = derive_final_action(
         [](msgrpc::RpcCell<ResponseBar>* r) -> void {
             cout << "final ----------------->>>> send data back to original requseter." << endl;
             UdpChannel::close_all_channels();
         }, rsp_cell
     );
-
 }
 
 void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+    msgrpc::Config::instance().init_with(&UdpMsgChannel::instance(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_local_service_id,
         [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
@@ -724,7 +735,7 @@ void local_service() {
 
 ////////////////////////////////////////////////////////////////////////////////
 void remote_service() {
-    msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+    msgrpc::Config::instance().init_with(&UdpMsgChannel::instance(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_remote_service_id,
         [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {

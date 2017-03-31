@@ -676,7 +676,17 @@ struct ServiceD {
 RpcRspCell<ResponseBar>* rspc;
 RpcRspCell<ResponseBar>* rspd;
 
+
 struct SimpleAsyncSI {
+    static boost::optional<ResponseBar> derive_result_from_c_and_d(Cell<ResponseBar> *c, Cell<ResponseBar> *d) {
+        if (c->cell_has_value_ && d->cell_has_value_) {
+            ResponseBar bar;
+            bar.bara = (c->value_.bara + d->value_.bara) / 2;
+            return boost::make_optional(bar);
+        }
+        return {};
+    }
+
     RpcCellBase<ResponseBar>& run(const RequestFoo& req) {
         RpcContext* ctxt = new RpcContext();
 
@@ -686,16 +696,7 @@ struct SimpleAsyncSI {
         rspd = ServiceD().calculate_ddd(req);
         ctxt->add_cell_to_release(rspd);
 
-        auto si_result = derive_cell(
-            [](Cell<ResponseBar>* c, Cell<ResponseBar>* d) -> boost::optional<ResponseBar> {
-                if (c->cell_has_value_ && d->cell_has_value_) {
-                    ResponseBar bar;
-                    bar.bara = (c->value_.bara + d->value_.bara) / 2;
-                    return boost::make_optional(bar);
-                }
-                return {};
-            },  rspc, rspd
-        );
+        auto si_result = derive_cell(derive_result_from_c_and_d,  rspc, rspd);
         ctxt->add_cell_to_release(si_result);
 
         si_result->set_binded_context(ctxt);

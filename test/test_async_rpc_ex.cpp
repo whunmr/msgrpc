@@ -1,4 +1,3 @@
-#if 0
 #include <iostream>
 #include <gtest/gtest.h>
 #include <thread>
@@ -441,164 +440,6 @@ namespace msgrpc {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//TODO: define following macros:
-#define declare_interface_on_consumer
-#define  define_interface_on_consumer
-#define declare_interface_on_provider
-#define  define_interface_on_provider
-
-#define define_mock_rpc_interface_provider as_following:
-struct MockIBuzzMathImpl : msgrpc::InterfaceImplBaseT<MockIBuzzMathImpl, 1> {
-    bool negative_fields(const RequestFoo &req, ResponseBar &rsp) {return true; }
-    bool plus1_to_fields(const RequestFoo &req, ResponseBar &rsp) {return false;}
-};
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//---------------- generate this part by macros set:
-struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
-    bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
-    bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
-
-    virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
-                            , const char* msg, size_t len
-                            , msgrpc::RspMsgHeader& rsp_header
-                            , uint8_t*& pout_buf, uint32_t& out_buf_len) override;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-//---------------- generate this part by macros set: interface_implement_define.h
-IBuzzMathImpl buzzMath;
-
-bool IBuzzMathImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
-                               , size_t len, msgrpc::RspMsgHeader& rsp_header
-                               , uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    bool ret;
-
-    if (req_header.method_index_in_interface_ == 1) {
-        ret = this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
-    } else
-
-    if (req_header.method_index_in_interface_ == 2) {
-        ret = this->invoke_templated_method(&IBuzzMathImpl::plus1_to_fields, msg, len, pout_buf, out_buf_len);
-    } else
-
-    {
-        rsp_header.rpc_result_ = msgrpc::RpcResult::method_not_found;
-        return false;
-    }
-
-    if (! ret) {
-        rsp_header.rpc_result_ = msgrpc::RpcResult::failed;
-    }
-
-    return ret;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//---------------- implement interface in here:
-bool IBuzzMathImpl::negative_fields(const RequestFoo& req, ResponseBar& rsp) {
-    rsp.__set_bara(req.get_foob());
-    if (req.__isset.foob) {
-        rsp.__set_barb(req.fooa);
-    }
-    return true;
-}
-
-bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
-    rsp.__set_bara(1 + req.fooa);
-    if (req.__isset.foob) {
-        rsp.__set_barb(1 + req.get_foob());
-    }
-
-    return true;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//-----------generate by:  declare and define stub macros
-struct IBuzzMathStub : msgrpc::RpcStubBase {
-    virtual void negative_fields(const RequestFoo&, msgrpc::RpcRspHandlerFunc callback);
-    virtual void plus1_to_fields(const RequestFoo&, msgrpc::RpcRspHandlerFunc callback);
-};
-
-void IBuzzMathStub::negative_fields(const RequestFoo& req, msgrpc::RpcRspHandlerFunc callback) {
-    encode_request_and_send(1, 1, req, callback);
-}
-
-void IBuzzMathStub::plus1_to_fields(const RequestFoo& req, msgrpc::RpcRspHandlerFunc callback) {
-    encode_request_and_send(1, 2, req, callback);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-template<typename RSP>
-struct RspHandler {
-    void operator()(msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len) {
-        RSP rsp;
-        if (!ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
-            cout << "WARNING: decode failed on remote side." << endl;
-            return;
-        }
-
-        handleRsp(rsp_header, rsp);
-    }
-
-    void handleRsp(msgrpc::RspMsgHeader* rsp_header, RSP& rsp) {
-        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
-        UdpChannel::close_all_channels();
-    }
-};
-
-void init_rpc() {
-    RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
-    IBuzzMathStub stub;
-
-    RspHandler<ResponseBar> handler;
-    stub.negative_fields(foo, handler);
-}
-
-void local_service() {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
-
-    UdpChannel channel(k_local_service_id,
-        [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-            if (0 == strcmp(msg, "init")) {
-                init_rpc();
-            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
-            } else {
-                cout << "local received msg:" << string(msg, len) << endl;
-            }
-        }
-    );
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void remote_service() {
-    msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
-
-    UdpChannel channel(k_remote_service_id,
-        [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-            if (0 == strcmp(msg, "init")) {
-               return;
-            }
-
-            msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
-        }
-    );
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST(async_rpc, should_able_to__auto__register_rpc_interface__after__application_startup) {
-    std::thread local_thread(local_service);
-    std::thread remote_thread(remote_service);
-
-    local_thread.join();
-    remote_thread.join();
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -718,4 +559,164 @@ TEST(async_rpc, should_support__simple__async__service_interaction____as_service
     rspd->set_rpc_rsp(&h, (const char*)pbuf2, len2);
 };
 
-#endif
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//TODO: define following macros:
+#define declare_interface_on_consumer
+#define  define_interface_on_consumer
+#define declare_interface_on_provider
+#define  define_interface_on_provider
+
+#define define_mock_rpc_interface_provider as_following:
+struct MockIBuzzMathImpl : msgrpc::InterfaceImplBaseT<MockIBuzzMathImpl, 1> {
+    bool negative_fields(const RequestFoo &req, ResponseBar &rsp) {return true; }
+    bool plus1_to_fields(const RequestFoo &req, ResponseBar &rsp) {return false;}
+};
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//---------------- generate this part by macros set:
+struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
+    bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
+    bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
+
+    virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
+            , const char* msg, size_t len
+            , msgrpc::RspMsgHeader& rsp_header
+            , uint8_t*& pout_buf, uint32_t& out_buf_len) override;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//---------------- generate this part by macros set: interface_implement_define.h
+IBuzzMathImpl buzzMath;
+
+bool IBuzzMathImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
+        , size_t len, msgrpc::RspMsgHeader& rsp_header
+        , uint8_t*& pout_buf, uint32_t& out_buf_len) {
+    bool ret;
+
+    if (req_header.method_index_in_interface_ == 1) {
+        ret = this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
+    } else
+
+    if (req_header.method_index_in_interface_ == 2) {
+        ret = this->invoke_templated_method(&IBuzzMathImpl::plus1_to_fields, msg, len, pout_buf, out_buf_len);
+    } else
+
+    {
+        rsp_header.rpc_result_ = msgrpc::RpcResult::method_not_found;
+        return false;
+    }
+
+    if (! ret) {
+        rsp_header.rpc_result_ = msgrpc::RpcResult::failed;
+    }
+
+    return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//---------------- implement interface in here:
+bool IBuzzMathImpl::negative_fields(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_bara(req.get_foob());
+    if (req.__isset.foob) {
+        rsp.__set_barb(req.fooa);
+    }
+    return true;
+}
+
+bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_bara(1 + req.fooa);
+    if (req.__isset.foob) {
+        rsp.__set_barb(1 + req.get_foob());
+    }
+
+    return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//-----------generate by:  declare and define stub macros
+struct IBuzzMathStub : msgrpc::RpcStubBase {
+    virtual void negative_fields(const RequestFoo&, msgrpc::RpcRspHandlerFunc callback);
+    virtual void plus1_to_fields(const RequestFoo&, msgrpc::RpcRspHandlerFunc callback);
+};
+
+void IBuzzMathStub::negative_fields(const RequestFoo& req, msgrpc::RpcRspHandlerFunc callback) {
+    encode_request_and_send(1, 1, req, callback);
+}
+
+void IBuzzMathStub::plus1_to_fields(const RequestFoo& req, msgrpc::RpcRspHandlerFunc callback) {
+    encode_request_and_send(1, 2, req, callback);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+template<typename RSP>
+struct RspHandler {
+    void operator()(msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len) {
+        RSP rsp;
+        if (!ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
+            cout << "WARNING: decode failed on remote side." << endl;
+            return;
+        }
+
+        handleRsp(rsp_header, rsp);
+    }
+
+    void handleRsp(msgrpc::RspMsgHeader* rsp_header, RSP& rsp) {
+        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
+        UdpChannel::close_all_channels();
+    }
+};
+
+void init_rpc() {
+    RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
+    IBuzzMathStub stub;
+
+    RspHandler<ResponseBar> handler;
+    stub.negative_fields(foo, handler);
+}
+
+void local_service() {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+
+    UdpChannel channel(k_local_service_id,
+        [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+            if (0 == strcmp(msg, "init")) {
+               init_rpc();
+            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+               msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
+            } else {
+               cout << "local received msg:" << string(msg, len) << endl;
+            }
+        }
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void remote_service() {
+    msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+
+    UdpChannel channel(k_remote_service_id,
+        [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+           if (0 == strcmp(msg, "init")) {
+               return;
+           }
+
+           msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+        }
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST(async_rpc, should_able_to__auto__register_rpc_interface__after__application_startup) {
+    std::thread local_thread(local_service);
+    std::thread remote_thread(remote_service);
+
+    local_thread.join();
+    remote_thread.join();
+}

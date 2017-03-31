@@ -330,10 +330,12 @@ namespace msgrpc {
     };
 
 
-    template<typename T>
-    struct RpcCellBase : Cell<T> {
+    struct RpcRspCellSink {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) = 0;
+    };
 
+    template<typename T>
+    struct RpcCellBase : Cell<T>, RpcRspCellSink {
         void set_binded_context(RpcContext* context) {
             context_ = context;
         }
@@ -436,31 +438,6 @@ namespace msgrpc {
         return new DerivedCell<typename decltype(f(args...))::value_type, Args...>(std::forward<F>(f),
                                                                                std::forward<Args>(args)...);
     }
-
-//    template<typename VT, typename... T>   //TODO: switch VT and T
-//    struct DerivedRpcRspCell : RpcRspCellBase, RpcCellBase, DerivedCell<VT, T...> {
-//        DerivedRpcRspCell(std::function<boost::optional<VT>(T...)> logic, T&&... args)
-//            : DerivedCell<VT, T...>(logic, std::forward<T>(args)...) {
-//        }
-//
-//        virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
-//            VT rsp;
-//            if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
-//                cout << "decode failed on remote side." << endl;
-//                return false;
-//            }
-//
-//            //TODO: handle msg header status
-//            DerivedCell<VT>::set_value(std::move(rsp));
-//            return true;
-//        }
-//    };
-//
-//    template<typename F, typename... Args>
-//    auto derive_rpc_result_cell(F &&f, Args &&... args) -> DerivedRpcRspCell<typename decltype(f(args...))::value_type, Args...>* {
-//        return new DerivedRpcRspCell<typename decltype(f(args...))::value_type, Args...>(std::forward<F>(f), std::forward<Args>(args)...);
-//    }
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -672,10 +649,8 @@ struct ServiceD {
     }
 };
 
-
 RpcRspCell<ResponseBar>* rspc;
 RpcRspCell<ResponseBar>* rspd;
-
 
 struct SimpleAsyncSI {
     static boost::optional<ResponseBar> derive_result_from_c_and_d(Cell<ResponseBar> *c, Cell<ResponseBar> *d) {

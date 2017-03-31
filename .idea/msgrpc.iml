@@ -11,11 +11,10 @@
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/thrift_struct/thrift_codec.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/thrift_struct/thrift_struct_define.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/frp/cell.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/test/test_cell_derivation.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/test_thrift_struct.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/test_zookeeper.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/test_util/UdpChannel.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/test_async_rpc.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/test/test_thrift_struct.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/demo_api_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/demo_service.interface" isTestSource="false" />

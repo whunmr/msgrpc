@@ -653,11 +653,15 @@ void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) { cout << "2 -------------
 
 struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+
         msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub().negative_fields(req);
         ctxt->track_item_to_release(rsp_cell);
 
         ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp_cell));
+
+
         ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_to_log, rsp_cell));
+
 
         return rsp_cell;
     }
@@ -671,10 +675,10 @@ void init_rpc() {
 
     if (rsp_cell != nullptr) {
         auto derivedAction = derive_final_action(
-            [](msgrpc::RpcCell<ResponseBar> *r) -> void {
-                cout << "final ----------------->>>> send data back to original requseter." << endl;
-                UdpChannel::close_all_channels();
-            }, rsp_cell
+                [](msgrpc::RpcCell<ResponseBar> *r) -> void {
+                    cout << "final ----------------->>>> send data back to original requseter." << endl;
+                    UdpChannel::close_all_channels();
+                }, rsp_cell
         );
     }
 }
@@ -721,54 +725,3 @@ TEST(async_rpc, should_able_to__support_async_rpc) {
     local_thread.join();
     remote_thread.join();
 }
-
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-#if 0
-struct Foo {
-    Foo() {}
-    Foo(int data) : data(data) {}
-    int data;
-};
-boost::optional<Foo> derive_logic_from_a_to_b(msgrpc::Cell<Foo> *a) {
-    if (a->cell_has_value_) {
-        cout << " a ---> b" << endl;
-        return boost::make_optional(Foo {a->value_.data * 3});
-    }
-    return {};
-}
-
-boost::optional<Foo> derive_logic_from_b_to_c(msgrpc::Cell<Foo>* b) {
-    if (b->cell_has_value_) {
-        cout << " b ---> c" << endl;
-        return boost::make_optional(Foo {b->value_.data + 1});
-    }
-    return {};
-}
-
-boost::optional<Foo> derive_logic_from_a_and_f_to_e(msgrpc::Cell<Foo> *a, msgrpc::Cell<Foo> *f) {
-    if ( a->cell_has_value_ && f->cell_has_value_) {
-        cout << " a&c ---> e:" << " derive value of e from a and c, a:" << (a->value_).data << " c:" << (f->value_).data << endl;
-        return boost::make_optional(Foo {a->value_.data + f->value_.data});
-    }
-    return {};
-}
-
-TEST(async_rpc, test_______________000) {
-    msgrpc::Cell<Foo> a;
-    msgrpc::Cell<Foo> f;
-
-    auto b = msgrpc::derive_cell(derive_logic_from_a_to_b, &a);
-    auto c = msgrpc::derive_cell(derive_logic_from_b_to_c, &b);
-    auto e = msgrpc::derive_cell(derive_logic_from_a_and_f_to_e, &a, &f);
-    auto g = msgrpc::derive_cell(derive_logic_from_a_and_f_to_e, &a, &f);
-
-    Foo foo; foo.data = 33;
-    a.set_value(std::move(foo));
-    f.set_value(std::move(foo));
-};
-#endif

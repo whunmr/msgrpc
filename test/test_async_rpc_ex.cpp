@@ -238,16 +238,16 @@ namespace msgrpc {
     ////////////////////////////////////////////////////////////////////////////////
     struct RpcContext {
         ~RpcContext() {
-            for (auto* cell: cell_list_) {
-                delete cell;
+            for (auto* r: release_list_) {
+                delete r;
             }
         }
 
-        void add_cell_to_release(CellBase* cell) {
-            cell_list_.push_back(cell);
+        void track_item_to_release(Updatable* cell) {
+            release_list_.push_back(cell);
         }
 
-        std::list<CellBase*> cell_list_;
+        std::list<Updatable*> release_list_;
     };
 
 
@@ -282,7 +282,12 @@ namespace msgrpc {
     template<typename VT, typename... T>
     struct DerivedAction : Updatable {
         DerivedAction(std::function<VT(T...)> logic, T &&... args) : bind_(logic, std::forward<T>(args)...) {
+            cout << "call DerivedAction constructor." << endl;
             call_each_args(std::forward<T>(args)...);
+        }
+
+        ~DerivedAction() {
+            cout << "call DerivedAction destructor." << endl;
         }
 
         template<typename C, typename... Ts>
@@ -294,6 +299,9 @@ namespace msgrpc {
         template<typename C>
         void call_each_args(C &&c) {
             c->register_listener(this);
+            if (c->context_) {
+                c->context_->track_item_to_release(this);
+            }
         }
 
         void update() override {
@@ -312,7 +320,7 @@ namespace msgrpc {
     }
 
     template<typename VT, typename... T>
-    struct DerivedCell : RpcCellBase<VT>, Updatable {
+    struct DerivedCell : RpcCellBase<VT> {
         DerivedCell(std::function<boost::optional<VT>(T...)> logic, T &&... args)
                 : bind_(logic, std::forward<T>(args)...) {
             call_each_args(std::forward<T>(args)...);
@@ -515,13 +523,13 @@ struct SimpleAsyncSI {
         RpcContext* ctxt = new RpcContext();
 
         rspc = ServiceC().calculate_next_prime_value(req); //TODO: check nullptr when sending rpc request failed
-        ctxt->add_cell_to_release(rspc);
+        ctxt->track_item_to_release(rspc);
 
         rspd = ServiceD().calculate_ddd(req);
-        ctxt->add_cell_to_release(rspd);
+        ctxt->track_item_to_release(rspd);
 
         auto si_result = derive_cell(derive_result_from_c_and_d,  rspc, rspd);
-        ctxt->add_cell_to_release(si_result);
+        ctxt->track_item_to_release(si_result);
 
         si_result->set_binded_context(ctxt);
         return si_result;
@@ -537,9 +545,6 @@ TEST(async_rpc, should_support__simple__async__service_interaction____as_service
     auto derivedAction = derive_action(
         [](RpcCellBase<ResponseBar>* r) -> void {
             cout << "----> send data back to original requseter." << endl;
-            if (r->context_) {
-                delete r->context_;
-            }
         }, rsp
     );
 
@@ -667,14 +672,14 @@ void init_rpc() {
 
     //TODO: check nullptr
     RpcRspCell<ResponseBar>* rsp_cell = stub.negative_fields(foo);
+    rsp_cell->context_ = new RpcContext();
 
     auto derivedAction = derive_action(
         [](RpcCellBase<ResponseBar>* r) -> void {
             cout << "----------------->>>> send data back to original requseter." << endl;
-            //            if (r->context_) {
-            //                delete r->context_;
-            //            }
-            //TODO: delete derivedAction itself
+            if (r->context_) {
+                delete r->context_;
+            }
             UdpChannel::close_all_channels();
         }, rsp_cell
     );

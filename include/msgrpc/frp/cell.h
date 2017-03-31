@@ -11,17 +11,17 @@
 namespace msgrpc {
 
     struct Updatable {
+        virtual ~Updatable() {}
         virtual void update() = 0;
     };
 
-    struct CellBase {
-        virtual ~CellBase() {}
-    };
 
     template<typename T>
-    struct Cell : CellBase {
+    struct Cell : Updatable {
         bool cell_has_value_{false};
         T value_;
+
+        void update() override {/**/}
 
         void set_value(T&& value) {
             std::cout << "cell got value:" << value << std::endl;

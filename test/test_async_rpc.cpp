@@ -318,16 +318,16 @@ namespace msgrpc {
     ////////////////////////////////////////////////////////////////////////////////
     struct RpcContext {
         ~RpcContext() {
-            for (auto* cell: cell_list_) {
+            for (auto* cell: release_list_) {
                 delete cell;
             }
         }
 
         void add_cell_to_release(CellBase* cell) {
-            cell_list_.push_back(cell);
+            release_list_.push_back(cell);
         }
 
-        std::list<CellBase*> cell_list_;
+        std::list<CellBase*> release_list_;
     };
 
 

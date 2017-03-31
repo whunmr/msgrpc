@@ -1,4 +1,3 @@
-#if 0
 #include <iostream>
 #include <gtest/gtest.h>
 #include <thread>
@@ -13,6 +12,7 @@ using namespace std::chrono;
 
 #include "demo/demo_api_declare.h"
 ////////////////////////////////////////////////////////////////////////////////
+//TODO: check valgrind check results
 namespace msgrpc {
     template <typename T> struct Ret {};
 
@@ -21,7 +21,7 @@ namespace msgrpc {
 
     struct MsgChannel {
         //TODO: extract common channel interface
-        virtual uint32_t send_msg(const service_id_t& remote_service_id, msg_id_t msg_id, const char* buf, size_t len) const = 0;
+        virtual bool send_msg(const service_id_t& remote_service_id, msg_id_t msg_id, const char* buf, size_t len) const = 0;
     };
 
     struct Config {
@@ -95,8 +95,8 @@ namespace demo {
     const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
     const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
 
-    struct UdpMsgChannel : msgrpc::MsgChannel {
-        virtual uint32_t send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
+    struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::Singleton<UdpMsgChannel> {
+        virtual bool send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
             size_t msg_len_with_msgid = sizeof(msgrpc::msg_id_t) + len;
             char* mem = (char*)malloc(msg_len_with_msgid);
             if (mem) {
@@ -108,7 +108,7 @@ namespace demo {
             } else {
                 cout << "send msg failed: allocation failure." << endl;
             }
-            return 0;
+            return true;
         }
     };
 }
@@ -236,101 +236,6 @@ namespace msgrpc {
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
 
-    typedef std::function<void(RspMsgHeader*, const char* msg, size_t len)> RpcRspHandlerFunc;
-
-    struct RpcRspDispatcher : msgrpc::Singleton<RpcRspDispatcher> {
-        void register_rsp_Handler(rpc_sequence_id_t sequence_id, RpcRspHandlerFunc func) {
-            assert(id_func_map_.find(sequence_id) == id_func_map_.end() && "should register with unique id.");
-            id_func_map_[sequence_id] = func;
-        }
-
-        void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            //cout << "DEBUG: local received msg----------->: " << string(msg, len) << endl;
-            if (len < sizeof(RspMsgHeader)) {
-                cout << "WARNING: invalid rsp msg" << endl;
-                return;
-            }
-
-            auto* rsp_header = (RspMsgHeader*)msg;
-            //cout << "                   sequence_id: " << rsp_header->sequence_id_ << endl;
-
-            auto iter = id_func_map_.find(rsp_header->sequence_id_);
-            if (iter == id_func_map_.end()) {
-                cout << "WARNING: can not find rsp handler" << endl;
-                return;
-            }
-
-            (iter->second)(rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
-        }
-
-        std::map<rpc_sequence_id_t, RpcRspHandlerFunc> id_func_map_;
-    };
-}
-
-////////////////////////////////////////////////////////////////////////////////
-namespace msgrpc {
-
-    struct RpcStubBase {
-        //TODO: split into .h and .cpp
-        void send_rpc_request_buf( msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index
-                                 , const uint8_t *pbuf, uint32_t len, RpcRspHandlerFunc callback) const {
-            size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
-
-            char *mem = (char *) malloc(msg_len_with_header);
-            if (!mem) {
-                cout << "alloc mem failed, during sending rpc request." << endl;
-                return;
-            }
-
-            auto seq_id = msgrpc::RpcSequenceId::instance().get();
-            msgrpc::RpcRspDispatcher::instance().register_rsp_Handler(seq_id, callback);
-
-            auto header = (msgrpc::ReqMsgHeader *) mem;
-            header->msgrpc_version_ = 0;
-            header->iface_index_in_service_ = iface_index;
-            header->method_index_in_interface_ = method_index;
-            header->sequence_id_ = seq_id;
-            memcpy(header + 1, (const char *) pbuf, len);
-
-            //cout << "stub sending msg with length: " << msg_len_with_header << endl;
-            //TODO: find k_remote_service_id by interface name "IBuzzMath"
-            msgrpc::Config::instance().msg_channel_->send_msg(k_remote_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
-            free(mem);
-        }
-
-        template<typename REQ>
-        void encode_request_and_send( msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index
-                                    , const REQ &req, RpcRspHandlerFunc callback) const {
-            uint8_t* pbuf;
-            uint32_t len;
-            /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
-            if (!ThriftEncoder::encode(req, &pbuf, &len)) {
-                /*TODO: how to do with log, maybe should extract logging interface*/
-                cout << "encode failed." << endl;
-                return; //TODO: return false;
-            }
-
-            send_rpc_request_buf(iface_index, method_index, pbuf, len, callback);
-        };
-    };
-
-
-    ////////////////////////////////////////////////////////////////////////////////
-    struct RpcContext {
-        ~RpcContext() {
-            for (auto* cell: release_list_) {
-                delete cell;
-            }
-        }
-
-        void add_cell_to_release(CellBase* cell) {
-            release_list_.push_back(cell);
-        }
-
-        std::list<CellBase*> release_list_;
-    };
-
-
     struct RpcRspCellSink {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) = 0;
     };
@@ -361,6 +266,11 @@ namespace msgrpc {
 
     template<typename VT, typename... T>
     struct DerivedAction : Updatable {
+        DerivedAction(bool is_final_action, std::function<VT(T...)> logic, T &&... args)
+                : is_final_action_(is_final_action), bind_(logic, std::forward<T>(args)...) {
+            call_each_args(std::forward<T>(args)...);
+        }
+
         DerivedAction(std::function<VT(T...)> logic, T &&... args) : bind_(logic, std::forward<T>(args)...) {
             call_each_args(std::forward<T>(args)...);
         }
@@ -374,25 +284,43 @@ namespace msgrpc {
         template<typename C>
         void call_each_args(C &&c) {
             c->register_listener(this);
+
+            if (is_final_action_) {
+                if (c->context_) {
+                    c->context_->track_item_to_release(this);
+                }
+                assert(c->context_ != nullptr && "to release context, should bind not null context to final action.");
+                context_ = c->context_;
+            }
         }
 
         void update() override {
             bind_();
+
+            if (is_final_action_) {
+                delete context_;
+            }
         }
 
+        bool is_final_action_ = {false};
+        RpcContext* context_;
         using bind_type = decltype(std::bind(std::declval<std::function<VT(T...)>>(), std::declval<T>()...));
         bind_type bind_;
-
     };
 
 
     template<typename F, typename... Args>
-    auto derive_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(args...)), Args...> {
-        return DerivedAction<decltype(f(args...)), Args...>(std::forward<F>(f), std::forward<Args>(args)...);
+    auto derive_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(args...)), Args...>* {
+        return new DerivedAction<decltype(f(args...)), Args...>(std::forward<F>(f), std::forward<Args>(args)...);
+    }
+
+    template<typename F, typename... Args>
+    auto derive_final_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(args...)), Args...>* {
+        return new DerivedAction<decltype(f(args...)), Args...>(/*is_final_action=*/true, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
     template<typename VT, typename... T>
-    struct DerivedCell : RpcCell<VT>, Updatable {
+    struct DerivedCell : RpcCell<VT> {
         DerivedCell(std::function<boost::optional<VT>(T...)> logic, T &&... args)
                 : bind_(logic, std::forward<T>(args)...) {
             call_each_args(std::forward<T>(args)...);
@@ -411,7 +339,7 @@ namespace msgrpc {
 
         void update() override {
             if (!Cell<VT>::cell_has_value_) {
-                auto value = bind_();
+                boost::optional<VT> value = bind_();
                 if (value) {
                     Cell<VT>::set_value(std::move(value.value()));
                 }
@@ -437,9 +365,193 @@ namespace msgrpc {
     template<typename F, typename... Args>
     auto derive_cell(F &&f, Args &&... args) -> DerivedCell<typename decltype(f(args...))::value_type, Args...>* {
         return new DerivedCell<typename decltype(f(args...))::value_type, Args...>(std::forward<F>(f),
-                                                                               std::forward<Args>(args)...);
+                                                                                   std::forward<Args>(args)...);
     }
+
+    struct RpcRspDispatcher : msgrpc::Singleton<RpcRspDispatcher> {
+        void register_rsp_Handler(rpc_sequence_id_t sequence_id, RpcRspCellSink* func) {
+            assert(id_func_map_.find(sequence_id) == id_func_map_.end() && "should register with unique id.");
+            id_func_map_[sequence_id] = func;
+        }
+
+        void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
+            //cout << "DEBUG: local received msg----------->: " << string(msg, len) << endl;
+            if (len < sizeof(RspMsgHeader)) {
+                cout << "WARNING: invalid rsp msg" << endl;
+                return;
+            }
+
+            auto* rsp_header = (RspMsgHeader*)msg;
+            //cout << "                   sequence_id: " << rsp_header->sequence_id_ << endl;
+
+            auto iter = id_func_map_.find(rsp_header->sequence_id_);
+            if (iter == id_func_map_.end()) {
+                cout << "WARNING: can not find rsp handler" << endl;
+                return;
+            }
+
+            (iter->second)->set_rpc_rsp(rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
+        }
+
+        std::map<rpc_sequence_id_t, RpcRspCellSink*> id_func_map_;
+    };
 }
+
+////////////////////////////////////////////////////////////////////////////////
+namespace msgrpc {
+
+    struct RpcStubBase {
+        //TODO: split into .h and .cpp
+        bool send_rpc_request_buf( msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index
+                                 , const uint8_t *pbuf, uint32_t len, RpcRspCellSink* rpc_rsp_cell_sink) const {
+            size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
+
+            char *mem = (char *) malloc(msg_len_with_header);
+            if (!mem) {
+                cout << "alloc mem failed, during sending rpc request." << endl;
+                return false;
+            }
+
+            auto seq_id = msgrpc::RpcSequenceId::instance().get();
+            msgrpc::RpcRspDispatcher::instance().register_rsp_Handler(seq_id, rpc_rsp_cell_sink);
+
+            auto header = (msgrpc::ReqMsgHeader *) mem;
+            header->msgrpc_version_ = 0;
+            header->iface_index_in_service_ = iface_index;
+            header->method_index_in_interface_ = method_index;
+            header->sequence_id_ = seq_id;
+            memcpy(header + 1, (const char *) pbuf, len);
+
+            //cout << "stub sending msg with length: " << msg_len_with_header << endl;
+            //TODO: find k_remote_service_id by interface name "IBuzzMath"
+            bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(k_remote_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
+            free(mem);
+
+            return send_ret;
+        }
+
+        template<typename T, typename U>
+        RpcRspCell<U>* encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const T &req) const {
+            uint8_t* pbuf;
+            uint32_t len;
+            /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
+            if (!ThriftEncoder::encode(req, &pbuf, &len)) {
+                /*TODO: how to do with log, maybe should extract logging interface*/
+                cout << "encode failed." << endl;
+                return nullptr; //TODO: return false;
+            }
+
+            RpcRspCell<U>* rsp_cell = new RpcRspCell<U>();
+
+            if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rsp_cell)) {
+                delete rsp_cell;
+                return nullptr;
+            }
+
+            return rsp_cell;
+        };
+    };
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//  1     +1  2
+//A --> B --> C
+//
+//      4  +2
+//      B <-- C
+//
+//7  +3
+//A <-- B
+
+#if 0
+___def_si(SimpleAsyncSI) {
+} simple_service_interaction;
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+using namespace demo;
+
+struct ServiceC {
+    msgrpc::RpcRspCell<ResponseBar>* calculate_next_prime_value(const RequestFoo& req_value) {
+        return new msgrpc::RpcRspCell<ResponseBar>();
+    }
+};
+
+
+struct ServiceD {
+    msgrpc::RpcRspCell<ResponseBar>* calculate_ddd(const RequestFoo& req_value) {
+        return new msgrpc::RpcRspCell<ResponseBar>();
+    }
+};
+
+msgrpc::RpcRspCell<ResponseBar>* rspc;
+msgrpc::RpcRspCell<ResponseBar>* rspd;
+
+struct SimpleAsyncSI {
+    static boost::optional<ResponseBar> derive_result_from_c_and_d(msgrpc::Cell<ResponseBar> *c, msgrpc::Cell<ResponseBar> *d) {
+        if (c->cell_has_value_ && d->cell_has_value_) {
+            ResponseBar bar;
+            bar.bara = (c->value_.bara + d->value_.bara) / 2;
+            return boost::make_optional(bar);
+        }
+        return {};
+    }
+
+    msgrpc::RpcCell<ResponseBar>* run(const RequestFoo& req) {
+        msgrpc::RpcContext* ctxt = new msgrpc::RpcContext();
+
+        rspc = ServiceC().calculate_next_prime_value(req); //TODO: check nullptr when sending rpc request failed
+        ctxt->track_item_to_release(rspc);
+
+        rspd = ServiceD().calculate_ddd(req);
+        ctxt->track_item_to_release(rspd);
+
+        auto si_result = msgrpc::derive_cell(derive_result_from_c_and_d,  rspc, rspd);
+        ctxt->track_item_to_release(si_result);
+
+        si_result->set_binded_context(ctxt);
+        return si_result;
+    }
+} simple_service_interaction;
+
+TEST(async_rpc, should_support__simple__async__service_interaction____as_service_B) {
+    RequestFoo req_from_a;
+    req_from_a.fooa = 100;
+
+    msgrpc::RpcCell<ResponseBar>* rsp = simple_service_interaction.run(req_from_a);
+
+    auto derivedAction = msgrpc::derive_action(
+        [](msgrpc::RpcCell<ResponseBar>* r) -> void {
+            cout << "----> send data back to original requseter." << endl;
+        }, rsp
+    );
+
+    msgrpc::RspMsgHeader h;
+    ResponseBar bar;
+    bar.bara = 101;
+    uint8_t* pbuf;
+    uint32_t len;
+    if (!ThriftEncoder::encode(bar, &pbuf, &len)) {
+        cout << "encode failed." << endl;
+        return;
+    }
+    rspc->set_rpc_rsp(&h, (const char*)pbuf, len);
+
+    ResponseBar bar2;
+    bar2.bara = 103;
+    uint8_t* pbuf2;
+    uint32_t len2;
+    if (!ThriftEncoder::encode(bar2, &pbuf2, &len2)) {
+        cout << "encode failed." << endl;
+        return;
+    }
+
+    rspd->set_rpc_rsp(&h, (const char*)pbuf2, len2);
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //TODO: define following macros:
@@ -454,7 +566,7 @@ struct MockIBuzzMathImpl : msgrpc::InterfaceImplBaseT<MockIBuzzMathImpl, 1> {
     bool plus1_to_fields(const RequestFoo &req, ResponseBar &rsp) {return false;}
 };
 
-////////////////////////////////////////////////////////////////////////////////
+
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
 struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
@@ -462,9 +574,9 @@ struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
     bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
 
     virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
-                            , const char* msg, size_t len
-                            , msgrpc::RspMsgHeader& rsp_header
-                            , uint8_t*& pout_buf, uint32_t& out_buf_len) override;
+            , const char* msg, size_t len
+            , msgrpc::RspMsgHeader& rsp_header
+            , uint8_t*& pout_buf, uint32_t& out_buf_len) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -472,8 +584,8 @@ struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
 IBuzzMathImpl buzzMath;
 
 bool IBuzzMathImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
-                               , size_t len, msgrpc::RspMsgHeader& rsp_header
-                               , uint8_t*& pout_buf, uint32_t& out_buf_len) {
+        , size_t len, msgrpc::RspMsgHeader& rsp_header
+        , uint8_t*& pout_buf, uint32_t& out_buf_len) {
     bool ret;
 
     if (req_header.method_index_in_interface_ == 1) {
@@ -511,7 +623,6 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
     if (req.__isset.foob) {
         rsp.__set_barb(1 + req.get_foob());
     }
-
     return true;
 }
 
@@ -519,203 +630,106 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
 ////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct IBuzzMathStub : msgrpc::RpcStubBase {
-    virtual void negative_fields(const RequestFoo&, msgrpc::RpcRspHandlerFunc callback);
-    virtual void plus1_to_fields(const RequestFoo&, msgrpc::RpcRspHandlerFunc callback);
+    virtual msgrpc::RpcRspCell<ResponseBar>* negative_fields(const RequestFoo&);
+    virtual msgrpc::RpcRspCell<ResponseBar>* plus1_to_fields(const RequestFoo&);
 };
 
-void IBuzzMathStub::negative_fields(const RequestFoo& req, msgrpc::RpcRspHandlerFunc callback) {
-    encode_request_and_send(1, 1, req, callback);
+msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::negative_fields(const RequestFoo& req) {
+    return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
 }
 
-void IBuzzMathStub::plus1_to_fields(const RequestFoo& req, msgrpc::RpcRspHandlerFunc callback) {
-    encode_request_and_send(1, 2, req, callback);
+msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
+    return encode_request_and_send<RequestFoo, ResponseBar>(1, 2, req);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-template<typename RSP>
-struct RspHandler {
-    void operator()(msgrpc::RspMsgHeader* rsp_header, const char* msg, size_t len) {
-        RSP rsp;
-        if (!ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
-            cout << "WARNING: decode failed on remote side." << endl;
-            return;
+namespace msgrpc {
+    template<typename T, typename U>
+    struct MsgRpcSIBase { /*SI is short for service interaction*/
+        msgrpc::RpcCell<U> *run(const T &req) {
+            msgrpc::RpcContext *ctxt = new msgrpc::RpcContext();
+
+            msgrpc::RpcCell<U> *result_cell = do_run(req, ctxt);
+            result_cell->set_binded_context(ctxt);
+
+            return result_cell;
         }
 
-        handleRsp(rsp_header, rsp);
-    }
+        virtual msgrpc::RpcCell<U> *do_run(const T &req, msgrpc::RpcContext *ctxt) = 0;
+    };
+}
 
-    void handleRsp(msgrpc::RspMsgHeader* rsp_header, RSP& rsp) {
-        cout << "[1] sequence id from callback------------>: " << rsp_header->sequence_id_ << endl;
-        UdpChannel::close_all_channels();
+void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) { cout << "1 ----------------->>>> write db." << endl; };
+void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) { cout << "2 ----------------->>>> save_log." << endl; };
+
+struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub().negative_fields(req);
+        ctxt->track_item_to_release(rsp_cell);
+
+        ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp_cell));
+        ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_to_log, rsp_cell));
+
+        return rsp_cell;
     }
-};
+} simple_rpc_service_interaction;
 
 void init_rpc() {
     RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
-    IBuzzMathStub stub;
 
-    RspHandler<ResponseBar> handler;
-    stub.negative_fields(foo, handler);
+    //TODO: check nullptr
+    msgrpc::RpcCell<ResponseBar>* rsp_cell = simple_rpc_service_interaction.run(foo);
+
+    if (rsp_cell != nullptr) {
+        auto derivedAction = derive_final_action(
+            [](msgrpc::RpcCell<ResponseBar> *r) -> void {
+                cout << "final ----------------->>>> send data back to original requseter." << endl;
+                UdpChannel::close_all_channels();
+            }, rsp_cell
+        );
+    }
 }
 
 void local_service() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+    msgrpc::Config::instance().init_with(&UdpMsgChannel::instance(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_local_service_id,
         [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
-                init_rpc();
-            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
-            } else {
-                cout << "local received msg:" << string(msg, len) << endl;
+               return init_rpc();
             }
+
+            if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+               return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
+            }
+
+            cout << "local received msg:" << string(msg, len) << endl;
         }
     );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void remote_service() {
-    msgrpc::Config::instance().init_with(new UdpMsgChannel(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+    msgrpc::Config::instance().init_with(&UdpMsgChannel::instance(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
     UdpChannel channel(k_remote_service_id,
         [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-            if (0 == strcmp(msg, "init")) {
+           if (0 == strcmp(msg, "init")) {
                return;
-            }
+           }
 
-            msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+           msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
         }
     );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST(async_rpc, should_able_to__auto__register_rpc_interface__after__application_startup) {
+TEST(async_rpc, should_able_to__support_async_rpc) {
     std::thread local_thread(local_service);
     std::thread remote_thread(remote_service);
 
     local_thread.join();
     remote_thread.join();
 }
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-using namespace std;
-using namespace msgrpc;
-////////////////////////////////////////////////////////////////////////////////
-
-//A --> B
-//A <-- B
-
-#if 0
-___def_service_interaction() {
-} simple_service_interaction;
-#endif
-TEST(async_rpc, should_support__simple__sync__service_interaction) {
-};
-
-
-////////////////////////////////////////////////////////////////////////////////
-//  1     +1  2
-//A --> B --> C
-//
-//      4  +2
-//      B <-- C
-//
-//7  +3
-//A <-- B
-
-#if 0
-___def_si(SimpleAsyncSI) {
-} simple_service_interaction;
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
-using namespace demo;
-
-struct ServiceC {
-    RpcRspCell<ResponseBar>* calculate_next_prime_value(const RequestFoo& req_value) {
-        return new RpcRspCell<ResponseBar>();
-    }
-};
-
-
-struct ServiceD {
-    RpcRspCell<ResponseBar>* calculate_ddd(const RequestFoo& req_value) {
-        return new RpcRspCell<ResponseBar>();
-    }
-};
-
-RpcRspCell<ResponseBar>* rspc;
-RpcRspCell<ResponseBar>* rspd;
-
-struct SimpleAsyncSI {
-    static boost::optional<ResponseBar> derive_result_from_c_and_d(Cell<ResponseBar> *c, Cell<ResponseBar> *d) {
-        if (c->cell_has_value_ && d->cell_has_value_) {
-            ResponseBar bar;
-            bar.bara = (c->value_.bara + d->value_.bara) / 2;
-            return boost::make_optional(bar);
-        }
-        return {};
-    }
-
-    RpcCell<ResponseBar>& run(const RequestFoo& req) {
-        RpcContext* ctxt = new RpcContext();
-
-        rspc = ServiceC().calculate_next_prime_value(req);
-        ctxt->add_cell_to_release(rspc);
-
-        rspd = ServiceD().calculate_ddd(req);
-        ctxt->add_cell_to_release(rspd);
-
-        auto si_result = derive_cell(derive_result_from_c_and_d,  rspc, rspd);
-        ctxt->add_cell_to_release(si_result);
-
-        si_result->set_binded_context(ctxt);
-        return *si_result;
-    }
-} simple_service_interaction;
-
-TEST(async_rpc, should_support__simple__async__service_interaction____as_service_B) {
-    RequestFoo req_from_a;
-    req_from_a.fooa = 100;
-
-    RpcCell<ResponseBar>& rsp = simple_service_interaction.run(req_from_a);
-
-    auto derivedAction = derive_action(
-        [](RpcCell<ResponseBar>* r) -> void {
-            cout << "----------------->>>> send data back to original requseter." << endl;
-            if (r->context_) {
-                delete r->context_;
-            }
-        }, &rsp
-    );
-
-    RspMsgHeader h;
-    ResponseBar bar;
-    bar.bara = 101;
-    uint8_t* pbuf;
-    uint32_t len;
-    if (!ThriftEncoder::encode(bar, &pbuf, &len)) {
-        cout << "encode failed." << endl;
-        return;
-    }
-    rspc->set_rpc_rsp(&h, (const char*)pbuf, len);
-
-    ResponseBar bar2;
-    bar2.bara = 103;
-    uint8_t* pbuf2;
-    uint32_t len2;
-    if (!ThriftEncoder::encode(bar2, &pbuf2, &len2)) {
-        cout << "encode failed." << endl;
-        return;
-    }
-
-    rspd->set_rpc_rsp(&h, (const char*)pbuf2, len2);
-};
-
-#endif

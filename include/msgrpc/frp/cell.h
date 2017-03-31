@@ -1,6 +1,6 @@
 #ifndef MSGRPC_CELL_H
 #define MSGRPC_CELL_H
-#include <vector>
+#include <list>
 #include <boost/optional.hpp>
 
 #include <iostream> //TODO:remove
@@ -44,6 +44,20 @@ namespace msgrpc {
         }
 
         std::vector<Updatable *> updatables_;
+    };
+
+    struct RpcContext {
+        ~RpcContext() {
+            for (auto* r: release_list_) {
+                delete r;
+            }
+        }
+
+        void track_item_to_release(Updatable* cell) {
+            release_list_.push_back(cell);
+        }
+
+        std::list<Updatable*> release_list_;
     };
 
 

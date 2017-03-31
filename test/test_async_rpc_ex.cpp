@@ -666,13 +666,24 @@ RpcRspCell<ResponseBar>* IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+struct SimpleRpcAsyncSI {
+    RpcCellBase<ResponseBar>* run(const RequestFoo& req) {
+        RpcContext* ctxt = new RpcContext();
+
+            RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub().negative_fields(req);
+            ctxt->track_item_to_release(rsp_cell);
+
+        rsp_cell->set_binded_context(ctxt);
+        return rsp_cell;
+    }
+} simple_rpc_service_interaction;
+
 void init_rpc() {
     RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
-    IBuzzMathStub stub;
 
+#if 1
     //TODO: check nullptr
-    RpcRspCell<ResponseBar>* rsp_cell = stub.negative_fields(foo);
-    rsp_cell->context_ = new RpcContext();
+    RpcCellBase<ResponseBar>* rsp_cell = simple_rpc_service_interaction.run(foo);
 
     auto derivedAction = derive_action(
         [](RpcCellBase<ResponseBar>* r) -> void {
@@ -683,6 +694,20 @@ void init_rpc() {
             UdpChannel::close_all_channels();
         }, rsp_cell
     );
+
+#else
+    RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub().negative_fields(foo);
+    rsp_cell->context_ = new RpcContext();
+    auto derivedAction = derive_action(
+        [](RpcCellBase<ResponseBar>* r) -> void {
+            cout << "----------------->>>> send data back to original requseter." << endl;
+            if (r->context_) {
+                delete r->context_;
+            }
+            UdpChannel::close_all_channels();
+        }, rsp_cell
+    );
+#endif
 }
 
 void local_service() {

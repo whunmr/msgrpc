@@ -12,6 +12,7 @@ using namespace std::chrono;
 
 #include "demo/demo_api_declare.h"
 ////////////////////////////////////////////////////////////////////////////////
+//TODO: check valgrind check results
 namespace msgrpc {
     template <typename T> struct Ret {};
 
@@ -307,11 +308,10 @@ namespace msgrpc {
         void call_each_args(C &&c) {
             c->register_listener(this);
 
-            //if (c->context_) {
-            //    c->context_->track_item_to_release(this);
-            //}
-
             if (is_final_action_) {
+                if (c->context_) {
+                    c->context_->track_item_to_release(this);
+                }
                 assert(c->context_ != nullptr && "to release context, should bind not null context to final action.");
                 context_ = c->context_;
             }
@@ -362,7 +362,7 @@ namespace msgrpc {
 
         void update() override {
             if (!Cell<VT>::cell_has_value_) {
-                auto value = bind_();
+                boost::optional<VT> value = bind_();
                 if (value) {
                     Cell<VT>::set_value(std::move(value.value()));
                 }
@@ -579,8 +579,6 @@ TEST(async_rpc, should_support__simple__async__service_interaction____as_service
 
 
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 //TODO: define following macros:
 #define declare_interface_on_consumer
 #define  define_interface_on_consumer
@@ -593,7 +591,7 @@ struct MockIBuzzMathImpl : msgrpc::InterfaceImplBaseT<MockIBuzzMathImpl, 1> {
     bool plus1_to_fields(const RequestFoo &req, ResponseBar &rsp) {return false;}
 };
 
-////////////////////////////////////////////////////////////////////////////////
+
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
 struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
@@ -650,7 +648,6 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
     if (req.__isset.foob) {
         rsp.__set_barb(1 + req.get_foob());
     }
-
     return true;
 }
 
@@ -672,24 +669,26 @@ msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::plus1_to_fields(const RequestFoo
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+namespace msgrpc {
+    template<typename T, typename U>
+    struct MsgRpcSIBase { /*SI is short for service interaction*/
+        msgrpc::RpcCell<U> *run(const T &req) {
+            msgrpc::RpcContext *ctxt = new msgrpc::RpcContext();
+
+            msgrpc::RpcCell<U> *result_cell = do_run(req, ctxt);
+            result_cell->set_binded_context(ctxt);
+
+            return result_cell;
+        }
+
+        virtual msgrpc::RpcCell<U> *do_run(const T &req, msgrpc::RpcContext *ctxt) = 0;
+    };
+}
+
 void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) { cout << "1 ----------------->>>> write db." << endl; };
 void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) { cout << "2 ----------------->>>> save_log." << endl; };
 
-template<typename T, typename U>
-struct MsgRpcSIBase { /*SI is short for service interaction*/
-    msgrpc::RpcCell<U>* run(const T& req) {
-        msgrpc::RpcContext* ctxt = new msgrpc::RpcContext();
-
-        msgrpc::RpcCell<U>* result_cell = do_run(req, ctxt);
-        result_cell->set_binded_context(ctxt);
-
-        return result_cell;
-    }
-
-    virtual msgrpc::RpcCell<U>* do_run(const T &req, msgrpc::RpcContext *ctxt) = 0;
-};
-
-struct SimpleMsgRpcSI : MsgRpcSIBase<RequestFoo, ResponseBar> {
+struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
         msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub().negative_fields(req);
         ctxt->track_item_to_release(rsp_cell);
@@ -699,7 +698,6 @@ struct SimpleMsgRpcSI : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
         return rsp_cell;
     }
-
 } simple_rpc_service_interaction;
 
 void init_rpc() {
@@ -725,12 +723,14 @@ void local_service() {
     UdpChannel channel(k_local_service_id,
         [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
             if (0 == strcmp(msg, "init")) {
-               init_rpc();
-            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-               msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
-            } else {
-               cout << "local received msg:" << string(msg, len) << endl;
+               return init_rpc();
             }
+
+            if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+               return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
+            }
+
+            cout << "local received msg:" << string(msg, len) << endl;
         }
     );
 }

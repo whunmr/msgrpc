@@ -672,25 +672,25 @@ msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::plus1_to_fields(const RequestFoo
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) {
-    cout << "1 ----------------->>>> write db." << endl;
-};
+void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) { cout << "1 ----------------->>>> write db." << endl; };
+void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) { cout << "2 ----------------->>>> save_log." << endl; };
 
-void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) {
-    cout << "2 ----------------->>>> save_log." << endl;
-};
-
-struct SimpleRpcAsyncSI {
-    msgrpc::RpcCell<ResponseBar>* run(const RequestFoo& req) {
+template<typename T, typename U>
+struct MsgRpcSIBase { /*SI is short for service interaction*/
+    msgrpc::RpcCell<U>* run(const T& req) {
         msgrpc::RpcContext* ctxt = new msgrpc::RpcContext();
 
-        msgrpc::RpcCell<ResponseBar>* rsp_cell = do_run(req, ctxt);
+        msgrpc::RpcCell<U>* result_cell = do_run(req, ctxt);
+        result_cell->set_binded_context(ctxt);
 
-        rsp_cell->set_binded_context(ctxt);
-        return rsp_cell;
+        return result_cell;
     }
 
-    msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) {
+    virtual msgrpc::RpcCell<U>* do_run(const T &req, msgrpc::RpcContext *ctxt) = 0;
+};
+
+struct SimpleMsgRpcSI : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
         msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub().negative_fields(req);
         ctxt->track_item_to_release(rsp_cell);
 
@@ -708,12 +708,14 @@ void init_rpc() {
     //TODO: check nullptr
     msgrpc::RpcCell<ResponseBar>* rsp_cell = simple_rpc_service_interaction.run(foo);
 
-    auto derivedAction = derive_final_action(
-        [](msgrpc::RpcCell<ResponseBar>* r) -> void {
-            cout << "final ----------------->>>> send data back to original requseter." << endl;
-            UdpChannel::close_all_channels();
-        }, rsp_cell
-    );
+    if (rsp_cell != nullptr) {
+        auto derivedAction = derive_final_action(
+            [](msgrpc::RpcCell<ResponseBar> *r) -> void {
+                cout << "final ----------------->>>> send data back to original requseter." << endl;
+                UdpChannel::close_all_channels();
+            }, rsp_cell
+        );
+    }
 }
 
 void local_service() {

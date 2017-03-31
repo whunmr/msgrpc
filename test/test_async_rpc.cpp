@@ -320,7 +320,7 @@ namespace msgrpc {
     }
 
     template<typename VT, typename... T>
-    struct DerivedCell : RpcCell<VT> {
+    struct DerivedCell : RpcRspCell<VT> {
         DerivedCell(std::function<boost::optional<VT>(T...)> logic, T &&... args)
                 : bind_(logic, std::forward<T>(args)...) {
             call_each_args(std::forward<T>(args)...);
@@ -344,18 +344,6 @@ namespace msgrpc {
                     Cell<VT>::set_value(std::move(value.value()));
                 }
             }
-        }
-
-        virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
-            VT rsp;
-            if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
-                cout << "decode failed on remote side." << endl;
-                return false;
-            }
-
-            //TODO: handle msg header status
-            RpcCell<VT>::set_value(std::move(rsp));
-            return true;
         }
 
         using bind_type = decltype(std::bind(std::declval<std::function<boost::optional<VT>(T...)>>(), std::declval<T>()...));

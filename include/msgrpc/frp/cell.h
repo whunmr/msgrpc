@@ -24,7 +24,7 @@ namespace msgrpc {
         void update() override {/**/}
 
         void set_value(T&& value) {
-            std::cout << "cell got value:" << value << std::endl;
+            //std::cout << "cell got value:" << value << std::endl;
             value_ = std::move(value);
             cell_has_value_ = true;
 
@@ -32,7 +32,8 @@ namespace msgrpc {
         }
 
         void evaluate_all_derived_cells() {
-            for (int i = 0; i < updatables_.size(); ++i) {
+            size_t size = updatables_.size();
+            for (int i = 0; i < size; ++i) {
                 if (updatables_[i] != nullptr) {
                     updatables_[i]->update();
                 }

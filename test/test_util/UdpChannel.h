@@ -24,7 +24,7 @@ struct UdpChannel {
 
         g_msg_channel = this;
 
-        sockets_.push_back(&socket_);
+        io_services_.push_back(&io_service_);
 
         io_service_.run();
     }
@@ -64,12 +64,12 @@ struct UdpChannel {
     }
 
     static void close_all_channels() {
-        for (auto s : sockets_) {
-            s->close();
+        for (auto s : io_services_) {
+            s->stop();
         }
     }
 
-    static std::vector<udp::socket*> sockets_;
+    static std::vector<boost::asio::io_service*> io_services_;
     boost::asio::io_service io_service_;
     udp::socket socket_;
     OnMsgFunc on_msg_func_;
@@ -78,6 +78,6 @@ struct UdpChannel {
     boost::array<char, 10240> recv_buffer_;
 };
 
-std::vector<udp::socket*> UdpChannel::sockets_;
+std::vector<boost::asio::io_service*> UdpChannel::io_services_;
 
 #endif //MSGRPC_UDPCHANNEL_H

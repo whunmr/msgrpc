@@ -549,8 +549,13 @@ namespace msgrpc {
     };
 }
 
-void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) { cout << "1 ----------------->>>> write db." << endl; };
-void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) { cout << "2 ----------------->>>> save_log." << endl; };
+void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) {
+    //cout << "1 ----------------->>>> write db." << endl;
+};
+
+void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) {
+    //cout << "2 ----------------->>>> save_log." << endl;
+};
 
 struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
@@ -565,19 +570,15 @@ struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 } simple_rpc_service_interaction;
 
+
 void init_rpc() {
     RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
 
-    //TODO: check nullptr
-    msgrpc::RpcCell<ResponseBar>* rsp_cell = simple_rpc_service_interaction.run(foo);
+    msgrpc::RpcCell<ResponseBar> *rsp_cell = simple_rpc_service_interaction.run(foo);
 
     if (rsp_cell != nullptr) {
-        auto derivedAction = derive_final_action(
-            [](msgrpc::RpcCell<ResponseBar> *r) -> void {
-                cout << "final ----------------->>>> send data back to original requseter." << endl;
-                UdpChannel::close_all_channels();
-            }, rsp_cell
-        );
+        derive_final_action( [](msgrpc::RpcCell<ResponseBar> *r) -> void { UdpChannel::close_all_channels(); }
+                           , rsp_cell);
     }
 }
 

@@ -57,7 +57,7 @@ struct UdpChannel {
     }
 
     static void close_all_channels() {
-        for (auto s : sockets_) {
+        for (auto* s : sockets_) {
             s->close();
         }
         sockets_.clear();

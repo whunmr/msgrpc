@@ -563,11 +563,7 @@ void local_main() {
     msgrpc::RpcCell<ResponseBar> *rsp_cell = simple_rpc_service_interaction.run(foo);
 
     if (rsp_cell != nullptr) {
-        derive_final_action(
-                [](msgrpc::RpcCell<ResponseBar> *r) {
-                    cout << "exiting--->>>" << endl;
-                    UdpChannel::close_all_channels();
-                }, rsp_cell);
+        derive_final_action( [](msgrpc::RpcCell<ResponseBar> *r) { UdpChannel::close_all_channels(); }, rsp_cell);
     }
 }
 
@@ -593,10 +589,23 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST(async_rpc, should_able_to__support_async_rpc) {
-    std::thread local_thread(msgrpc_loop,  k_local_service_id,  local_main);
-    std::thread remote_thread(msgrpc_loop, k_remote_service_id, [](){});
+TEST(async_rpc, should_able_to__support_simple_async_rpc_________implement_service_interactions_in_a) {
+    // a ----(req)---->b
+    // b <---(rsp)-----b
+    std::thread thread_a(msgrpc_loop,  k_local_service_id,  local_main);
+    std::thread thread_b(msgrpc_loop, k_remote_service_id, [](){});
 
-    local_thread.join();
-    remote_thread.join();
+    thread_a.join();
+    thread_b.join();
 }
+
+//////////////////////////////////////////////////////////////////////////////////
+//TEST(async_rpc, should_able_to__support_simple_async_rpc_______implement_service_interactions_in_b) {
+//    // a ----(req)---->b
+//    // b <---(rsp)-----b
+//    std::thread thread_a(msgrpc_loop,  k_local_service_id,  local_main);
+//    std::thread thread_b(msgrpc_loop, k_remote_service_id, [](){});
+//
+//    thread_a.join();
+//    thread_b.join();
+//}

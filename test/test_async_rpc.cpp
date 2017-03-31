@@ -336,7 +336,7 @@ namespace msgrpc {
     };
 
     template<typename T>
-    struct RpcCellBase : Cell<T>, RpcRspCellSink {
+    struct RpcCell : Cell<T>, RpcRspCellSink {
         void set_binded_context(RpcContext* context) {
             context_ = context;
         }
@@ -345,7 +345,7 @@ namespace msgrpc {
     };
 
     template<typename T>
-    struct RpcRspCell : RpcCellBase<T> {
+    struct RpcRspCell : RpcCell<T> {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
             T rsp;
             if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
@@ -392,7 +392,7 @@ namespace msgrpc {
     }
 
     template<typename VT, typename... T>
-    struct DerivedCell : RpcCellBase<VT>, Updatable {
+    struct DerivedCell : RpcCell<VT>, Updatable {
         DerivedCell(std::function<boost::optional<VT>(T...)> logic, T &&... args)
                 : bind_(logic, std::forward<T>(args)...) {
             call_each_args(std::forward<T>(args)...);
@@ -426,7 +426,7 @@ namespace msgrpc {
             }
 
             //TODO: handle msg header status
-            RpcCellBase<VT>::set_value(std::move(rsp));
+            RpcCell<VT>::set_value(std::move(rsp));
             return true;
         }
 
@@ -663,7 +663,7 @@ struct SimpleAsyncSI {
         return {};
     }
 
-    RpcCellBase<ResponseBar>& run(const RequestFoo& req) {
+    RpcCell<ResponseBar>& run(const RequestFoo& req) {
         RpcContext* ctxt = new RpcContext();
 
         rspc = ServiceC().calculate_next_prime_value(req);
@@ -684,10 +684,10 @@ TEST(async_rpc, should_support__simple__async__service_interaction____as_service
     RequestFoo req_from_a;
     req_from_a.fooa = 100;
 
-    RpcCellBase<ResponseBar>& rsp = simple_service_interaction.run(req_from_a);
+    RpcCell<ResponseBar>& rsp = simple_service_interaction.run(req_from_a);
 
     auto derivedAction = derive_action(
-        [](RpcCellBase<ResponseBar>* r) -> void {
+        [](RpcCell<ResponseBar>* r) -> void {
             cout << "----------------->>>> send data back to original requseter." << endl;
             if (r->context_) {
                 delete r->context_;

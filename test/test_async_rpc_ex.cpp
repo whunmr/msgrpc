@@ -281,6 +281,13 @@ namespace msgrpc {
 
     template<typename VT, typename... T>
     struct DerivedAction : Updatable {
+        DerivedAction(bool is_final_action, std::function<VT(T...)> logic, T &&... args)
+                : is_final_action_(is_final_action), bind_(logic, std::forward<T>(args)...) {
+
+            cout << "call DerivedAction constructor." << endl;
+            call_each_args(std::forward<T>(args)...);
+        }
+
         DerivedAction(std::function<VT(T...)> logic, T &&... args) : bind_(logic, std::forward<T>(args)...) {
             cout << "call DerivedAction constructor." << endl;
             call_each_args(std::forward<T>(args)...);
@@ -299,24 +306,40 @@ namespace msgrpc {
         template<typename C>
         void call_each_args(C &&c) {
             c->register_listener(this);
+
             if (c->context_) {
                 c->context_->track_item_to_release(this);
+            }
+
+            if (is_final_action_) {
+                assert(c->context_ != nullptr && "to release context, should bind not null context to final action.");
+                context_ = c->context_;
             }
         }
 
         void update() override {
             bind_();
+
+            if (is_final_action_) {
+                delete context_;
+            }
         }
 
+        bool is_final_action_ = {false};
+        RpcContext* context_;
         using bind_type = decltype(std::bind(std::declval<std::function<VT(T...)>>(), std::declval<T>()...));
         bind_type bind_;
-
     };
 
 
     template<typename F, typename... Args>
     auto derive_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(args...)), Args...>* {
         return new DerivedAction<decltype(f(args...)), Args...>(std::forward<F>(f), std::forward<Args>(args)...);
+    }
+
+    template<typename F, typename... Args>
+    auto derive_final_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(args...)), Args...>* {
+        return new DerivedAction<decltype(f(args...)), Args...>(/*is_final_action=*/true, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
     template<typename VT, typename... T>
@@ -685,12 +708,9 @@ void init_rpc() {
     //TODO: check nullptr
     RpcCellBase<ResponseBar>* rsp_cell = simple_rpc_service_interaction.run(foo);
 
-    auto derivedAction = derive_action(
+    auto derivedAction = derive_final_action(
         [](RpcCellBase<ResponseBar>* r) -> void {
             cout << "----------------->>>> send data back to original requseter." << endl;
-            if (r->context_) {
-                delete r->context_;
-            }
             UdpChannel::close_all_channels();
         }, rsp_cell
     );

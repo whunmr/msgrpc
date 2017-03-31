@@ -556,66 +556,46 @@ struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
 
 
 void local_main() {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
     RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
 
     msgrpc::RpcCell<ResponseBar> *rsp_cell = simple_rpc_service_interaction.run(foo);
 
     if (rsp_cell != nullptr) {
-        derive_final_action([](msgrpc::RpcCell<ResponseBar> *r) { UdpChannel::close_all_channels(); }, rsp_cell);
+        derive_final_action(
+                [](msgrpc::RpcCell<ResponseBar> *r) {
+                    cout << "exiting--->>>" << endl;
+                    UdpChannel::close_all_channels();
+                }, rsp_cell);
     }
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-void local_service() {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
     msgrpc::Config::instance().init_with(&UdpMsgChannel::instance(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
 
-    UdpChannel channel(k_local_service_id,
-        [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-            if (0 == strcmp(msg, "init")) {
-               return local_main();
-            }
+    UdpChannel channel(udp_port,
+        [&init_func](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+           if (0 == strcmp(msg, "init")) {
+               return init_func();
+           }
 
-            if (msg_id == msgrpc::Config::instance().request_msg_id_) {
-                return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
-            }
-
-            if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+           if (msg_id == msgrpc::Config::instance().response_msg_id_) {
                return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
-            }
+           }
 
-            cout << "local received msg:" << string(msg, len) << endl;
-        }
-    );
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void remote_service() {
-    msgrpc::Config::instance().init_with(&UdpMsgChannel::instance(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
-
-    UdpChannel channel(k_remote_service_id,
-        [](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-            if (0 == strcmp(msg, "init")) {
-               return;
-            }
-
-            if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
-            }
-
-            if (msg_id == msgrpc::Config::instance().request_msg_id_) {
-                return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
-            }
+           if (msg_id == msgrpc::Config::instance().request_msg_id_) {
+               return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+           }
         }
     );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST(async_rpc, should_able_to__support_async_rpc) {
-    std::thread local_thread(local_service);
-    std::thread remote_thread(remote_service);
+    std::thread local_thread(msgrpc_loop,  k_local_service_id,  local_main);
+    std::thread remote_thread(msgrpc_loop, k_remote_service_id, [](){});
 
     local_thread.join();
     remote_thread.join();

@@ -18,19 +18,12 @@ thread_local UdpChannel* g_msg_channel;
 struct UdpChannel {
     UdpChannel(unsigned short udp_port, OnMsgFunc on_msg_func)
             : io_service_(), socket_(io_service_, udp::endpoint(udp::v4(), udp_port)), on_msg_func_(on_msg_func) {
+
         start_receive();
-
         this->send_msg_to_remote("00init", udp::endpoint(udp::v4(), udp_port)); //00 means leading msgrpc::msg_id_t
-
         g_msg_channel = this;
-
-        io_services_.push_back(&io_service_);
-
+        sockets_.push_back(&socket_);
         io_service_.run();
-    }
-
-    ~UdpChannel() {
-        g_msg_channel = nullptr;
     }
 
     void start_receive() {
@@ -64,12 +57,13 @@ struct UdpChannel {
     }
 
     static void close_all_channels() {
-        for (auto s : io_services_) {
-            s->stop();
+        for (auto s : sockets_) {
+            s->close();
         }
+        sockets_.clear();
     }
 
-    static std::vector<boost::asio::io_service*> io_services_;
+    static std::vector<udp::socket*> sockets_;
     boost::asio::io_service io_service_;
     udp::socket socket_;
     OnMsgFunc on_msg_func_;
@@ -78,6 +72,6 @@ struct UdpChannel {
     boost::array<char, 10240> recv_buffer_;
 };
 
-std::vector<boost::asio::io_service*> UdpChannel::io_services_;
+std::vector<udp::socket*> UdpChannel::sockets_;
 
 #endif //MSGRPC_UDPCHANNEL_H

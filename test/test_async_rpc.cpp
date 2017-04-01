@@ -22,6 +22,7 @@ namespace msgrpc {
 
     struct MsgChannel {
         //TODO: extract common channel interface
+        //TODO: check common return value type
         virtual bool send_msg(const service_id_t& remote_service_id, msg_id_t msg_id, const char* buf, size_t len) const = 0;
     };
 
@@ -77,160 +78,14 @@ namespace msgrpc {
 
     enum class RpcResult : unsigned short {
         succeeded = 0
-        , failed  = 1
-        , method_not_found = 2
-        , iface_not_found =  3
+        , deferred = 1
+        , failed  = 2
+        , method_not_found = 3
+        , iface_not_found =  4
     };
 
     struct RspMsgHeader : MsgHeader {
         RpcResult rpc_result_ = { RpcResult::succeeded };
-    };
-}
-
-////////////////////////////////////////////////////////////////////////////////
-#include "test_util/UdpChannel.h"
-namespace demo {
-    const msgrpc::service_id_t x_service_id = 2222;
-    const msgrpc::service_id_t y_service_id = 3333;
-
-    const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
-    const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
-
-    struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::Singleton<UdpMsgChannel> {
-        virtual bool send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
-            cout << ((remote_service_id == x_service_id) ? "X <------ " : "   ------> Y") << endl;
-
-            size_t msg_len_with_msgid = sizeof(msgrpc::msg_id_t) + len;
-            char* mem = (char*)malloc(msg_len_with_msgid);
-            if (mem) {
-                *(msgrpc::msg_id_t*)(mem) = msg_id;
-                memcpy(mem + sizeof(msgrpc::msg_id_t), buf, len);
-                g_msg_channel->send_msg_to_remote(string(mem, msg_len_with_msgid), udp::endpoint(udp::v4(), remote_service_id));
-                free(mem);
-            } else {
-                cout << "send msg failed: allocation failure." << endl;
-            }
-            return true;
-        }
-    };
-}
-
-using namespace demo;
-
-////////////////////////////////////////////////////////////////////////////////
-namespace msgrpc {
-
-    struct IfaceImplBase {
-        virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
-                                , const char* msg, size_t len
-                                , msgrpc::RspMsgHeader& rsp_header
-                                , uint8_t*& pout_buf, uint32_t& out_buf_len) = 0;
-    };
-
-    struct IfaceRepository : msgrpc::Singleton<IfaceRepository> {
-        void add_iface_impl(iface_index_t ii, IfaceImplBase* iface) {
-            assert(iface != nullptr && "interface implementation can not be null");
-            assert(___m.find(ii) == ___m.end() && "interface can only register once");
-            ___m[ii] = iface;
-        }
-
-        IfaceImplBase* get_iface_impl_by(iface_index_t ii) {
-            auto iter = ___m.find(ii);
-            return iter == ___m.end() ? nullptr : iter->second;
-        }
-
-      private:
-        std::map<iface_index_t, IfaceImplBase*> ___m;
-    };
-
-    template<typename T, iface_index_t iface_index>
-    struct InterfaceImplBaseT : IfaceImplBase {
-        InterfaceImplBaseT() {
-            IfaceRepository::instance().add_iface_impl(iface_index, this);
-        }
-
-        template<typename REQ, typename RSP>
-        bool invoke_templated_method( bool (T::*method_impl)(const REQ&, RSP&)
-                                    , const char *msg, size_t len
-                                    , uint8_t *&pout_buf, uint32_t &out_buf_len) {
-            REQ req;
-            if (! ThriftDecoder::decode(req, (uint8_t *) msg, len)) {
-                cout << "decode failed on remote side." << endl;
-                return false;
-            }
-
-            RSP rsp;
-            if (! ((T*)this->*method_impl)(req, rsp)) {
-                //TODO: log
-                return false;
-            }
-
-            if (! ThriftEncoder::encode(rsp, &pout_buf, &out_buf_len)) {
-                cout << "encode failed on remtoe side." << endl;
-                return false;
-            }
-
-            return true;
-        }
-    };
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-namespace msgrpc {
-    struct RpcReqMsgHandler {
-        static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            assert(msg_id == k_msgrpc_request_msg_id && "invalid msg id for rpc");
-
-            if (len < sizeof(msgrpc::ReqMsgHeader)) {
-                cout << "invalid msg: without sufficient msg header info." << endl;
-                return;
-            }
-
-            auto *req_header = (msgrpc::ReqMsgHeader *) msg;
-            msg += sizeof(msgrpc::ReqMsgHeader);
-
-            msgrpc::RspMsgHeader rsp_header;
-            rsp_header.msgrpc_version_ = req_header->msgrpc_version_;
-            rsp_header.iface_index_in_service_ = req_header->iface_index_in_service_;
-            rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
-            rsp_header.sequence_id_ = req_header->sequence_id_;
-
-            uint8_t *pout_buf;
-            uint32_t out_buf_len;
-
-
-            msgrpc::service_id_t sender_id = req_header->iface_index_in_service_ == 2 ? x_service_id : y_service_id;
-
-            IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
-            if (iface == nullptr) {
-                rsp_header.rpc_result_ = RpcResult::iface_not_found;
-                msgrpc::Config::instance().msg_channel_->send_msg(sender_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
-                return;
-            }
-
-            bool ret = iface->onRpcInvoke(*req_header, msg, len - sizeof(msgrpc::ReqMsgHeader), rsp_header, pout_buf, out_buf_len);
-            if (ret) {
-                return send_msg_with_header(sender_id, rsp_header, pout_buf, out_buf_len);
-            } else {
-                msgrpc::Config::instance().msg_channel_->send_msg(sender_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
-            }
-
-            //TODO: using pipelined processor to handling input/output msgheader and rpc statistics.
-        }
-
-        static void send_msg_with_header(msgrpc::service_id_t& service_id, RspMsgHeader &rsp_header, const uint8_t *pout_buf, uint32_t out_buf_len) {
-            size_t rsp_len_with_header = sizeof(rsp_header) + out_buf_len;
-            char *mem = (char *) malloc(rsp_len_with_header);
-            if (mem != nullptr) {
-                memcpy(mem, &rsp_header, sizeof(rsp_header));
-                memcpy(mem + sizeof(rsp_header), pout_buf, out_buf_len);
-                /*TODO: replace x_service_id to sender id*/
-
-                Config::instance().msg_channel_->send_msg(service_id, k_msgrpc_response_msg_id, mem, rsp_len_with_header);
-                free(mem);
-            }
-        }
     };
 }
 
@@ -388,6 +243,200 @@ namespace msgrpc {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+#include "test_util/UdpChannel.h"
+namespace demo {
+    const msgrpc::service_id_t x_service_id = 2222;
+    const msgrpc::service_id_t y_service_id = 3333;
+
+    const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
+    const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
+
+    struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::Singleton<UdpMsgChannel> {
+        virtual bool send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
+            cout << ((remote_service_id == x_service_id) ? "X <------ " : "   ------> Y") << endl;
+
+            size_t msg_len_with_msgid = sizeof(msgrpc::msg_id_t) + len;
+            char* mem = (char*)malloc(msg_len_with_msgid);
+            if (mem) {
+                *(msgrpc::msg_id_t*)(mem) = msg_id;
+                memcpy(mem + sizeof(msgrpc::msg_id_t), buf, len);
+                g_msg_channel->send_msg_to_remote(string(mem, msg_len_with_msgid), udp::endpoint(udp::v4(), remote_service_id));
+                free(mem);
+            } else {
+                cout << "send msg failed: allocation failure." << endl;
+            }
+            return true;
+        }
+    };
+}
+
+using namespace demo;
+
+////////////////////////////////////////////////////////////////////////////////
+namespace msgrpc {
+
+    struct IfaceImplBase {
+        virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
+                , const char* msg, size_t len
+                , msgrpc::RspMsgHeader& rsp_header
+                , msgrpc::service_id_t& sender_id) = 0;
+    };
+
+    struct IfaceRepository : msgrpc::Singleton<IfaceRepository> {
+        void add_iface_impl(iface_index_t ii, IfaceImplBase* iface) {
+            assert(iface != nullptr && "interface implementation can not be null");
+            assert(___m.find(ii) == ___m.end() && "interface can only register once");
+            ___m[ii] = iface;
+        }
+
+        IfaceImplBase* get_iface_impl_by(iface_index_t ii) {
+            auto iter = ___m.find(ii);
+            return iter == ___m.end() ? nullptr : iter->second;
+        }
+
+    private:
+        std::map<iface_index_t, IfaceImplBase*> ___m;
+    };
+
+    struct MsgSender {
+        static void send_msg_with_header(const msgrpc::service_id_t& service_id, const RspMsgHeader &rsp_header, const uint8_t *pout_buf, uint32_t out_buf_len) {
+            if (pout_buf == nullptr || out_buf_len == 0) {
+                Config::instance().msg_channel_->send_msg(service_id, k_msgrpc_response_msg_id, (const char*)&rsp_header, sizeof(rsp_header));
+                return;
+            }
+
+            size_t rsp_len_with_header = sizeof(rsp_header) + out_buf_len;
+            char *mem = (char *) malloc(rsp_len_with_header);
+            if (mem != nullptr) {
+                memcpy(mem, &rsp_header, sizeof(rsp_header));
+                memcpy(mem + sizeof(rsp_header), pout_buf, out_buf_len);
+                Config::instance().msg_channel_->send_msg(service_id, k_msgrpc_response_msg_id, mem, rsp_len_with_header);
+                free(mem);
+            }
+        }
+    };
+    struct RpcReqMsgHandler {
+        static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
+            assert(msg_id == k_msgrpc_request_msg_id && "invalid msg id for rpc");
+
+            if (len < sizeof(msgrpc::ReqMsgHeader)) {
+                cout << "invalid msg: without sufficient msg header info." << endl;
+                return;
+            }
+
+            auto *req_header = (msgrpc::ReqMsgHeader *) msg;
+            msg += sizeof(msgrpc::ReqMsgHeader);
+
+            msgrpc::RspMsgHeader rsp_header;
+            rsp_header.msgrpc_version_ = req_header->msgrpc_version_;
+            rsp_header.iface_index_in_service_ = req_header->iface_index_in_service_;
+            rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
+            rsp_header.sequence_id_ = req_header->sequence_id_;
+
+            msgrpc::service_id_t sender_id = req_header->iface_index_in_service_ == 2 ? x_service_id : y_service_id;
+
+            IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
+            if (iface == nullptr) {
+                rsp_header.rpc_result_ = RpcResult::iface_not_found;
+                msgrpc::Config::instance().msg_channel_->send_msg(sender_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
+                return;
+            }
+
+            RpcResult ret = iface->onRpcInvoke(*req_header, msg, len - sizeof(msgrpc::ReqMsgHeader), rsp_header, sender_id);
+
+            if (ret == RpcResult::failed || ret == RpcResult::method_not_found) {
+                return MsgSender::send_msg_with_header(sender_id, rsp_header, nullptr, 0);
+            }
+
+            //TODO: using pipelined processor to handling input/output msgheader and rpc statistics.
+        }
+    };
+}
+
+////////////////////////////////////////////////////////////////////////////////
+namespace msgrpc {
+    ////////////////////////////////////////////////////////////////////////////////
+    enum class MsgRpcRet : unsigned char {
+        succeeded = 0,
+        failed = 1,
+        async_deferred = 2
+    };
+
+    template<typename RSP>
+    static RpcResult send_rsp_cell_value(const service_id_t& sender_id, const RspMsgHeader &rsp_header, const RpcCell<RSP>& rsp_cell) {
+        if (!rsp_cell.cell_has_value_) {
+            return RpcResult::failed;
+        }
+
+        uint8_t* pout_buf = nullptr;
+        uint32_t out_buf_len = 0;
+        if (!ThriftEncoder::encode(rsp_cell.value_, &pout_buf, &out_buf_len)) {
+            cout << "encode failed on remtoe side." << endl;
+            return RpcResult::failed;
+        }
+
+        MsgSender::send_msg_with_header(sender_id, rsp_header, pout_buf, out_buf_len);
+        return RpcResult::succeeded;
+    }
+
+    template<typename T, iface_index_t iface_index>
+    struct InterfaceImplBaseT : IfaceImplBase {
+        InterfaceImplBaseT() {
+            IfaceRepository::instance().add_iface_impl(iface_index, this);
+        }
+
+        template<typename REQ, typename RSP>
+        RpcResult invoke_templated_method(msgrpc::RpcCell<RSP>* (T::*method_impl)(const REQ&)
+                , const char *msg, size_t len
+                , msgrpc::service_id_t& sender_id
+                , msgrpc::RspMsgHeader& rsp_header) {
+
+            REQ req;
+            if (! ThriftDecoder::decode(req, (uint8_t *) msg, len)) {
+                cout << "decode failed on remote side." << endl;
+                return RpcResult::failed;
+            }
+
+            msgrpc::RpcCell<RSP>* rsp_cell = ((T*)this->*method_impl)(req);
+            if ( rsp_cell == nullptr ) {
+                //TODO: log
+                return RpcResult::failed;
+            }
+
+
+            //if rsp cell already has value, then not bind final action, send, and delete rsp_cell
+            if (rsp_cell->cell_has_value_) {
+                RpcResult ret = send_rsp_cell_value(sender_id, rsp_header, *rsp_cell);
+                delete rsp_cell;
+                return ret;
+            }
+
+            //else, bind final action to send result.
+            //TODO: make args of lambda to be reference & ??
+            derive_final_action([sender_id, rsp_header](msgrpc::RpcCell<RSP> *r) {
+                if (r == nullptr) {
+                    //TODO: log error
+                    return;
+                }
+
+                cout << "async_y got:" << r->cell_has_value_ << endl;
+                cout << "async_y got:" << r->value_.rspa << endl;
+
+                if (r->cell_has_value_) {
+                    send_rsp_cell_value(sender_id, rsp_header, *r);
+                } else {
+                    //TODO: handle error case where result do not contains value. maybe timeout?
+                }
+            }, rsp_cell);
+
+            return RpcResult::deferred;
+        }
+    };
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
 
     struct RpcStubBase {
@@ -424,7 +473,7 @@ namespace msgrpc {
         }
 
         template<typename T, typename U>
-        RpcRspCell<U>* encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const T &req) const {
+        RpcCell<U>* encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const T &req) const {
             uint8_t* pbuf;
             uint32_t len;
             /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
@@ -485,42 +534,42 @@ const int k__sync_x__delta = 17;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct InterfaceXStub : msgrpc::RpcStubBase {
-    virtual msgrpc::RpcRspCell<ResponseBar>* ______sync_x(const RequestFoo&);
+    msgrpc::RpcCell<ResponseBar>* ______sync_x(const RequestFoo&);
 };
 
-msgrpc::RpcRspCell<ResponseBar>* InterfaceXStub::______sync_x(const RequestFoo& req) {
+msgrpc::RpcCell<ResponseBar>* InterfaceXStub::______sync_x(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
 struct InterfaceXImpl : msgrpc::InterfaceImplBaseT<InterfaceXImpl, 1> {
-    bool ______sync_x(const RequestFoo& req, ResponseBar& rsp);
+    msgrpc::RpcCell<ResponseBar>* ______sync_x(const RequestFoo& req);
 
-    virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
+    virtual msgrpc::RpcResult onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header
             , const char* msg, size_t len
             , msgrpc::RspMsgHeader& rsp_header
-            , uint8_t*& pout_buf, uint32_t& out_buf_len) override;
+            , msgrpc::service_id_t& sender_id) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set: interface_implement_define.h
 InterfaceXImpl interfaceXImpl;
-bool InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
+msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
         , size_t len, msgrpc::RspMsgHeader& rsp_header
-        , uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    bool ret;
+        , msgrpc::service_id_t& sender_id) {
 
+    msgrpc::RpcResult ret;
     if (req_header.method_index_in_interface_ == 1) {
-        ret = this->invoke_templated_method(&InterfaceXImpl::______sync_x, msg, len, pout_buf, out_buf_len);
+        ret = this->invoke_templated_method(&InterfaceXImpl::______sync_x, msg, len, sender_id, rsp_header);
     } else
 
     {
         rsp_header.rpc_result_ = msgrpc::RpcResult::method_not_found;
-        return false;
+        return msgrpc::RpcResult::failed;
     }
 
-    if (! ret) {
+    if (ret == msgrpc::RpcResult::failed) {
         rsp_header.rpc_result_ = msgrpc::RpcResult::failed;
     }
 
@@ -529,10 +578,12 @@ bool InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const 
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- implement interface in here:
-bool InterfaceXImpl::______sync_x(const RequestFoo& req, ResponseBar& rsp) {
+msgrpc::RpcCell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
     cout << "                     ______sync_x" << endl;
-    rsp.__set_rspa(req.reqa + k__sync_x__delta);
-    return true;
+    auto* rsp_cell = new msgrpc::RpcRspCell<ResponseBar>();
+    rsp_cell->cell_has_value_ = true;
+    rsp_cell->value_.__set_rspa(req.reqa + k__sync_x__delta);
+    return rsp_cell;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -540,52 +591,52 @@ bool InterfaceXImpl::______sync_x(const RequestFoo& req, ResponseBar& rsp) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct InterfaceYStub : msgrpc::RpcStubBase {
-    virtual msgrpc::RpcRspCell<ResponseBar>* ______sync_y(const RequestFoo&);
-    virtual msgrpc::RpcRspCell<ResponseBar>* _____async_y(const RequestFoo&);
+    msgrpc::RpcCell<ResponseBar>* ______sync_y(const RequestFoo&);
+    msgrpc::RpcCell<ResponseBar>* _____async_y(const RequestFoo&);
 };
 
-msgrpc::RpcRspCell<ResponseBar>* InterfaceYStub::______sync_y(const RequestFoo& req) {
+msgrpc::RpcCell<ResponseBar>* InterfaceYStub::______sync_y(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(2, 1, req);
 }
 
-msgrpc::RpcRspCell<ResponseBar>* InterfaceYStub::_____async_y(const RequestFoo& req) {
+msgrpc::RpcCell<ResponseBar>* InterfaceYStub::_____async_y(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(2, 2, req);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
 struct InterfaceYImpl : msgrpc::InterfaceImplBaseT<InterfaceYImpl, 2> {
-    bool ______sync_y(const RequestFoo& req, ResponseBar& rsp);
-    bool _____async_y(const RequestFoo& req, ResponseBar& rsp);
+    msgrpc::RpcCell<ResponseBar>* ______sync_y(const RequestFoo& req);
+    msgrpc::RpcCell<ResponseBar>* _____async_y(const RequestFoo& req);
 
-    virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
+    virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
             , const char* msg, size_t len
             , msgrpc::RspMsgHeader& rsp_header
-            , uint8_t*& pout_buf, uint32_t& out_buf_len) override;
+            , msgrpc::service_id_t& sender_id) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set: interface_implement_define.h
 InterfaceYImpl interfaceYImpl;
-bool InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
-        , size_t len, msgrpc::RspMsgHeader& rsp_header
-        , uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    bool ret;
+msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
+                                             , size_t len, msgrpc::RspMsgHeader& rsp_header
+                                             , msgrpc::service_id_t& sender_id) {
+    msgrpc::RpcResult ret;
 
     if (req_header.method_index_in_interface_ == 1) {
-        ret = this->invoke_templated_method(&InterfaceYImpl::______sync_y, msg, len, pout_buf, out_buf_len);
+        ret = this->invoke_templated_method(&InterfaceYImpl::______sync_y, msg, len, sender_id, rsp_header);
     } else
 
     if (req_header.method_index_in_interface_ == 2) {
-        ret = this->invoke_templated_method(&InterfaceYImpl::_____async_y, msg, len, pout_buf, out_buf_len);
+        ret = this->invoke_templated_method(&InterfaceYImpl::_____async_y, msg, len, sender_id, rsp_header);
     } else
 
     {
         rsp_header.rpc_result_ = msgrpc::RpcResult::method_not_found;
-        return false;
+        return msgrpc::RpcResult::method_not_found;
     }
 
-    if (! ret) {
+    if (ret == msgrpc::RpcResult::failed) {
         rsp_header.rpc_result_ = msgrpc::RpcResult::failed;
     }
 
@@ -594,38 +645,44 @@ bool InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const 
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- implement interface in here:
-bool InterfaceYImpl::______sync_y(const RequestFoo& req, ResponseBar& rsp) {
+msgrpc::RpcCell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
     cout << "                     ______sync_y" << endl;
 
-    rsp.__set_rspa(req.reqa + k__sync_y__delta);
-    return true;
+    auto* rsp_cell = new msgrpc::RpcRspCell<ResponseBar>();
+    rsp_cell->cell_has_value_ = true;
+    rsp_cell->value_.__set_rspa(req.reqa + k__sync_y__delta);
+    return rsp_cell;
 }
 
 struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = InterfaceXStub().______sync_x(req);
+        msgrpc::RpcCell<ResponseBar>* rsp_cell = InterfaceXStub().______sync_x(req);
         ctxt->track_item_to_release(rsp_cell);
         return rsp_cell;
     }
 };
 
-bool InterfaceYImpl::_____async_y(const RequestFoo& req, ResponseBar& rsp) {
+//bool InterfaceYImpl::_____async_y(const RequestFoo& req, ResponseBar& rsp) {
+//    cout << "                     _____async_y" << endl;
+//    rsp.__set_rspa(req.reqa + k_async_y__delta);
+//
+//    //TODO: defer the send rsp action, until si finished.
+//    msgrpc::RpcCell<ResponseBar> *rsp_cell = SI_____async_y().run(req);
+//    if (rsp_cell != nullptr) {
+//        derive_final_action([](msgrpc::RpcCell<ResponseBar> *r) {
+//            cout << "async_y got:" << r->cell_has_value_ << endl;
+//            cout << "async_y got:" << r->value_.rspa << endl;
+//            UdpChannel::close_all_channels();
+//        }, rsp_cell);
+//    }
+//
+//    return true;
+//}
+
+msgrpc::RpcCell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
     cout << "                     _____async_y" << endl;
-    rsp.__set_rspa(req.reqa + k_async_y__delta);
-
-    //TODO: defer the send rsp action, until si finished.
     msgrpc::RpcCell<ResponseBar> *rsp_cell = SI_____async_y().run(req);
-    if (rsp_cell != nullptr) {
-        derive_final_action([](msgrpc::RpcCell<ResponseBar> *r) {
-            cout << "async_y got:" << r->cell_has_value_ << endl;
-            cout << "async_y got:" << r->value_.rspa << endl;
-            //EXPECT_TRUE(r->cell_has_value_);
-            //EXPECT_EQ(k_req_init_value + k_async_y__delta, r->value_.rspa);
-            //UdpChannel::close_all_channels();
-        }, rsp_cell);
-    }
-
-    return true;
+    return rsp_cell;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -641,7 +698,7 @@ void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r)                    { cout 
 struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
 
-        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = InterfaceYStub().______sync_y(req);
+        msgrpc::RpcCell<ResponseBar>* rsp_cell = InterfaceYStub().______sync_y(req);
         ctxt->track_item_to_release(rsp_cell);
 
         ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp_cell));
@@ -653,7 +710,7 @@ struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
 
 struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = InterfaceYStub()._____async_y(req);
+        msgrpc::RpcCell<ResponseBar>* rsp_cell = InterfaceYStub()._____async_y(req);
         ctxt->track_item_to_release(rsp_cell);
         return rsp_cell;
     }

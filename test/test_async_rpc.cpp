@@ -353,7 +353,7 @@ namespace msgrpc {
                                                                                    std::forward<Args>(args)...);
     }
 
-    struct RpcRspDispatcher : msgrpc::Singleton<RpcRspDispatcher> {
+    struct RpcRspDispatcher : msgrpc::ThreadLocalSingleton<RpcRspDispatcher> {
         void register_rsp_Handler(rpc_sequence_id_t sequence_id, RpcRspCellSink* func) {
             assert(id_func_map_.find(sequence_id) == id_func_map_.end() && "should register with unique id.");
             id_func_map_[sequence_id] = func;
@@ -442,6 +442,13 @@ namespace msgrpc {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+//constants for testing.
+const int k_req_init_value = 97;
+const int k__sync_y__delta = 1;
+const int k_async_y__delta = 7;
+const int k__sync_z__delta = 17;
+
+////////////////////////////////////////////////////////////////////////////////
 //TODO: define following macros:
 #define declare_interface_on_consumer
 #define  define_interface_on_consumer
@@ -451,8 +458,9 @@ namespace msgrpc {
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
 struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
-    bool _____f1(const RequestFoo& req, ResponseBar& rsp);
-    bool _____f2(const RequestFoo& req, ResponseBar& rsp);
+    bool ______sync_y(const RequestFoo& req, ResponseBar& rsp);
+    bool _____async_y(const RequestFoo& req, ResponseBar& rsp);
+    bool ______sync_x(const RequestFoo& req, ResponseBar& rsp);
 
     virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
             , const char* msg, size_t len
@@ -469,11 +477,15 @@ bool IBuzzMathImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const c
     bool ret;
 
     if (req_header.method_index_in_interface_ == 1) {
-        ret = this->invoke_templated_method(&IBuzzMathImpl::_____f1, msg, len, pout_buf, out_buf_len);
+        ret = this->invoke_templated_method(&IBuzzMathImpl::______sync_y, msg, len, pout_buf, out_buf_len);
     } else
 
     if (req_header.method_index_in_interface_ == 2) {
-        ret = this->invoke_templated_method(&IBuzzMathImpl::_____f2, msg, len, pout_buf, out_buf_len);
+        ret = this->invoke_templated_method(&IBuzzMathImpl::_____async_y, msg, len, pout_buf, out_buf_len);
+    } else
+
+    if (req_header.method_index_in_interface_ == 3) {
+        ret = this->invoke_templated_method(&IBuzzMathImpl::______sync_x, msg, len, pout_buf, out_buf_len);
     } else
 
     {
@@ -490,13 +502,20 @@ bool IBuzzMathImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const c
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- implement interface in here:
-bool IBuzzMathImpl::_____f1(const RequestFoo& req, ResponseBar& rsp) {
-    rsp.__set_rspa(req.get_reqb());
+bool IBuzzMathImpl::______sync_y(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_rspa(req.reqa + k__sync_y__delta);
     return true;
 }
 
-bool IBuzzMathImpl::_____f2(const RequestFoo& req, ResponseBar& rsp) {
-    rsp.__set_rspa(1 + req.reqa);
+
+
+bool IBuzzMathImpl::_____async_y(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_rspa(req.reqa + k_async_y__delta);
+    return true;
+}
+
+bool IBuzzMathImpl::______sync_x(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_rspa(req.reqa + k__sync_z__delta);
     return true;
 }
 
@@ -504,15 +523,20 @@ bool IBuzzMathImpl::_____f2(const RequestFoo& req, ResponseBar& rsp) {
 ////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct IBuzzMathStub : msgrpc::RpcStubBase {
-    virtual msgrpc::RpcRspCell<ResponseBar>* _____f1(const RequestFoo&);
-    virtual msgrpc::RpcRspCell<ResponseBar>* _____f2(const RequestFoo&);
+    virtual msgrpc::RpcRspCell<ResponseBar>* ______sync_y(const RequestFoo&);
+    virtual msgrpc::RpcRspCell<ResponseBar>* _____async_y(const RequestFoo&);
+    virtual msgrpc::RpcRspCell<ResponseBar>* ______sync_x(const RequestFoo&);
 };
 
-msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::_____f1(const RequestFoo& req) {
+msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::______sync_y(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
 }
 
-msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::_____f2(const RequestFoo& req) {
+msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::_____async_y(const RequestFoo& req) {
+    return encode_request_and_send<RequestFoo, ResponseBar>(1, 2, req);
+}
+
+msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::______sync_x(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(1, 2, req);
 }
 
@@ -535,12 +559,12 @@ namespace msgrpc {
 }
 
 void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) { cout << "1/2 ----------------->>>> write db." << endl; };
-void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) { cout << "2/2 ----------------->>>> save_log." << endl; };
+void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
 
-struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
+struct SI_case1 : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
 
-        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub()._____f1(req);
+        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub().______sync_y(req);
         ctxt->track_item_to_release(rsp_cell);
 
         ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp_cell));
@@ -548,17 +572,43 @@ struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
         ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_to_log, rsp_cell));
         return rsp_cell;
     }
-} simple_rpc_service_interaction;
+};
+
+struct SI_case2 : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub()._____async_y(req);
+        ctxt->track_item_to_release(rsp_cell);
+        return rsp_cell;
+    }
+};
 
 
-void local_main() {
+void x_main___case1() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    RequestFoo foo; foo.reqa = 97; foo.__set_reqb(98);
+    RequestFoo foo; foo.reqa = k_req_init_value;
 
-    msgrpc::RpcCell<ResponseBar> *rsp_cell = simple_rpc_service_interaction.run(foo);
+    msgrpc::RpcCell<ResponseBar> *rsp_cell = SI_case1().run(foo);
+
+    if (rsp_cell != nullptr) {
+        derive_final_action( [](msgrpc::RpcCell<ResponseBar> *rsp) {
+            EXPECT_TRUE(rsp->cell_has_value_);
+            EXPECT_EQ(k_req_init_value + k__sync_y__delta, rsp->value_.rspa);
+            UdpChannel::close_all_channels();
+        }, rsp_cell);
+    }
+}
+
+void x_main___case2() {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    RequestFoo foo; foo.reqa = k_req_init_value;
+
+    SI_case2 si;
+    msgrpc::RpcCell<ResponseBar> *rsp_cell = si.run(foo);
 
     if (rsp_cell != nullptr) {
         derive_final_action( [](msgrpc::RpcCell<ResponseBar> *r) {
+            EXPECT_TRUE(r->cell_has_value_);
+            EXPECT_EQ(k_req_init_value + k_async_y__delta, r->value_.rspa);
             UdpChannel::close_all_channels();
         }, rsp_cell);
     }
@@ -586,10 +636,23 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST(async_rpc, should_able_to__support_simple_async_rpc_________implement_service_interactions_in_a) {
-    // a ----(req)---->b
-    // b <---(rsp)-----b
-    std::thread thread_a(msgrpc_loop,  k_local_service_id,  local_main);
+TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__sync_method_in__y__________case1) {
+    // x ----(req)---->y (sync_y)
+    // x <---(rsp)-----y
+    std::thread thread_x(msgrpc_loop,  k_local_service_id, x_main___case1);
+    std::thread thread_y(msgrpc_loop, k_remote_service_id, [](){});
+
+    thread_x.join();
+    thread_y.join();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__async_method_in_y__________case2) {
+    // x ----(req1)------------------->y  (async_y)
+    // x (sync_x) <=========(req2)=====y  (async_y)
+    // x (sync_x) ==========(rsp2)====>y  (async_y)
+    // x <---(rsp1)--------------------y  (async_y)
+    std::thread thread_a(msgrpc_loop,  k_local_service_id, x_main___case2);
     std::thread thread_b(msgrpc_loop, k_remote_service_id, [](){});
 
     thread_a.join();

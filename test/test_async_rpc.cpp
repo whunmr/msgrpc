@@ -198,31 +198,35 @@ namespace msgrpc {
             uint8_t *pout_buf;
             uint32_t out_buf_len;
 
+
+            msgrpc::service_id_t sender_id = req_header->iface_index_in_service_ == 2 ? x_service_id : y_service_id;
+
             IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
             if (iface == nullptr) {
                 rsp_header.rpc_result_ = RpcResult::iface_not_found;
-                msgrpc::Config::instance().msg_channel_->send_msg(x_service_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
+                msgrpc::Config::instance().msg_channel_->send_msg(sender_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
                 return;
             }
 
             bool ret = iface->onRpcInvoke(*req_header, msg, len - sizeof(msgrpc::ReqMsgHeader), rsp_header, pout_buf, out_buf_len);
             if (ret) {
-                return send_msg_with_header(rsp_header, pout_buf, out_buf_len);
+                return send_msg_with_header(sender_id, rsp_header, pout_buf, out_buf_len);
             } else {
-                msgrpc::Config::instance().msg_channel_->send_msg(x_service_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
+                msgrpc::Config::instance().msg_channel_->send_msg(sender_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
             }
 
             //TODO: using pipelined processor to handling input/output msgheader and rpc statistics.
         }
 
-        static void send_msg_with_header(RspMsgHeader &rsp_header, const uint8_t *pout_buf, uint32_t out_buf_len) {
+        static void send_msg_with_header(msgrpc::service_id_t& service_id, RspMsgHeader &rsp_header, const uint8_t *pout_buf, uint32_t out_buf_len) {
             size_t rsp_len_with_header = sizeof(rsp_header) + out_buf_len;
             char *mem = (char *) malloc(rsp_len_with_header);
             if (mem != nullptr) {
                 memcpy(mem, &rsp_header, sizeof(rsp_header));
                 memcpy(mem + sizeof(rsp_header), pout_buf, out_buf_len);
                 /*TODO: replace x_service_id to sender id*/
-                Config::instance().msg_channel_->send_msg(x_service_id, k_msgrpc_response_msg_id, mem, rsp_len_with_header);
+
+                Config::instance().msg_channel_->send_msg(service_id, k_msgrpc_response_msg_id, mem, rsp_len_with_header);
                 free(mem);
             }
         }
@@ -409,7 +413,8 @@ namespace msgrpc {
 
             //cout << "stub sending msg with length: " << msg_len_with_header << endl;
             //TODO: find y_service_id by interface name "IBuzzMath"
-            //msgrpc::service_id_t service_id = method_index > 2 ? x_service_id : y_service_id;
+
+            msgrpc::service_id_t service_id = iface_index == 1 ? x_service_id : y_service_id;
 
             bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(y_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
             free(mem);
@@ -473,6 +478,62 @@ const int k__sync_x__delta = 17;
 #define declare_interface_on_provider
 #define  define_interface_on_provider
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//-----------generate by:  declare and define stub macros
+struct InterfaceXStub : msgrpc::RpcStubBase {
+    virtual msgrpc::RpcRspCell<ResponseBar>* ______sync_x(const RequestFoo&);
+};
+
+msgrpc::RpcRspCell<ResponseBar>* InterfaceXStub::______sync_x(const RequestFoo& req) {
+    return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//---------------- generate this part by macros set:
+struct InterfaceXImpl : msgrpc::InterfaceImplBaseT<InterfaceXImpl, 1> {
+    bool ______sync_x(const RequestFoo& req, ResponseBar& rsp);
+
+    virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
+            , const char* msg, size_t len
+            , msgrpc::RspMsgHeader& rsp_header
+            , uint8_t*& pout_buf, uint32_t& out_buf_len) override;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//---------------- generate this part by macros set: interface_implement_define.h
+InterfaceXImpl interfaceXImpl;
+bool InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
+        , size_t len, msgrpc::RspMsgHeader& rsp_header
+        , uint8_t*& pout_buf, uint32_t& out_buf_len) {
+    bool ret;
+
+    if (req_header.method_index_in_interface_ == 1) {
+        ret = this->invoke_templated_method(&InterfaceXImpl::______sync_x, msg, len, pout_buf, out_buf_len);
+    } else
+
+    {
+        rsp_header.rpc_result_ = msgrpc::RpcResult::method_not_found;
+        return false;
+    }
+
+    if (! ret) {
+        rsp_header.rpc_result_ = msgrpc::RpcResult::failed;
+    }
+
+    return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//---------------- implement interface in here:
+bool InterfaceXImpl::______sync_x(const RequestFoo& req, ResponseBar& rsp) {
+    cout << "----------> ______sync_x" << endl;
+    rsp.__set_rspa(req.reqa + k__sync_x__delta);
+    return true;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -483,16 +544,16 @@ struct InterfaceYStub : msgrpc::RpcStubBase {
 };
 
 msgrpc::RpcRspCell<ResponseBar>* InterfaceYStub::______sync_y(const RequestFoo& req) {
-    return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
+    return encode_request_and_send<RequestFoo, ResponseBar>(2, 1, req);
 }
 
 msgrpc::RpcRspCell<ResponseBar>* InterfaceYStub::_____async_y(const RequestFoo& req) {
-    return encode_request_and_send<RequestFoo, ResponseBar>(1, 2, req);
+    return encode_request_and_send<RequestFoo, ResponseBar>(2, 2, req);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
-struct InterfaceYImpl : msgrpc::InterfaceImplBaseT<InterfaceYImpl, 1> {
+struct InterfaceYImpl : msgrpc::InterfaceImplBaseT<InterfaceYImpl, 2> {
     bool ______sync_y(const RequestFoo& req, ResponseBar& rsp);
     bool _____async_y(const RequestFoo& req, ResponseBar& rsp);
 
@@ -541,7 +602,7 @@ bool InterfaceYImpl::______sync_y(const RequestFoo& req, ResponseBar& rsp) {
 
 struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = InterfaceYStub().______sync_y(req);
+        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = InterfaceXStub().______sync_x(req);
         ctxt->track_item_to_release(rsp_cell);
         return rsp_cell;
     }
@@ -565,62 +626,6 @@ bool InterfaceYImpl::_____async_y(const RequestFoo& req, ResponseBar& rsp) {
 
     return true;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//-----------generate by:  declare and define stub macros
-struct InterfaceXStub : msgrpc::RpcStubBase {
-    virtual msgrpc::RpcRspCell<ResponseBar>* ______sync_x(const RequestFoo&);
-};
-
-msgrpc::RpcRspCell<ResponseBar>* InterfaceXStub::______sync_x(const RequestFoo& req) {
-    return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//---------------- generate this part by macros set:
-struct InterfaceXImpl : msgrpc::InterfaceImplBaseT<InterfaceXImpl, 2> {
-    bool ______sync_x(const RequestFoo& req, ResponseBar& rsp);
-
-    virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
-            , const char* msg, size_t len
-            , msgrpc::RspMsgHeader& rsp_header
-            , uint8_t*& pout_buf, uint32_t& out_buf_len) override;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-//---------------- generate this part by macros set: interface_implement_define.h
-InterfaceXImpl interfaceXImpl;
-bool InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
-        , size_t len, msgrpc::RspMsgHeader& rsp_header
-        , uint8_t*& pout_buf, uint32_t& out_buf_len) {
-    bool ret;
-
-    if (req_header.method_index_in_interface_ == 1) {
-        ret = this->invoke_templated_method(&InterfaceXImpl::______sync_x, msg, len, pout_buf, out_buf_len);
-    } else
-
-    {
-        rsp_header.rpc_result_ = msgrpc::RpcResult::method_not_found;
-        return false;
-    }
-
-    if (! ret) {
-        rsp_header.rpc_result_ = msgrpc::RpcResult::failed;
-    }
-
-    return ret;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//---------------- implement interface in here:
-bool InterfaceXImpl::______sync_x(const RequestFoo& req, ResponseBar& rsp) {
-    cout << "----------> ______sync_x" << endl;
-    rsp.__set_rspa(req.reqa + k__sync_x__delta);
-    return true;
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

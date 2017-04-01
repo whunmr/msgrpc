@@ -52,10 +52,15 @@ namespace demo {
 #if 0
     #define ___methods_of_interface___InterfaceY(_, ...)        \
         _(1, ResponseBar, ______sync_y, RequestFoo, __VA_ARGS__)\
-        _(2, ResponseBar, _____async_y, RequestFoo, __VA_ARGS__)\
-        _(3, ResponseBar, ______sync_x, RequestFoo, __VA_ARGS__)
+        _(2, ResponseBar, _____async_y, RequestFoo, __VA_ARGS__)
 
     ___as_interface(InterfaceY, __with_interface_id(1))
+
+
+    #define ___methods_of_interface___InterfaceX(_, ...)        \
+        _(1, ResponseBar, ______sync_x, RequestFoo, __VA_ARGS__)
+
+    ___as_interface(InterfaceX, __with_interface_id(2))
 
     /*TODO: interface uniqueness checking*/
 #endif

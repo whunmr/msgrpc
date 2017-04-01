@@ -11,6 +11,7 @@ using namespace std;
 using namespace std::chrono;
 
 #include "demo/demo_api_declare.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 //TODO: check valgrind check results
 namespace msgrpc {
@@ -374,6 +375,7 @@ namespace msgrpc {
                 return;
             }
 
+            id_func_map_.erase(iter);
             (iter->second)->set_rpc_rsp(rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
         }
 
@@ -449,8 +451,8 @@ namespace msgrpc {
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
 struct IBuzzMathImpl : msgrpc::InterfaceImplBaseT<IBuzzMathImpl, 1> {
-    bool negative_fields(const RequestFoo& req, ResponseBar& rsp);
-    bool plus1_to_fields(const RequestFoo& req, ResponseBar& rsp);
+    bool _____f1(const RequestFoo& req, ResponseBar& rsp);
+    bool _____f2(const RequestFoo& req, ResponseBar& rsp);
 
     virtual bool onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
             , const char* msg, size_t len
@@ -467,11 +469,11 @@ bool IBuzzMathImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const c
     bool ret;
 
     if (req_header.method_index_in_interface_ == 1) {
-        ret = this->invoke_templated_method(&IBuzzMathImpl::negative_fields, msg, len, pout_buf, out_buf_len);
+        ret = this->invoke_templated_method(&IBuzzMathImpl::_____f1, msg, len, pout_buf, out_buf_len);
     } else
 
     if (req_header.method_index_in_interface_ == 2) {
-        ret = this->invoke_templated_method(&IBuzzMathImpl::plus1_to_fields, msg, len, pout_buf, out_buf_len);
+        ret = this->invoke_templated_method(&IBuzzMathImpl::_____f2, msg, len, pout_buf, out_buf_len);
     } else
 
     {
@@ -488,19 +490,13 @@ bool IBuzzMathImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const c
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- implement interface in here:
-bool IBuzzMathImpl::negative_fields(const RequestFoo& req, ResponseBar& rsp) {
-    rsp.__set_bara(req.get_foob());
-    if (req.__isset.foob) {
-        rsp.__set_barb(req.fooa);
-    }
+bool IBuzzMathImpl::_____f1(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_rspa(req.get_reqb());
     return true;
 }
 
-bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
-    rsp.__set_bara(1 + req.fooa);
-    if (req.__isset.foob) {
-        rsp.__set_barb(1 + req.get_foob());
-    }
+bool IBuzzMathImpl::_____f2(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_rspa(1 + req.reqa);
     return true;
 }
 
@@ -508,15 +504,15 @@ bool IBuzzMathImpl::plus1_to_fields(const RequestFoo& req, ResponseBar& rsp) {
 ////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct IBuzzMathStub : msgrpc::RpcStubBase {
-    virtual msgrpc::RpcRspCell<ResponseBar>* negative_fields(const RequestFoo&);
-    virtual msgrpc::RpcRspCell<ResponseBar>* plus1_to_fields(const RequestFoo&);
+    virtual msgrpc::RpcRspCell<ResponseBar>* _____f1(const RequestFoo&);
+    virtual msgrpc::RpcRspCell<ResponseBar>* _____f2(const RequestFoo&);
 };
 
-msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::negative_fields(const RequestFoo& req) {
+msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::_____f1(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
 }
 
-msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::plus1_to_fields(const RequestFoo& req) {
+msgrpc::RpcRspCell<ResponseBar>* IBuzzMathStub::_____f2(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(1, 2, req);
 }
 
@@ -544,7 +540,7 @@ void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r) { cout << "2/2 -----------
 struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
 
-        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub().negative_fields(req);
+        msgrpc::RpcRspCell<ResponseBar>* rsp_cell = IBuzzMathStub()._____f1(req);
         ctxt->track_item_to_release(rsp_cell);
 
         ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp_cell));
@@ -557,13 +553,14 @@ struct SimpleMsgRpcSI : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
 
 void local_main() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    RequestFoo foo; foo.fooa = 97; foo.__set_foob(98);
+    RequestFoo foo; foo.reqa = 97; foo.__set_reqb(98);
 
     msgrpc::RpcCell<ResponseBar> *rsp_cell = simple_rpc_service_interaction.run(foo);
 
     if (rsp_cell != nullptr) {
-        derive_final_action( [](msgrpc::RpcCell<ResponseBar> *r) { UdpChannel::close_all_channels(); }, rsp_cell);
+        derive_final_action( [](msgrpc::RpcCell<ResponseBar> *r) {
+            UdpChannel::close_all_channels();
+        }, rsp_cell);
     }
 }
 
@@ -573,17 +570,17 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
 
     UdpChannel channel(udp_port,
         [&init_func](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-           if (0 == strcmp(msg, "init")) {
-               return init_func();
-           }
+            if (0 == strcmp(msg, "init")) {
+                return init_func();
+            }
 
-           if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-               return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
-           }
+            if (msg_id == msgrpc::Config::instance().request_msg_id_) {
+                return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+            }
 
-           if (msg_id == msgrpc::Config::instance().request_msg_id_) {
-               return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
-           }
+            if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+                return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
+            }
         }
     );
 }
@@ -599,13 +596,3 @@ TEST(async_rpc, should_able_to__support_simple_async_rpc_________implement_servi
     thread_b.join();
 }
 
-//////////////////////////////////////////////////////////////////////////////////
-//TEST(async_rpc, should_able_to__support_simple_async_rpc_______implement_service_interactions_in_b) {
-//    // a ----(req)---->b
-//    // b <---(rsp)-----b
-//    std::thread thread_a(msgrpc_loop,  k_local_service_id,  local_main);
-//    std::thread thread_b(msgrpc_loop, k_remote_service_id, [](){});
-//
-//    thread_a.join();
-//    thread_b.join();
-//}

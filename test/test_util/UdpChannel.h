@@ -8,6 +8,7 @@
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
+#include <mutex>
 using boost::asio::ip::udp;
 
 typedef std::function<void(msgrpc::msg_id_t msg_id, const char* msg, size_t len)> OnMsgFunc;
@@ -22,7 +23,12 @@ struct UdpChannel {
         start_receive();
         this->send_msg_to_remote("00init", udp::endpoint(udp::v4(), udp_port)); //00 means leading msgrpc::msg_id_t
         g_msg_channel = this;
+
+        mutex_.lock();
         sockets_.push_back(&socket_);
+        io_services_.push_back(&io_service_);
+        mutex_.unlock();
+
         io_service_.run();
     }
 
@@ -57,13 +63,14 @@ struct UdpChannel {
     }
 
     static void close_all_channels() {
-        for (auto* s : sockets_) {
-            s->close();
+        for (auto* s: io_services_) {
+            s->stop();
         }
-        sockets_.clear();
     }
 
-    static std::vector<udp::socket*> sockets_;
+    static std::list<boost::asio::io_service*> io_services_;
+    static std::list<udp::socket*> sockets_;
+    static std::mutex mutex_;
     boost::asio::io_service io_service_;
     udp::socket socket_;
     OnMsgFunc on_msg_func_;
@@ -72,6 +79,8 @@ struct UdpChannel {
     boost::array<char, 10240> recv_buffer_;
 };
 
-std::vector<udp::socket*> UdpChannel::sockets_;
+std::list<boost::asio::io_service*> UdpChannel::io_services_;
+std::list<udp::socket*> UdpChannel::sockets_;
+std::mutex UdpChannel::mutex_;
 
 #endif //MSGRPC_UDPCHANNEL_H

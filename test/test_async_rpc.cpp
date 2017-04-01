@@ -90,11 +90,16 @@ namespace msgrpc {
 ////////////////////////////////////////////////////////////////////////////////
 #include "test_util/UdpChannel.h"
 namespace demo {
+    const msgrpc::service_id_t x_service_id = 2222;
+    const msgrpc::service_id_t y_service_id = 3333;
+
     const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
     const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
 
     struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::Singleton<UdpMsgChannel> {
         virtual bool send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
+            cout << ((remote_service_id == x_service_id) ? "X <------ " : "   ------> Y") << endl;
+
             size_t msg_len_with_msgid = sizeof(msgrpc::msg_id_t) + len;
             char* mem = (char*)malloc(msg_len_with_msgid);
             if (mem) {
@@ -110,11 +115,7 @@ namespace demo {
     };
 }
 
-////////////////////////////////////////////////////////////////////////////////
 using namespace demo;
-
-const msgrpc::service_id_t x_service_id = 2222;
-const msgrpc::service_id_t y_service_id = 3333;
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
@@ -416,7 +417,7 @@ namespace msgrpc {
 
             msgrpc::service_id_t service_id = iface_index == 1 ? x_service_id : y_service_id;
 
-            bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(y_service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
+            bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
             free(mem);
 
             return send_ret;
@@ -529,7 +530,7 @@ bool InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- implement interface in here:
 bool InterfaceXImpl::______sync_x(const RequestFoo& req, ResponseBar& rsp) {
-    cout << "----------> ______sync_x" << endl;
+    cout << "                     ______sync_x" << endl;
     rsp.__set_rspa(req.reqa + k__sync_x__delta);
     return true;
 }
@@ -594,7 +595,7 @@ bool InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- implement interface in here:
 bool InterfaceYImpl::______sync_y(const RequestFoo& req, ResponseBar& rsp) {
-    cout << "----------> ______sync_y" << endl;
+    cout << "                     ______sync_y" << endl;
 
     rsp.__set_rspa(req.reqa + k__sync_y__delta);
     return true;
@@ -609,7 +610,7 @@ struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
 };
 
 bool InterfaceYImpl::_____async_y(const RequestFoo& req, ResponseBar& rsp) {
-    cout << "----------> _____async_y" << endl;
+    cout << "                     _____async_y" << endl;
     rsp.__set_rspa(req.reqa + k_async_y__delta);
 
     //TODO: defer the send rsp action, until si finished.

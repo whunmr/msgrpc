@@ -419,9 +419,6 @@ namespace msgrpc {
                     return;
                 }
 
-                cout << "async_y got:" << r->cell_has_value_ << endl;
-                cout << "async_y got:" << r->value_.rspa << endl;
-
                 if (r->cell_has_value_) {
                     send_rsp_cell_value(sender_id, rsp_header, *r);
                 } else {
@@ -518,7 +515,6 @@ namespace msgrpc {
 //constants for testing.
 const int k_req_init_value = 97;
 const int k__sync_y__delta = 1;
-const int k_async_y__delta = 7;
 const int k__sync_x__delta = 17;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -662,23 +658,6 @@ struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-//bool InterfaceYImpl::_____async_y(const RequestFoo& req, ResponseBar& rsp) {
-//    cout << "                     _____async_y" << endl;
-//    rsp.__set_rspa(req.reqa + k_async_y__delta);
-//
-//    //TODO: defer the send rsp action, until si finished.
-//    msgrpc::RpcCell<ResponseBar> *rsp_cell = SI_____async_y().run(req);
-//    if (rsp_cell != nullptr) {
-//        derive_final_action([](msgrpc::RpcCell<ResponseBar> *r) {
-//            cout << "async_y got:" << r->cell_has_value_ << endl;
-//            cout << "async_y got:" << r->value_.rspa << endl;
-//            UdpChannel::close_all_channels();
-//        }, rsp_cell);
-//    }
-//
-//    return true;
-//}
-
 msgrpc::RpcCell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
     cout << "                     _____async_y" << endl;
     msgrpc::RpcCell<ResponseBar> *rsp_cell = SI_____async_y().run(req);
@@ -688,10 +667,6 @@ msgrpc::RpcCell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-////////////////////////////////////////////////////////////////////////////////
 void save_rsp_from_other_services_to_db(msgrpc::RpcCell<ResponseBar> *r) { cout << "1/2 ----------------->>>> write db." << endl; };
 void save_rsp_to_log(msgrpc::RpcCell<ResponseBar> *r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
 
@@ -704,14 +679,6 @@ struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
         ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp_cell));
 
         ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_to_log, rsp_cell));
-        return rsp_cell;
-    }
-};
-
-struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        msgrpc::RpcCell<ResponseBar>* rsp_cell = InterfaceYStub()._____async_y(req);
-        ctxt->track_item_to_release(rsp_cell);
         return rsp_cell;
     }
 };
@@ -731,6 +698,16 @@ void x_main___case1() {
     }
 }
 
+
+
+struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual msgrpc::RpcCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        msgrpc::RpcCell<ResponseBar>* rsp_cell = InterfaceYStub()._____async_y(req);
+        ctxt->track_item_to_release(rsp_cell);
+        return rsp_cell;
+    }
+};
+
 void x_main___case2() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     RequestFoo foo; foo.reqa = k_req_init_value;
@@ -741,7 +718,7 @@ void x_main___case2() {
         derive_final_action( [](msgrpc::RpcCell<ResponseBar> *r) {
             cout << "case2 finished" << endl;
             EXPECT_TRUE(r->cell_has_value_);
-            EXPECT_EQ(k_req_init_value + k_async_y__delta, r->value_.rspa);
+            EXPECT_EQ(k_req_init_value + k__sync_x__delta, r->value_.rspa);
             UdpChannel::close_all_channels();
         }, rsp_cell);
     }

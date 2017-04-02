@@ -781,6 +781,7 @@ void create_delayed_exiting_thread() {
 
 template<typename SI>
 void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
+    this_thread::sleep_for(milliseconds(30));
     RequestFoo foo; foo.reqa = k_req_init_value;
 
     auto* rsp_cell = SI().run(foo);

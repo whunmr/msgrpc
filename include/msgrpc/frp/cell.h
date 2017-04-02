@@ -50,9 +50,7 @@ namespace msgrpc {
 
     struct RpcContext {
         ~RpcContext() {
-            std::cout << "~RpcContext" << std::endl;
             for (auto* r: release_list_) {
-                std::cout << "context delete: " << r << std::endl;
                 delete r;
             }
         }

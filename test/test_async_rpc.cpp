@@ -94,6 +94,7 @@ namespace msgrpc {
     struct RpcRspCellSink {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) = 0;
         virtual void set_sequential_id(const rpc_sequence_id_t& seq_id) = 0;
+        virtual void reset_sequential_id() = 0;
     };
 
     struct RpcRspDispatcher : msgrpc::ThreadLocalSingleton<RpcRspDispatcher> {
@@ -115,7 +116,7 @@ namespace msgrpc {
         }
 
         void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            cout << "DEBUG: local received msg----------->: " << string(msg, len) << endl;
+            //cout << "DEBUG: local received msg----------->: " << string(msg, len) << endl;
             if (len < sizeof(RspMsgHeader)) {
                 cout << "WARNING: invalid rsp msg" << endl;
                 return;
@@ -129,7 +130,6 @@ namespace msgrpc {
                 return;
             }
 
-            cout << "find rsp handler cell: " << iter->second << endl;
             (iter->second)->set_rpc_rsp(rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
 
             //if this rsp finishes a SI, the handler (iter->second) will be release in whole SI context teardown;
@@ -140,6 +140,7 @@ namespace msgrpc {
         void delete_rsp_handler_if_exist(const rpc_sequence_id_t& seq_id) {
             auto iter = id_func_map_.find(seq_id);
             if (iter != id_func_map_.end()) {
+                (iter->second)->reset_sequential_id();
                 id_func_map_.erase(iter);
             }
         }
@@ -161,6 +162,10 @@ namespace msgrpc {
 
         void set_binded_context(RpcContext* context) {
             context_ = context;
+        }
+
+        virtual void reset_sequential_id() override {
+            has_seq_id_ = false;
         }
 
         virtual void set_sequential_id(const rpc_sequence_id_t& seq_id) override {
@@ -487,7 +492,6 @@ namespace msgrpc {
 
             RspCell<U>* rsp_cell = new RspCell<U>();
 
-            cout << "register rsp handler:-----> " << rsp_cell << endl;
             if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rsp_cell)) {
                 delete rsp_cell;
                 return nullptr;
@@ -852,9 +856,9 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 boost::optional<ResponseBar> merge_logic(msgrpc::RspCell<ResponseBar>& rsp_cell_1, msgrpc::RspCell<ResponseBar>& rsp_cell_2)  {
-    if (rsp_cell_1.cell_has_value_ || rsp_cell_2.cell_has_value_) {
+    if (rsp_cell_1.cell_has_value_ && rsp_cell_2.cell_has_value_) {
         ResponseBar bar;
-        bar.rspa = 33; //rsp_cell_1.value_.rspa + rsp_cell_2.value_.rspa;
+        bar.rspa = rsp_cell_1.value_.rspa + rsp_cell_2.value_.rspa;
         return boost::make_optional(bar);
     }
     return {};
@@ -883,10 +887,9 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
     // x <---(rsp1)---------------------------y  (async_y)
 
     auto then_check = [](msgrpc::RspCell<ResponseBar>& ___r) {
-        cout << "got result:....." << endl;
         EXPECT_TRUE(___r.cell_has_value_);
         int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
-        //EXPECT_EQ(expect_value, ___r.value_.rspa);
+        EXPECT_EQ(expect_value, ___r.value_.rspa);
     };
 
     std::thread thread_x(msgrpc_loop, x_service_id, [&]() {rpc_main<SI_case3_x>(then_check);});

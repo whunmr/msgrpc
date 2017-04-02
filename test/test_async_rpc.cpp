@@ -737,6 +737,19 @@ struct MsgRpcTest : public ::testing::Test {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+void create_delayed_exiting_thread() {
+    thread thread_delayed_exiting([]() {
+        this_thread::sleep_for(seconds(1));
+        lock_guard<mutex> lk(can_safely_exit_mutex);
+        can_safely_exit = true;
+        can_safely_exit_cv.notify_one();
+
+        UdpChannel::close_all_channels();
+    });
+    thread_delayed_exiting.detach();
+}
+
+
 template<typename SI>
 void rpc_main(std::function<void(msgrpc::RpcRspCell<ResponseBar>&)> f) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -749,15 +762,7 @@ void rpc_main(std::function<void(msgrpc::RpcRspCell<ResponseBar>&)> f) {
             f(r);
             //msgrpc::RpcRspDispatcher::instance().remove_rsp_handler(2);
 
-            std::thread thread_delayed_exiting([]() {
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-                std::lock_guard<std::mutex> lk(can_safely_exit_mutex);
-                can_safely_exit = true;
-                can_safely_exit_cv.notify_one();
-
-                UdpChannel::close_all_channels();
-            });
-            thread_delayed_exiting.detach();
+            create_delayed_exiting_thread();
 
         }, *rsp_cell);
     }
@@ -846,6 +851,21 @@ struct SI_case3_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
+template<typename SI>
+void rpc_main2(std::function<void(msgrpc::RpcRspCell<ResponseBar>&)> f) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    RequestFoo foo; foo.reqa = k_req_init_value;
+
+    msgrpc::RpcRspCell<ResponseBar> *rsp_cell = SI().run(foo);
+
+    if (rsp_cell != nullptr) {
+        derive_final_action([f](msgrpc::RpcRspCell<ResponseBar>& r) {
+            f(r);
+            msgrpc::RpcRspDispatcher::instance().remove_rsp_handler(2);
+            create_delayed_exiting_thread();
+        }, *rsp_cell);
+    }
+}
 TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__async_method_in_y__________case3) {
     // x ----(req1)-------------------------->y  (async_y)
     //        y (sync_x) <=========(req2)=====y  (async_y)
@@ -861,7 +881,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
         //EXPECT_EQ(expect_value, ___r.value_.rspa);
     };
 
-    std::thread thread_x(msgrpc_loop, x_service_id, [&]() {rpc_main<SI_case3_x>(then_check);});
+    std::thread thread_x(msgrpc_loop, x_service_id, [&]() {rpc_main2<SI_case3_x>(then_check);});
     std::thread thread_y(msgrpc_loop, y_service_id, [](){});
     thread_x.join();
     thread_y.join();

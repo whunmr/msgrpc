@@ -111,7 +111,7 @@ namespace msgrpc {
     };
 
     template<typename T>
-    struct RpcRspCell :  CellContextBase, Cell<T>, RpcRspCellSink {
+    struct RpcRspCell :  Cell<T>, RpcRspCellSink, CellContextBase {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
             //TODO: handle msg header status
             T rsp;
@@ -216,13 +216,23 @@ namespace msgrpc {
     }
 
     struct RpcRspDispatcher : msgrpc::ThreadLocalSingleton<RpcRspDispatcher> {
+        void remove_rsp_handler(rpc_sequence_id_t sequence_id) {
+            auto iter = id_func_map_.find(sequence_id);
+            if (iter == id_func_map_.end()) {
+                cout << "WARNING: not existing handler to remove: id: " << sequence_id << endl;
+                return;
+            }
+
+            id_func_map_.erase(iter);
+        }
+
         void register_rsp_Handler(rpc_sequence_id_t sequence_id, RpcRspCellSink* func) {
             assert(id_func_map_.find(sequence_id) == id_func_map_.end() && "should register with unique id.");
             id_func_map_[sequence_id] = func;
         }
 
         void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            //cout << "DEBUG: local received msg----------->: " << string(msg, len) << endl;
+            cout << "DEBUG: local received msg----------->: " << string(msg, len) << endl;
             if (len < sizeof(RspMsgHeader)) {
                 cout << "WARNING: invalid rsp msg" << endl;
                 return;
@@ -236,6 +246,7 @@ namespace msgrpc {
                 return;
             }
 
+            cout << "find rsp handler cell: " << iter->second << endl;
             (iter->second)->set_rpc_rsp(rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
             id_func_map_.erase(iter);
         }
@@ -452,6 +463,7 @@ namespace msgrpc {
 
             RpcRspCell<U>* rsp_cell = new RpcRspCell<U>();
 
+            cout << "register rsp handler:-----> " << rsp_cell << endl;
             if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rsp_cell)) {
                 delete rsp_cell;
                 return nullptr;
@@ -570,7 +582,8 @@ void rpc_main(std::function<void(msgrpc::RpcRspCell<ResponseBar>&)> f) {
     if (rsp_cell != nullptr) {
         derive_final_action([f](msgrpc::RpcRspCell<ResponseBar>& r) {
             f(r);
-            UdpChannel::close_all_channels();
+            //msgrpc::RpcRspDispatcher::instance().remove_rsp_handler(2);
+            //UdpChannel::close_all_channels();
         }, *rsp_cell);
     }
 }

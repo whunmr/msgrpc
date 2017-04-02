@@ -14,7 +14,6 @@ using namespace std::chrono;
 #include "demo/demo_api_declare.h"
 
 ////////////////////////////////////////////////////////////////////////////////
-//TODO: check valgrind check results
 namespace msgrpc {
     template <typename T> struct Ret {};
 
@@ -103,7 +102,7 @@ namespace msgrpc {
         }
 
         RpcContext* context_;
-        
+
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
             //TODO: handle msg header status
             T rsp;
@@ -239,34 +238,10 @@ namespace msgrpc {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-#include "test_util/UdpChannel.h"
-namespace demo {
-    const msgrpc::service_id_t x_service_id = 2222;
-    const msgrpc::service_id_t y_service_id = 3333;
-
-    const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
-    const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
-
-    struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::Singleton<UdpMsgChannel> {
-        virtual bool send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
-            cout << ((remote_service_id == x_service_id) ? "X <------ " : "   ------> Y") << endl;
-
-            size_t msg_len_with_msgid = sizeof(msgrpc::msg_id_t) + len;
-            char* mem = (char*)malloc(msg_len_with_msgid);
-            if (mem) {
-                *(msgrpc::msg_id_t*)(mem) = msg_id;
-                memcpy(mem + sizeof(msgrpc::msg_id_t), buf, len);
-                g_msg_channel->send_msg_to_remote(string(mem, msg_len_with_msgid), udp::endpoint(udp::v4(), remote_service_id));
-                free(mem);
-            } else {
-                cout << "send msg failed: allocation failure." << endl;
-            }
-            return true;
-        }
-    };
-}
-
-using namespace demo;
+const msgrpc::service_id_t x_service_id = 2222;
+const msgrpc::service_id_t y_service_id = 3333;
+const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
+const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
@@ -408,11 +383,6 @@ namespace msgrpc {
 
             //TODO: make args of lambda to be reference & ??
             derive_final_action([sender_id, rsp_header](msgrpc::RpcRspCell<RSP>& r) {
-//                if (r == nullptr) {
-//                    //TODO: log error
-//                    return;
-//                }
-
                 if (r.cell_has_value_) {
                     send_rsp_cell_value(sender_id, rsp_header, r);
                 } else {
@@ -502,6 +472,58 @@ namespace msgrpc {
     };
 }
 
+////////////////////////////////////////////////////////////////////////////////
+#include "test_util/UdpChannel.h"
+
+namespace demo {
+    struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::Singleton<UdpMsgChannel> {
+        virtual bool send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
+            cout << ((remote_service_id == x_service_id) ? "X <------ " : "   ------> Y") << endl;
+
+            size_t msg_len_with_msgid = sizeof(msgrpc::msg_id_t) + len;
+            char* mem = (char*)malloc(msg_len_with_msgid);
+            if (mem) {
+                *(msgrpc::msg_id_t*)(mem) = msg_id;
+                memcpy(mem + sizeof(msgrpc::msg_id_t), buf, len);
+                g_msg_channel->send_msg_to_remote(string(mem, msg_len_with_msgid), udp::endpoint(udp::v4(), remote_service_id));
+                free(mem);
+            } else {
+                cout << "send msg failed: allocation failure." << endl;
+            }
+            return true;
+        }
+    };
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using namespace demo;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -509,6 +531,43 @@ namespace msgrpc {
 const int k_req_init_value = 97;
 const int k__sync_y__delta = 1;
 const int k__sync_x__delta = 17;
+
+////////////////////////////////////////////////////////////////////////////////
+void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
+    msgrpc::Config::instance().init_with(&UdpMsgChannel::instance(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
+
+    UdpChannel channel(udp_port,
+                       [&init_func](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+                           if (0 == strcmp(msg, "init")) {
+                               return init_func();
+                           }
+
+                           if (msg_id == msgrpc::Config::instance().request_msg_id_) {
+                               return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+                           }
+
+                           if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+                               return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
+                           }
+                       }
+    );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename SI>
+void rpc_main(std::function<void(msgrpc::RpcRspCell<ResponseBar>&)> f) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    RequestFoo foo; foo.reqa = k_req_init_value;
+
+    msgrpc::RpcRspCell<ResponseBar> *rsp_cell = SI().run(foo);
+
+    if (rsp_cell != nullptr) {
+        derive_final_action([f](msgrpc::RpcRspCell<ResponseBar>& r) {
+            f(r);
+            UdpChannel::close_all_channels();
+        }, *rsp_cell);
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //TODO: define following macros:
@@ -676,23 +735,23 @@ struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-void x_main___case1() {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    RequestFoo foo; foo.reqa = k_req_init_value;
+TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__sync_method_in__y__________case1) {
+    // x ----(req)---->y (sync_y)
+    // x <---(rsp)-----y
 
-    msgrpc::RpcRspCell<ResponseBar> *rsp_cell = SI_case1_x().run(foo);
+    auto then_check = [](msgrpc::RpcRspCell<ResponseBar>& ___r) {
+        EXPECT_TRUE(___r.cell_has_value_);
+        EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value_.rspa);
+    };
 
-    if (rsp_cell != nullptr) {
-        derive_final_action( [](msgrpc::RpcRspCell<ResponseBar>& rsp) {
-            EXPECT_TRUE(rsp.cell_has_value_);
-            EXPECT_EQ(k_req_init_value + k__sync_y__delta, rsp.value_.rspa);
-            UdpChannel::close_all_channels();
-        }, *rsp_cell);
-    }
+    std::thread thread_x(msgrpc_loop, x_service_id, [&]() {rpc_main<SI_case1_x>(then_check);});
+    std::thread thread_y(msgrpc_loop, y_service_id, [](){});
+    thread_x.join();
+    thread_y.join();
 }
 
-
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RpcRspCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
         msgrpc::RpcRspCell<ResponseBar>* rsp_cell = InterfaceYStub()._____async_y(req);
@@ -701,63 +760,20 @@ struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-void x_main___case2() {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    RequestFoo foo; foo.reqa = k_req_init_value;
-
-    msgrpc::RpcRspCell<ResponseBar> *rsp_cell = SI_case2_x().run(foo);
-
-    if (rsp_cell != nullptr) {
-        derive_final_action([](msgrpc::RpcRspCell<ResponseBar>& r) {
-            EXPECT_TRUE(r.cell_has_value_);
-            EXPECT_EQ(k_req_init_value + k__sync_x__delta, r.value_.rspa);
-            UdpChannel::close_all_channels();
-        }, *rsp_cell);
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
-    msgrpc::Config::instance().init_with(&UdpMsgChannel::instance(), k_msgrpc_request_msg_id, k_msgrpc_response_msg_id);
-
-    UdpChannel channel(udp_port,
-        [&init_func](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-            if (0 == strcmp(msg, "init")) {
-                return init_func();
-            }
-
-            if (msg_id == msgrpc::Config::instance().request_msg_id_) {
-                return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
-            }
-
-            if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
-            }
-        }
-    );
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__sync_method_in__y__________case1) {
-    // x ----(req)---->y (sync_y)
-    // x <---(rsp)-----y
-    std::thread thread_x(msgrpc_loop, x_service_id, x_main___case1);
-    std::thread thread_y(msgrpc_loop, y_service_id, [](){});
-
-    thread_x.join();
-    thread_y.join();
-}
-
-////////////////////////////////////////////////////////////////////////////////
 TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__async_method_in_y__________case2) {
     // x ----(req1)-------------------------->y  (async_y)
     //        y (sync_x) <=========(req2)=====y  (async_y)
     //        y (sync_x) ==========(rsp2)====>y  (async_y)
     // x <---(rsp1)---------------------------y  (async_y)
-    std::thread thread_a(msgrpc_loop, x_service_id, x_main___case2);
-    std::thread thread_b(msgrpc_loop, y_service_id, [](){});
 
-    thread_a.join();
-    thread_b.join();
+    auto then_check = [](msgrpc::RpcRspCell<ResponseBar>& ___r) {
+        EXPECT_TRUE(___r.cell_has_value_);
+        EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value_.rspa);
+    };
+
+    std::thread thread_x(msgrpc_loop, x_service_id, [&]() {rpc_main<SI_case2_x>(then_check);});
+    std::thread thread_y(msgrpc_loop, y_service_id, [](){});
+    thread_x.join();
+    thread_y.join();
 }
 

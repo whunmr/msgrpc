@@ -179,7 +179,7 @@ namespace msgrpc {
     };
 
     template<typename T>
-    struct RspCell : Cell<T>, RspCellBase {
+    struct Cell : CellBase<T>, RspCellBase {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
             //TODO: handle msg header status
             T rsp;
@@ -188,7 +188,7 @@ namespace msgrpc {
                 return false;
             }
 
-            Cell<T>::set_value(std::move(rsp));
+            CellBase<T>::set_value(std::move(rsp));
             return true;
         }
     };
@@ -247,7 +247,7 @@ namespace msgrpc {
     }
 
     template<typename VT, typename... T>
-    struct DerivedCell : RspCell<VT> {
+    struct DerivedCell : Cell<VT> {
         DerivedCell(std::function<boost::optional<VT>(T...)> logic, T &&... args)
                 : bind_(logic, std::ref(args)...) {
             call_each_args(std::forward<T>(args)...);
@@ -265,10 +265,10 @@ namespace msgrpc {
         }
 
         void update() override {
-            if (!Cell<VT>::cell_has_value_) {
+            if (!CellBase<VT>::cell_has_value_) {
                 boost::optional<VT> value = bind_();
                 if (value) {
-                    Cell<VT>::set_value(std::move(value.value()));
+                    CellBase<VT>::set_value(std::move(value.value()));
                 }
             }
         }
@@ -382,7 +382,7 @@ namespace msgrpc {
     };
 
     template<typename RSP>
-    static RpcResult send_rsp_cell_value(const service_id_t& sender_id, const RspMsgHeader &rsp_header, const RspCell<RSP>& rsp_cell) {
+    static RpcResult send_rsp_cell_value(const service_id_t& sender_id, const RspMsgHeader &rsp_header, const Cell<RSP>& rsp_cell) {
         if (!rsp_cell.cell_has_value_) {
             return RpcResult::failed;
         }
@@ -405,7 +405,7 @@ namespace msgrpc {
         }
 
         template<typename REQ, typename RSP>
-        RpcResult invoke_templated_method(msgrpc::RspCell<RSP>* (T::*method_impl)(const REQ&)
+        RpcResult invoke_templated_method(msgrpc::Cell<RSP>* (T::*method_impl)(const REQ&)
                 , const char *msg, size_t len
                 , msgrpc::service_id_t& sender_id
                 , msgrpc::RspMsgHeader& rsp_header) {
@@ -416,7 +416,7 @@ namespace msgrpc {
                 return RpcResult::failed;
             }
 
-            msgrpc::RspCell<RSP>* rsp_cell = ((T*)this->*method_impl)(req);
+            msgrpc::Cell<RSP>* rsp_cell = ((T*)this->*method_impl)(req);
             if ( rsp_cell == nullptr ) {
                 //TODO: log
                 return RpcResult::failed;
@@ -429,7 +429,7 @@ namespace msgrpc {
             }
 
             //TODO: make args of lambda to be reference & ??
-            derive_final_action([sender_id, rsp_header](msgrpc::RspCell<RSP>& r) {
+            derive_final_action([sender_id, rsp_header](msgrpc::Cell<RSP>& r) {
                 if (r.cell_has_value_) {
                     send_rsp_cell_value(sender_id, rsp_header, r);
                 } else {
@@ -480,7 +480,7 @@ namespace msgrpc {
         }
 
         template<typename T, typename U>
-        RspCell<U>* encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const T &req) const {
+        Cell<U>* encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const T &req) const {
             uint8_t* pbuf;
             uint32_t len;
             /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
@@ -490,7 +490,7 @@ namespace msgrpc {
                 return nullptr; //TODO: return false;
             }
 
-            RspCell<U>* rsp_cell = new RspCell<U>();
+            Cell<U>* rsp_cell = new Cell<U>();
 
             if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rsp_cell)) {
                 delete rsp_cell;
@@ -506,17 +506,17 @@ namespace msgrpc {
 namespace msgrpc {
     template<typename T, typename U>
     struct MsgRpcSIBase { /*SI is short for service interaction*/
-        msgrpc::RspCell<U> *run(const T &req) {
+        msgrpc::Cell<U> *run(const T &req) {
             msgrpc::RpcContext *ctxt = new msgrpc::RpcContext();
 
-            msgrpc::RspCell<U> *result_cell = do_run(req, ctxt);
+            msgrpc::Cell<U> *result_cell = do_run(req, ctxt);
             result_cell->set_binded_context(ctxt);
             ctxt->release_list_.remove(result_cell);
 
             return result_cell;
         }
 
-        virtual msgrpc::RspCell<U> *do_run(const T &req, msgrpc::RpcContext *ctxt) = 0;
+        virtual msgrpc::Cell<U> *do_run(const T &req, msgrpc::RpcContext *ctxt) = 0;
     };
 }
 
@@ -574,7 +574,7 @@ namespace demo {
 using namespace demo;
 
 //constants for testing.
-const int k_req_init_value = 97;
+const int k_req_init_value = 1;
 const int k__sync_y__delta = 1;
 const int k__sync_x__delta = 17;
 
@@ -611,17 +611,17 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct InterfaceXStub : msgrpc::RpcStubBase {
-    msgrpc::RspCell<ResponseBar>* ______sync_x(const RequestFoo&);
+    msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo&);
 };
 
-msgrpc::RspCell<ResponseBar>* InterfaceXStub::______sync_x(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceXStub::______sync_x(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
 struct InterfaceXImpl : msgrpc::InterfaceImplBaseT<InterfaceXImpl, 1> {
-    msgrpc::RspCell<ResponseBar>* ______sync_x(const RequestFoo& req);
+    msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo& req);
 
     virtual msgrpc::RpcResult onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header
             , const char* msg, size_t len
@@ -656,9 +656,9 @@ msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- implement interface in here:
-msgrpc::RspCell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
     cout << "                     ______sync_x" << endl;
-    auto* rsp_cell = new msgrpc::RspCell<ResponseBar>();
+    auto* rsp_cell = new msgrpc::Cell<ResponseBar>();
     rsp_cell->cell_has_value_ = true;
     rsp_cell->value_.__set_rspa(req.reqa + k__sync_x__delta);
     return rsp_cell;
@@ -669,23 +669,23 @@ msgrpc::RspCell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct InterfaceYStub : msgrpc::RpcStubBase {
-    msgrpc::RspCell<ResponseBar>* ______sync_y(const RequestFoo&);
-    msgrpc::RspCell<ResponseBar>* _____async_y(const RequestFoo&);
+    msgrpc::Cell<ResponseBar>* ______sync_y(const RequestFoo&);
+    msgrpc::Cell<ResponseBar>* _____async_y(const RequestFoo&);
 };
 
-msgrpc::RspCell<ResponseBar>* InterfaceYStub::______sync_y(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceYStub::______sync_y(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(2, 1, req);
 }
 
-msgrpc::RspCell<ResponseBar>* InterfaceYStub::_____async_y(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceYStub::_____async_y(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(2, 2, req);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
 struct InterfaceYImpl : msgrpc::InterfaceImplBaseT<InterfaceYImpl, 2> {
-    msgrpc::RspCell<ResponseBar>* ______sync_y(const RequestFoo& req);
-    msgrpc::RspCell<ResponseBar>* _____async_y(const RequestFoo& req);
+    msgrpc::Cell<ResponseBar>* ______sync_y(const RequestFoo& req);
+    msgrpc::Cell<ResponseBar>* _____async_y(const RequestFoo& req);
 
     virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
             , const char* msg, size_t len
@@ -723,24 +723,24 @@ msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- implement interface in here:
-msgrpc::RspCell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
     cout << "                     ______sync_y" << endl;
 
-    auto* rsp_cell = new msgrpc::RspCell<ResponseBar>();
+    auto* rsp_cell = new msgrpc::Cell<ResponseBar>();
     rsp_cell->cell_has_value_ = true;
     rsp_cell->value_.__set_rspa(req.reqa + k__sync_y__delta);
     return rsp_cell;
 }
 
 struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::RspCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        msgrpc::RspCell<ResponseBar>* rsp_cell = InterfaceXStub().______sync_x(req);
+    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        auto rsp_cell = InterfaceXStub().______sync_x(req);
         ctxt->track_item_to_release(rsp_cell);
         return rsp_cell;
     }
 };
 
-msgrpc::RspCell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
     cout << "                     _____async_y" << endl;
     return SI_____async_y().run(req);
 }
@@ -767,7 +767,7 @@ struct MsgRpcTest : public ::testing::Test {
 ////////////////////////////////////////////////////////////////////////////////
 void create_delayed_exiting_thread() {
     std::thread thread_delayed_exiting([]() {
-        this_thread::sleep_for(seconds(1));
+        this_thread::sleep_for(milliseconds(30));
 
         lock_guard<mutex> lk(can_safely_exit_mutex);
         can_safely_exit = true;
@@ -780,14 +780,13 @@ void create_delayed_exiting_thread() {
 
 
 template<typename SI>
-void rpc_main(std::function<void(msgrpc::RspCell<ResponseBar>&)> f) {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
     RequestFoo foo; foo.reqa = k_req_init_value;
 
-    msgrpc::RspCell<ResponseBar> *rsp_cell = SI().run(foo);
+    auto* rsp_cell = SI().run(foo);
 
     if (rsp_cell != nullptr) {
-        derive_final_action([f](msgrpc::RspCell<ResponseBar>& r) {
+        derive_final_action([f](msgrpc::Cell<ResponseBar>& r) {
             f(r);
 
             create_delayed_exiting_thread();
@@ -795,13 +794,13 @@ void rpc_main(std::function<void(msgrpc::RspCell<ResponseBar>&)> f) {
     }
 }
 
-void save_rsp_from_other_services_to_db(msgrpc::RspCell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
-void save_rsp_to_log(msgrpc::RspCell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
+void save_rsp_from_other_services_to_db(msgrpc::Cell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
+void save_rsp_to_log(msgrpc::Cell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
 
 struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::RspCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
 
-        msgrpc::RspCell<ResponseBar>* rsp_cell = InterfaceYStub().______sync_y(req);
+        auto rsp_cell = InterfaceYStub().______sync_y(req);
         ctxt->track_item_to_release(rsp_cell);
 
         ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_from_other_services_to_db, *rsp_cell));
@@ -815,7 +814,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__s
     // x ----(req)---->y (sync_y)
     // x <---(rsp)-----y
 
-    auto then_check = [](msgrpc::RspCell<ResponseBar>& ___r) {
+    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.cell_has_value_);
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value_.rspa);
     };
@@ -829,8 +828,8 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__s
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::RspCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        msgrpc::RspCell<ResponseBar>* rsp_cell = InterfaceYStub()._____async_y(req);
+    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        auto rsp_cell = InterfaceYStub()._____async_y(req);
         ctxt->track_item_to_release(rsp_cell);
         return rsp_cell;
     }
@@ -842,7 +841,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
     //        y (sync_x) ==========(rsp2)====>y  (async_y)
     // x <---(rsp1)---------------------------y  (async_y)
 
-    auto then_check = [](msgrpc::RspCell<ResponseBar>& ___r) {
+    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.cell_has_value_);
         EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value_.rspa);
     };
@@ -855,7 +854,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-boost::optional<ResponseBar> merge_logic(msgrpc::RspCell<ResponseBar>& rsp_cell_1, msgrpc::RspCell<ResponseBar>& rsp_cell_2)  {
+boost::optional<ResponseBar> merge_logic(msgrpc::Cell<ResponseBar>& rsp_cell_1, msgrpc::Cell<ResponseBar>& rsp_cell_2)  {
     if (rsp_cell_1.cell_has_value_ && rsp_cell_2.cell_has_value_) {
         ResponseBar bar;
         bar.rspa = rsp_cell_1.value_.rspa + rsp_cell_2.value_.rspa;
@@ -868,11 +867,11 @@ boost::optional<ResponseBar> merge_logic(msgrpc::RspCell<ResponseBar>& rsp_cell_
 //TODO: add timeout handling
 //TODO: add service discovery
 struct SI_case3_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::RspCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        msgrpc::RspCell<ResponseBar>* rsp_cell_1 = InterfaceYStub()._____async_y(req);
+    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        auto rsp_cell_1 = InterfaceYStub()._____async_y(req);
         ctxt->track_item_to_release(rsp_cell_1);
 
-        msgrpc::RspCell<ResponseBar>* rsp_cell_2 = InterfaceYStub()._____async_y(req);
+        auto rsp_cell_2 = InterfaceYStub()._____async_y(req);
         ctxt->track_item_to_release(rsp_cell_2);
 
         auto * rsp_cell = msgrpc::derive_cell(merge_logic, *rsp_cell_1, *rsp_cell_2);
@@ -889,13 +888,58 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
     //        y (sync_x) ==========(rsp3)====>y  (async_y)
     // x <---(rsp1)---------------------------y  (async_y)
 
-    auto then_check = [](msgrpc::RspCell<ResponseBar>& ___r) {
+    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.cell_has_value_);
         int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
         EXPECT_EQ(expect_value, ___r.value_.rspa);
     };
 
     std::thread thread_x(msgrpc_loop, x_service_id, [&]() {rpc_main<SI_case3_x>(then_check);});
+    std::thread thread_y(msgrpc_loop, y_service_id, [](){});
+    thread_x.join();
+    thread_y.join();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//boost::optional<ResponseBar> merge_logic(msgrpc::Cell<ResponseBar>& rsp_cell_1, msgrpc::Cell<ResponseBar>& rsp_cell_2)  {
+//    if (rsp_cell_1.cell_has_value_ && rsp_cell_2.cell_has_value_) {
+//        ResponseBar bar;
+//        bar.rspa = rsp_cell_1.value_.rspa + rsp_cell_2.value_.rspa;
+//        return boost::make_optional(bar);
+//    }
+//    return {};
+//};
+
+
+struct SI_case4_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        auto rsp_cell_1 = InterfaceYStub()._____async_y(req);
+        ctxt->track_item_to_release(rsp_cell_1);
+
+        auto rsp_cell_2 = InterfaceYStub()._____async_y(req);
+        ctxt->track_item_to_release(rsp_cell_2);
+
+        auto * rsp_cell = msgrpc::derive_cell(merge_logic, *rsp_cell_1, *rsp_cell_2);
+        ctxt->track_item_to_release(rsp_cell);
+        return rsp_cell;
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__async_method_in_y__________case4) {
+    // x ----(req1)-------------------------->y  (async_y)
+    //        y (sync_x) <=========(req2)=====y  (async_y)
+    //        y (sync_x) ==========(rsp2)====>y  (async_y)
+    //        y (sync_x) <=========(req3)=====y  (async_y)
+    //        y (sync_x) ==========(rsp3)====>y  (async_y)
+    // x <---(rsp1)---------------------------y  (async_y)
+
+    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
+        EXPECT_TRUE(___r.cell_has_value_);
+        int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
+        EXPECT_EQ(expect_value, ___r.value_.rspa);
+    };
+
+    std::thread thread_x(msgrpc_loop, x_service_id, [&]() {rpc_main<SI_case4_x>(then_check);});
     std::thread thread_y(msgrpc_loop, y_service_id, [](){});
     thread_x.join();
     thread_y.join();

@@ -25,7 +25,6 @@ struct UdpChannel {
         g_msg_channel = this;
 
         mutex_.lock();
-        sockets_.push_back(&socket_);
         io_services_.push_back(&io_service_);
         mutex_.unlock();
 
@@ -66,10 +65,10 @@ struct UdpChannel {
         for (auto* s: io_services_) {
             s->stop();
         }
+        io_services_.clear();
     }
 
     static std::list<boost::asio::io_service*> io_services_;
-    static std::list<udp::socket*> sockets_;
     static std::mutex mutex_;
     boost::asio::io_service io_service_;
     udp::socket socket_;
@@ -80,7 +79,6 @@ struct UdpChannel {
 };
 
 std::list<boost::asio::io_service*> UdpChannel::io_services_;
-std::list<udp::socket*> UdpChannel::sockets_;
 std::mutex UdpChannel::mutex_;
 
 #endif //MSGRPC_UDPCHANNEL_H

@@ -17,8 +17,8 @@ namespace msgrpc {
 
 
     template<typename T>
-    struct Cell : Updatable {
-        virtual ~Cell() {}
+    struct CellBase : Updatable {
+        virtual ~CellBase() {}
         bool cell_has_value_{false};
         T value_;
 

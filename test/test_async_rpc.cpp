@@ -864,6 +864,9 @@ boost::optional<ResponseBar> merge_logic(msgrpc::RspCell<ResponseBar>& rsp_cell_
     return {};
 };
 
+//TODO: fold into DSL
+//TODO: add timeout handling
+//TODO: add service discovery
 struct SI_case3_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::RspCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
         msgrpc::RspCell<ResponseBar>* rsp_cell_1 = InterfaceYStub()._____async_y(req);

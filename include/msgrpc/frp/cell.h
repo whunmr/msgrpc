@@ -18,6 +18,7 @@ namespace msgrpc {
 
     template<typename T>
     struct Cell : Updatable {
+        virtual ~Cell() {}
         bool cell_has_value_{false};
         T value_;
 
@@ -49,6 +50,7 @@ namespace msgrpc {
 
     struct RpcContext {
         ~RpcContext() {
+            std::cout << "~RpcContext" << std::endl;
             for (auto* r: release_list_) {
                 delete r;
             }
@@ -60,8 +62,6 @@ namespace msgrpc {
 
         std::list<Updatable*> release_list_;
     };
-
-
 }
 
 #endif //MSGRPC_CELL_H

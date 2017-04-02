@@ -95,14 +95,23 @@ namespace msgrpc {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) = 0;
     };
 
-    template<typename T>
-    struct RpcRspCell :  Cell<T>, RpcRspCellSink {
+    struct CellContextBase {
+        virtual ~CellContextBase() {
+            if (context_ != nullptr) {
+                delete context_;
+                context_ = nullptr;
+            }
+        }
+
         void set_binded_context(RpcContext* context) {
             context_ = context;
         }
 
         RpcContext* context_;
+    };
 
+    template<typename T>
+    struct RpcRspCell :  CellContextBase, Cell<T>, RpcRspCellSink {
         virtual bool set_rpc_rsp(RspMsgHeader* rsp_header, const char* msg, size_t len) override {
             //TODO: handle msg header status
             T rsp;
@@ -138,11 +147,9 @@ namespace msgrpc {
             c.register_listener(this);
 
             if (is_final_action_) {
-                if (c.context_) {
-                    c.context_->track_item_to_release(this);
-                }
-                assert(c.context_ != nullptr && "to release context, should bind not null context to final action.");
-                context_ = c.context_;
+                assert(c.context_ != nullptr && "final action should bind to cell with resouce management context.");
+                c.context_->track_item_to_release(this);
+                cell_ = &c;
             }
         }
 
@@ -150,12 +157,12 @@ namespace msgrpc {
             bind_();
 
             if (is_final_action_) {
-                delete context_;
+                delete cell_;
             }
         }
 
         bool is_final_action_ = {false};
-        RpcContext* context_;
+        CellContextBase* cell_ = {nullptr};
         using bind_type = decltype(std::bind(std::declval<std::function<VT(T...)>>(), std::ref(std::declval<T>())...));
         bind_type bind_;
     };
@@ -180,13 +187,13 @@ namespace msgrpc {
 
         template<typename C, typename... Ts>
         void call_each_args(C &&c, Ts &&... args) {
-            c->register_listener(this);
+            c.register_listener(this);
             call_each_args(std::forward<Ts>(args)...);
         }
 
         template<typename C>
         void call_each_args(C &&c) {
-            c->register_listener(this);
+            c.register_listener(this);
         }
 
         void update() override {
@@ -464,6 +471,7 @@ namespace msgrpc {
 
             msgrpc::RpcRspCell<U> *result_cell = do_run(req, ctxt);
             result_cell->set_binded_context(ctxt);
+            ctxt->release_list_.remove(result_cell);
 
             return result_cell;
         }
@@ -514,19 +522,17 @@ namespace demo {
 
 
 
-
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using namespace demo;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //constants for testing.
 const int k_req_init_value = 97;
 const int k__sync_y__delta = 1;
@@ -576,7 +582,6 @@ void rpc_main(std::function<void(msgrpc::RpcRspCell<ResponseBar>&)> f) {
 #define declare_interface_on_provider
 #define  define_interface_on_provider
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -608,6 +613,7 @@ msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
         , msgrpc::service_id_t& sender_id) {
 
     msgrpc::RpcResult ret;
+
     if (req_header.method_index_in_interface_ == 1) {
         ret = this->invoke_templated_method(&InterfaceXImpl::______sync_x, msg, len, sender_id, rsp_header);
     } else
@@ -712,8 +718,7 @@ struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
 
 msgrpc::RpcRspCell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
     cout << "                     _____async_y" << endl;
-    msgrpc::RpcRspCell<ResponseBar> *rsp_cell = SI_____async_y().run(req);
-    return rsp_cell;
+    return SI_____async_y().run(req);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -772,6 +777,52 @@ TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__asyn
     };
 
     std::thread thread_x(msgrpc_loop, x_service_id, [&]() {rpc_main<SI_case2_x>(then_check);});
+    std::thread thread_y(msgrpc_loop, y_service_id, [](){});
+    thread_x.join();
+    thread_y.join();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+boost::optional<ResponseBar> merge_logic(msgrpc::RpcRspCell<ResponseBar>& rsp_cell_1, msgrpc::RpcRspCell<ResponseBar>& rsp_cell_2)  {
+    if (rsp_cell_1.cell_has_value_ || rsp_cell_2.cell_has_value_) {
+        ResponseBar bar;
+        bar.rspa = 33; //rsp_cell_1.value_.rspa + rsp_cell_2.value_.rspa;
+        return boost::make_optional(bar);
+    }
+    return {};
+};
+
+struct SI_case3_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual msgrpc::RpcRspCell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        msgrpc::RpcRspCell<ResponseBar>* rsp_cell_1 = InterfaceYStub()._____async_y(req);
+        ctxt->track_item_to_release(rsp_cell_1);
+
+        msgrpc::RpcRspCell<ResponseBar>* rsp_cell_2 = InterfaceYStub()._____async_y(req);
+        ctxt->track_item_to_release(rsp_cell_2);
+
+        auto * rsp_cell = msgrpc::derive_cell(merge_logic, *rsp_cell_1, *rsp_cell_2);
+        ctxt->track_item_to_release(rsp_cell);
+        return rsp_cell;
+    }
+};
+
+TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__async_method_in_y__________case3) {
+    // x ----(req1)-------------------------->y  (async_y)
+    //        y (sync_x) <=========(req2)=====y  (async_y)
+    //        y (sync_x) ==========(rsp2)====>y  (async_y)
+    //        y (sync_x) <=========(req3)=====y  (async_y)
+    //        y (sync_x) ==========(rsp3)====>y  (async_y)
+    // x <---(rsp1)---------------------------y  (async_y)
+
+    auto then_check = [](msgrpc::RpcRspCell<ResponseBar>& ___r) {
+        cout << "got result:....." << endl;
+        EXPECT_TRUE(___r.cell_has_value_);
+        //int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
+        //EXPECT_EQ(expect_value, ___r.value_.rspa);
+    };
+
+    std::thread thread_x(msgrpc_loop, x_service_id, [&]() {rpc_main<SI_case3_x>(then_check);});
     std::thread thread_y(msgrpc_loop, y_service_id, [](){});
     thread_x.join();
     thread_y.join();

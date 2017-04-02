@@ -572,23 +572,6 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-template<typename SI>
-void rpc_main(std::function<void(msgrpc::RpcRspCell<ResponseBar>&)> f) {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    RequestFoo foo; foo.reqa = k_req_init_value;
-
-    msgrpc::RpcRspCell<ResponseBar> *rsp_cell = SI().run(foo);
-
-    if (rsp_cell != nullptr) {
-        derive_final_action([f](msgrpc::RpcRspCell<ResponseBar>& r) {
-            f(r);
-            //msgrpc::RpcRspDispatcher::instance().remove_rsp_handler(2);
-            //UdpChannel::close_all_channels();
-        }, *rsp_cell);
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
 //TODO: define following macros:
 #define declare_interface_on_consumer
 #define  define_interface_on_consumer
@@ -737,6 +720,49 @@ msgrpc::RpcRspCell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool can_safely_exit = false;
+std::mutex can_safely_exit_mutex;
+std::condition_variable can_safely_exit_cv;
+
+#include <condition_variable>
+struct MsgRpcTest : public ::testing::Test {
+    virtual void SetUp() {
+        can_safely_exit = false;
+    }
+
+    virtual void TearDown() {
+        std::unique_lock<std::mutex> lk(can_safely_exit_mutex);
+        can_safely_exit_cv.wait(lk, []{return can_safely_exit;});
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename SI>
+void rpc_main(std::function<void(msgrpc::RpcRspCell<ResponseBar>&)> f) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    RequestFoo foo; foo.reqa = k_req_init_value;
+
+    msgrpc::RpcRspCell<ResponseBar> *rsp_cell = SI().run(foo);
+
+    if (rsp_cell != nullptr) {
+        derive_final_action([f](msgrpc::RpcRspCell<ResponseBar>& r) {
+            f(r);
+            //msgrpc::RpcRspDispatcher::instance().remove_rsp_handler(2);
+
+            std::thread thread_delayed_exiting([]() {
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                std::lock_guard<std::mutex> lk(can_safely_exit_mutex);
+                can_safely_exit = true;
+                can_safely_exit_cv.notify_one();
+
+                UdpChannel::close_all_channels();
+            });
+            thread_delayed_exiting.detach();
+
+        }, *rsp_cell);
+    }
+}
+
 void save_rsp_from_other_services_to_db(msgrpc::RpcRspCell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
 void save_rsp_to_log(msgrpc::RpcRspCell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
 
@@ -753,7 +779,7 @@ struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__sync_method_in__y__________case1) {
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__sync_method_in__y__________case1) {
     // x ----(req)---->y (sync_y)
     // x <---(rsp)-----y
 
@@ -778,7 +804,7 @@ struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__async_method_in_y__________case2) {
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__async_method_in_y__________case2) {
     // x ----(req1)-------------------------->y  (async_y)
     //        y (sync_x) <=========(req2)=====y  (async_y)
     //        y (sync_x) ==========(rsp2)====>y  (async_y)
@@ -820,7 +846,7 @@ struct SI_case3_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__async_method_in_y__________case3) {
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__async_method_in_y__________case3) {
     // x ----(req1)-------------------------->y  (async_y)
     //        y (sync_x) <=========(req2)=====y  (async_y)
     //        y (sync_x) ==========(rsp2)====>y  (async_y)
@@ -831,7 +857,7 @@ TEST(async_rpc, should_able_to__support_simple_async_rpc_________x__rpc_to__asyn
     auto then_check = [](msgrpc::RpcRspCell<ResponseBar>& ___r) {
         cout << "got result:....." << endl;
         EXPECT_TRUE(___r.cell_has_value_);
-        //int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
+        int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
         //EXPECT_EQ(expect_value, ___r.value_.rspa);
     };
 

@@ -6,6 +6,7 @@
 #include <msgrpc/frp/cell.h>
 #include <type_traits>
 #include <future>
+#include <atomic>
 
 using namespace std;
 using namespace std::chrono;
@@ -45,15 +46,14 @@ namespace msgrpc {
 }
 
 namespace msgrpc {
-    typedef uint32_t rpc_sequence_id_t;
-    struct RpcSequenceId : msgrpc::ThreadLocalSingleton<RpcSequenceId> {
+    typedef int32_t rpc_sequence_id_t;
+    struct RpcSequenceId : msgrpc::Singleton<RpcSequenceId> {
         rpc_sequence_id_t get() {
-            return sequence_id_++;
+            return ++sequence_id_;
         }
 
     private:
-        //TODO: using atomic int
-        rpc_sequence_id_t sequence_id_ = {0};
+        atomic_uint sequence_id_ = {0};
     };
 }
 
@@ -460,7 +460,6 @@ namespace msgrpc {
 
             //cout << "stub sending msg with length: " << msg_len_with_header << endl;
             //TODO: find y_service_id by interface name "IBuzzMath"
-
             msgrpc::service_id_t service_id = iface_index == 1 ? x_service_id : y_service_id;
 
             bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
@@ -716,7 +715,6 @@ void x_main___case2() {
 
     if (rsp_cell != nullptr) {
         derive_final_action( [](msgrpc::RpcCell<ResponseBar> *r) {
-            cout << "case2 finished" << endl;
             EXPECT_TRUE(r->cell_has_value_);
             EXPECT_EQ(k_req_init_value + k__sync_x__delta, r->value_.rspa);
             UdpChannel::close_all_channels();

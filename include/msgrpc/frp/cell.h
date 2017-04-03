@@ -55,8 +55,10 @@ namespace msgrpc {
             }
         }
 
-        void track_item_to_release(Updatable* cell) {
-            release_list_.push_back(cell);
+        template<typename T>
+        T track(T cell) {
+            release_list_.push_back(static_cast<Updatable*>(cell));
+            return cell;
         }
 
         std::list<Updatable*> release_list_;

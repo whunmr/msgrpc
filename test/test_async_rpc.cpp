@@ -38,9 +38,9 @@ namespace msgrpc {
             return instance;
         }
 
-        MsgChannel* msg_channel_;
-        msg_id_t request_msg_id_;
-        msg_id_t response_msg_id_;
+        MsgChannel* msg_channel_ = {nullptr};
+        msg_id_t request_msg_id_ = 0;
+        msg_id_t response_msg_id_ = 0;
     };
 }
 
@@ -173,7 +173,7 @@ namespace msgrpc {
             has_seq_id_ = true;
         }
 
-        RpcContext* context_;
+        RpcContext* context_ = {nullptr};
         bool has_seq_id_ = false;
         rpc_sequence_id_t seq_id_ = {0};
     };
@@ -216,7 +216,7 @@ namespace msgrpc {
 
             if (is_final_action_) {
                 assert(c.context_ != nullptr && "final action should bind to cell with resouce management context.");
-                c.context_->track_item_to_release(this);
+                c.context_->track(this);
                 cell_ = &c;
             }
         }
@@ -237,13 +237,13 @@ namespace msgrpc {
 
 
     template<typename F, typename... Args>
-    auto derive_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(args...)), Args...>* {
-        return new DerivedAction<decltype(f(args...)), Args...>(std::forward<F>(f), std::ref(args)...);
+    auto derive_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(*args...)), decltype(*args)...>* {
+        return new DerivedAction<decltype(f(*args...)), decltype(*args)...>(std::forward<F>(f), std::ref(*args)...);
     }
 
     template<typename F, typename... Args>
-    auto derive_final_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(args...)), Args...>* {
-        return new DerivedAction<decltype(f(args...)), Args...>(/*is_final_action=*/true, std::forward<F>(f), std::ref(args)...);
+    auto derive_final_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(*args...)), decltype(*args)...>* {
+        return new DerivedAction<decltype(f(*args...)), decltype(*args)...>(/*is_final_action=*/true, std::forward<F>(f), std::ref(*args)...);
     }
 
     template<typename VT, typename... T>
@@ -278,9 +278,8 @@ namespace msgrpc {
     };
 
     template<typename F, typename... Args>
-    auto derive_cell(F &&f, Args &&... args) -> DerivedCell<typename decltype(f(args...))::value_type, Args...>* {
-        return new DerivedCell<typename decltype(f(args...))::value_type, Args...>(std::forward<F>(f),
-                                                                                   std::ref(args)...);
+    auto derive_cell(F &&f, Args &&... args) -> DerivedCell<typename decltype(f(*args...))::value_type, decltype(*args)...>* {
+        return new DerivedCell<typename decltype(f(*args...))::value_type, decltype(*args)...>(std::forward<F>(f), std::ref(*args)...);
     }
 }
 
@@ -435,7 +434,7 @@ namespace msgrpc {
                 } else {
                     //TODO: handle error case where result do not contains value. maybe timeout?
                 }
-            }, *rsp_cell);
+            }, rsp_cell);
 
             return RpcResult::deferred;
         }
@@ -735,7 +734,7 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
 struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
         auto rsp_cell = InterfaceXStub().______sync_x(req);
-        ctxt->track_item_to_release(rsp_cell);
+        ctxt->track(rsp_cell);
         return rsp_cell;
     }
 };
@@ -789,9 +788,8 @@ void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
     if (rsp_cell != nullptr) {
         derive_final_action([f](msgrpc::Cell<ResponseBar>& r) {
             f(r);
-
             create_delayed_exiting_thread();
-        }, *rsp_cell);
+        }, rsp_cell);
     }
 }
 
@@ -802,11 +800,11 @@ struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
 
         auto rsp_cell = InterfaceYStub().______sync_y(req);
-        ctxt->track_item_to_release(rsp_cell);
+        ctxt->track(rsp_cell);
 
-        ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_from_other_services_to_db, *rsp_cell));
+        ctxt->track(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp_cell));
 
-        ctxt->track_item_to_release(msgrpc::derive_action(save_rsp_to_log, *rsp_cell));
+        ctxt->track(msgrpc::derive_action(save_rsp_to_log, rsp_cell));
         return rsp_cell;
     }
 };
@@ -831,7 +829,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__s
 struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
         auto rsp_cell = InterfaceYStub()._____async_y(req);
-        ctxt->track_item_to_release(rsp_cell);
+        ctxt->track(rsp_cell);
         return rsp_cell;
     }
 };
@@ -870,13 +868,13 @@ boost::optional<ResponseBar> merge_logic(msgrpc::Cell<ResponseBar>& rsp_cell_1, 
 struct SI_case3_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
         auto rsp_cell_1 = InterfaceYStub()._____async_y(req);
-        ctxt->track_item_to_release(rsp_cell_1);
+        ctxt->track(rsp_cell_1);
 
         auto rsp_cell_2 = InterfaceYStub()._____async_y(req);
-        ctxt->track_item_to_release(rsp_cell_2);
+        ctxt->track(rsp_cell_2);
 
-        auto * rsp_cell = msgrpc::derive_cell(merge_logic, *rsp_cell_1, *rsp_cell_2);
-        ctxt->track_item_to_release(rsp_cell);
+        auto * rsp_cell = msgrpc::derive_cell(merge_logic, rsp_cell_1, rsp_cell_2);
+        ctxt->track(rsp_cell);
         return rsp_cell;
     }
 };
@@ -902,27 +900,24 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//boost::optional<ResponseBar> merge_logic(msgrpc::Cell<ResponseBar>& rsp_cell_1, msgrpc::Cell<ResponseBar>& rsp_cell_2)  {
-//    if (rsp_cell_1.cell_has_value_ && rsp_cell_2.cell_has_value_) {
-//        ResponseBar bar;
-//        bar.rspa = rsp_cell_1.value_.rspa + rsp_cell_2.value_.rspa;
-//        return boost::make_optional(bar);
-//    }
-//    return {};
-//};
+boost::optional<ResponseBar> gen2(msgrpc::Cell<ResponseBar> &rsp_cell_1)  {
+    return boost::make_optional(rsp_cell_1.cell_has_value_, rsp_cell_1.value_);
+};
 
+void action1(msgrpc::Cell<ResponseBar> &r) { cout << "1/1 ----------------->>>> action1." << endl; };
 
 struct SI_case4_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        auto rsp_cell_1 = InterfaceYStub()._____async_y(req);
-        ctxt->track_item_to_release(rsp_cell_1);
+        auto ___1 = ctxt->track(InterfaceYStub()._____async_y(req));
+                    ctxt->track(msgrpc::derive_action(action1, ___1));
 
-        auto rsp_cell_2 = InterfaceYStub()._____async_y(req);
-        ctxt->track_item_to_release(rsp_cell_2);
+        auto ___2 = ctxt->track(msgrpc::derive_cell(gen2, ___1));
 
-        auto * rsp_cell = msgrpc::derive_cell(merge_logic, *rsp_cell_1, *rsp_cell_2);
-        ctxt->track_item_to_release(rsp_cell);
-        return rsp_cell;
+        auto ___3 = ctxt->track(InterfaceYStub()._____async_y(req));
+
+        auto rsp = ctxt->track(msgrpc::derive_cell(merge_logic, ___1, ___3));
+
+        return rsp;
     }
 };
 

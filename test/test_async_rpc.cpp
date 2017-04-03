@@ -265,7 +265,7 @@ namespace msgrpc {
         }
 
         void update() override {
-            if (!CellBase<VT>::cell_has_value_) {
+            if (!CellBase<VT>::has_value_) {
                 boost::optional<VT> value = bind_();
                 if (value) {
                     CellBase<VT>::set_value(std::move(value.value()));
@@ -382,7 +382,7 @@ namespace msgrpc {
 
     template<typename RSP>
     static RpcResult send_rsp_cell_value(const service_id_t& sender_id, const RspMsgHeader &rsp_header, const Cell<RSP>& rsp_cell) {
-        if (!rsp_cell.cell_has_value_) {
+        if (!rsp_cell.has_value_) {
             return RpcResult::failed;
         }
 
@@ -421,7 +421,7 @@ namespace msgrpc {
                 return RpcResult::failed;
             }
 
-            if (rsp_cell->cell_has_value_) {
+            if (rsp_cell->has_value_) {
                 RpcResult ret = send_rsp_cell_value(sender_id, rsp_header, *rsp_cell);
                 delete rsp_cell;
                 return ret;
@@ -429,7 +429,7 @@ namespace msgrpc {
 
             //TODO: make args of lambda to be reference & ??
             derive_final_action([sender_id, rsp_header](msgrpc::Cell<RSP>& r) {
-                if (r.cell_has_value_) {
+                if (r.has_value_) {
                     send_rsp_cell_value(sender_id, rsp_header, r);
                 } else {
                     //TODO: handle error case where result do not contains value. maybe timeout?
@@ -658,7 +658,7 @@ msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 msgrpc::Cell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
     cout << "                     ______sync_x" << endl;
     auto* rsp_cell = new msgrpc::Cell<ResponseBar>();
-    rsp_cell->cell_has_value_ = true;
+    rsp_cell->has_value_ = true;
     rsp_cell->value_.__set_rspa(req.reqa + k__sync_x__delta);
     return rsp_cell;
 }
@@ -726,16 +726,14 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
     cout << "                     ______sync_y" << endl;
 
     auto* rsp_cell = new msgrpc::Cell<ResponseBar>();
-    rsp_cell->cell_has_value_ = true;
+    rsp_cell->has_value_ = true;
     rsp_cell->value_.__set_rspa(req.reqa + k__sync_y__delta);
     return rsp_cell;
 }
 
 struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        auto rsp_cell = InterfaceXStub().______sync_x(req);
-        ctxt->track(rsp_cell);
-        return rsp_cell;
+        return ctxt->track(InterfaceXStub().______sync_x(req));
     }
 };
 
@@ -798,14 +796,10 @@ void save_rsp_to_log(msgrpc::Cell<ResponseBar>& r)                    { cout << 
 
 struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-
-        auto rsp_cell = InterfaceYStub().______sync_y(req);
-        ctxt->track(rsp_cell);
-
-        ctxt->track(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp_cell));
-
-        ctxt->track(msgrpc::derive_action(save_rsp_to_log, rsp_cell));
-        return rsp_cell;
+        auto rsp = ctxt->track(InterfaceYStub().______sync_y(req));
+                   ctxt->track(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp));
+                   ctxt->track(msgrpc::derive_action(save_rsp_to_log, rsp));
+        return rsp;
     }
 };
 
@@ -814,7 +808,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__s
     // x <---(rsp)-----y
 
     auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.cell_has_value_);
+        EXPECT_TRUE(___r.has_value_);
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value_.rspa);
     };
 
@@ -828,9 +822,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__s
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        auto rsp_cell = InterfaceYStub()._____async_y(req);
-        ctxt->track(rsp_cell);
-        return rsp_cell;
+        return ctxt->track(InterfaceYStub()._____async_y(req));
     }
 };
 
@@ -841,7 +833,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
     // x <---(rsp1)---------------------------y  (async_y)
 
     auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.cell_has_value_);
+        EXPECT_TRUE(___r.has_value_);
         EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value_.rspa);
     };
 
@@ -854,7 +846,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 boost::optional<ResponseBar> merge_logic(msgrpc::Cell<ResponseBar>& rsp_cell_1, msgrpc::Cell<ResponseBar>& rsp_cell_2)  {
-    if (rsp_cell_1.cell_has_value_ && rsp_cell_2.cell_has_value_) {
+    if (rsp_cell_1.has_value_ && rsp_cell_2.has_value_) {
         ResponseBar bar;
         bar.rspa = rsp_cell_1.value_.rspa + rsp_cell_2.value_.rspa;
         return boost::make_optional(bar);
@@ -867,15 +859,9 @@ boost::optional<ResponseBar> merge_logic(msgrpc::Cell<ResponseBar>& rsp_cell_1, 
 //TODO: add service discovery
 struct SI_case3_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        auto rsp_cell_1 = InterfaceYStub()._____async_y(req);
-        ctxt->track(rsp_cell_1);
-
-        auto rsp_cell_2 = InterfaceYStub()._____async_y(req);
-        ctxt->track(rsp_cell_2);
-
-        auto * rsp_cell = msgrpc::derive_cell(merge_logic, rsp_cell_1, rsp_cell_2);
-        ctxt->track(rsp_cell);
-        return rsp_cell;
+        auto ___1 = ctxt->track(InterfaceYStub()._____async_y(req));
+        auto ___2 = ctxt->track(InterfaceYStub()._____async_y(req));
+        return ctxt->track( msgrpc::derive_cell(merge_logic, ___1, ___2));
     }
 };
 
@@ -888,7 +874,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
     // x <---(rsp1)---------------------------y  (async_y)
 
     auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.cell_has_value_);
+        EXPECT_TRUE(___r.has_value_);
         int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
         EXPECT_EQ(expect_value, ___r.value_.rspa);
     };
@@ -901,7 +887,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 boost::optional<ResponseBar> gen2(msgrpc::Cell<ResponseBar> &rsp_cell_1)  {
-    return boost::make_optional(rsp_cell_1.cell_has_value_, rsp_cell_1.value_);
+    return boost::make_optional(rsp_cell_1.has_value_, rsp_cell_1.value_);
 };
 
 void action1(msgrpc::Cell<ResponseBar> &r) { cout << "1/1 ----------------->>>> action1." << endl; };
@@ -915,9 +901,7 @@ struct SI_case4_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
 
         auto ___3 = ctxt->track(InterfaceYStub()._____async_y(req));
 
-        auto rsp = ctxt->track(msgrpc::derive_cell(merge_logic, ___1, ___3));
-
-        return rsp;
+        return ctxt->track(msgrpc::derive_cell(merge_logic, ___2, ___3));
     }
 };
 
@@ -930,7 +914,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_________x__rpc_to__a
     // x <---(rsp1)---------------------------y  (async_y)
 
     auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.cell_has_value_);
+        EXPECT_TRUE(___r.has_value_);
         int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
         EXPECT_EQ(expect_value, ___r.value_.rspa);
     };

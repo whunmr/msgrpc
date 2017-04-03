@@ -19,7 +19,7 @@ namespace msgrpc {
     template<typename T>
     struct CellBase : Updatable {
         virtual ~CellBase() {}
-        bool cell_has_value_{false};
+        bool has_value_{false};
         T value_;
 
         void update() override {/**/}
@@ -27,7 +27,7 @@ namespace msgrpc {
         void set_value(T&& value) {
             //std::cout << "cell got value:" << value << std::endl;
             value_ = std::move(value);
-            cell_has_value_ = true;
+            has_value_ = true;
 
             evaluate_all_derived_cells();
         }

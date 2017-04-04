@@ -897,9 +897,11 @@ struct SI_case4_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
         auto ___1 = ctxt->track(InterfaceYStub()._____async_y(req));
                     ctxt->track(msgrpc::derive_action(action1, ___1));
+
         auto ___2 = ctxt->track(msgrpc::derive_cell(gen2, ___1));
 
         auto ___3 = ctxt->track(InterfaceYStub()._____async_y(req));
+
         return ctxt->track(msgrpc::derive_cell(merge_logic, ___2, ___3));
     }
 };
@@ -923,3 +925,9 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case4) 
     thread_x.join();
     thread_y.join();
 }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//TODO: test case for sequential sending out async request instead of parallel one in case4.
+//TODO: add nested depencency between async rpc request, like we do in __def_mi
+//TODO: handle timeout and timer

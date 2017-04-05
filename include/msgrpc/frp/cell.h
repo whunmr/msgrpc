@@ -31,12 +31,10 @@ namespace msgrpc {
         virtual ~CellBase() {}
         bool has_value_{false};
         RpcResult status_ = {RpcResult::succeeded};
-        T value_;
 
         void update() override {/**/}
 
         void set_failed_reason(RpcResult ret) {
-            std::cout << this << "  set failed reason: ---->updatables_.size(): " << updatables_.size() << std::endl;
             status_ = ret;
             evaluate_all_derived_cells();
         }
@@ -76,10 +74,11 @@ namespace msgrpc {
 
         void register_listener(Updatable *updatable) {
             updatables_.push_back(updatable);
-            std::cout << this << "---->updatables_.size(): " << updatables_.size() << "  register new update:" << updatable << std::endl;
         }
 
         std::vector<Updatable *> updatables_;
+
+        T value_;
     };
 
     struct RpcContext {

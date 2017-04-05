@@ -779,7 +779,10 @@ struct MsgRpcTest : public ::testing::Test {
 };
 
 struct test_thread : std::thread {
-    using std::thread::thread;
+    template<typename... Args>
+    test_thread(Args... args) : std::thread(msgrpc_loop, args...) {
+    }
+
     ~test_thread() {
         join();
     }
@@ -837,8 +840,8 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) 
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
     };
 
-    test_thread thread_x(msgrpc_loop, x_service_id, [&] {rpc_main<SI_case1_x>(then_check);});
-    test_thread thread_y(msgrpc_loop, y_service_id, []{});
+    test_thread thread_x(x_service_id, [&] {rpc_main<SI_case1_x>(then_check);});
+    test_thread thread_y(y_service_id, []{});
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -860,8 +863,8 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case2) 
         EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value().rspa);
     };
 
-    test_thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case2_x>(then_check);});
-    test_thread thread_y(msgrpc_loop, y_service_id, []{});
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case2_x>(then_check);});
+    test_thread thread_y(y_service_id, []{});
 }
 
 
@@ -901,8 +904,8 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case3) 
         EXPECT_EQ(expect_value, ___r.value().rspa);
     };
 
-    test_thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case3_x>(then_check);});
-    test_thread thread_y(msgrpc_loop, y_service_id, []{});
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case3_x>(then_check);});
+    test_thread thread_y(y_service_id, []{});
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -940,8 +943,8 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case4) 
         EXPECT_EQ(expect_value, ___r.value().rspa);
     };
 
-    test_thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case4>(then_check);});
-    test_thread thread_y(msgrpc_loop, y_service_id, []{});
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4>(then_check);});
+    test_thread thread_y(y_service_id, []{});
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -967,8 +970,8 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_______rpc_fails_____
         EXPECT_FALSE(___r.has_value_);
     };
 
-    test_thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case5>(then_check);});
-    test_thread thread_y(msgrpc_loop, y_service_id, []{});
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case5>(then_check);});
+    test_thread thread_y(y_service_id, []{});
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

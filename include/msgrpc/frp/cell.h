@@ -80,8 +80,8 @@ namespace msgrpc {
             return value_;
         }
 
-        //TODO: add -> overload
         const T& value() const {
+            assert(this->has_value_ && "can not access value_ field, if cell do not has_value_.");
             return value_;
         }
 

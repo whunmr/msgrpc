@@ -10,6 +10,14 @@
 
 namespace msgrpc {
 
+    enum class RpcResult : unsigned short {
+        succeeded = 0
+        , deferred = 1
+        , failed  = 2
+        , method_not_found = 3
+        , iface_not_found =  4
+    };
+
     struct Updatable {
         virtual ~Updatable() {}
         virtual void update() = 0;
@@ -18,17 +26,42 @@ namespace msgrpc {
 
     template<typename T>
     struct CellBase : Updatable {
+        typedef T value_type;
+
         virtual ~CellBase() {}
         bool has_value_{false};
+        RpcResult status_ = {RpcResult::succeeded};
         T value_;
 
         void update() override {/**/}
 
+        void set_failed_reason(RpcResult ret) {
+            std::cout << this << "  set failed reason: ---->updatables_.size(): " << updatables_.size() << std::endl;
+            status_ = ret;
+            evaluate_all_derived_cells();
+        }
+
+        RpcResult failed_reason() const {
+            return status_;
+        }
+
+        RpcResult status() const {
+            return status_;
+        }
+
+        bool is_failed() const {
+            return status_ != RpcResult::succeeded;
+        }
+
+        void set_value(const T& value) {
+            value_ = value;
+            has_value_ = true;
+            evaluate_all_derived_cells();
+        }
+
         void set_value(T&& value) {
-            //std::cout << "cell got value:" << value << std::endl;
             value_ = std::move(value);
             has_value_ = true;
-
             evaluate_all_derived_cells();
         }
 
@@ -43,6 +76,7 @@ namespace msgrpc {
 
         void register_listener(Updatable *updatable) {
             updatables_.push_back(updatable);
+            std::cout << this << "---->updatables_.size(): " << updatables_.size() << "  register new update:" << updatable << std::endl;
         }
 
         std::vector<Updatable *> updatables_;

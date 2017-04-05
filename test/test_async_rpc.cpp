@@ -389,7 +389,7 @@ namespace msgrpc {
 
         uint8_t* pout_buf = nullptr;
         uint32_t out_buf_len = 0;
-        if (!ThriftEncoder::encode(rsp_cell.value_, &pout_buf, &out_buf_len)) {
+        if (!ThriftEncoder::encode(rsp_cell.value(), &pout_buf, &out_buf_len)) {
             cout << "encode failed on remtoe side." << endl;
             return RpcResult::failed;
         }
@@ -659,8 +659,11 @@ msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 msgrpc::Cell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
     cout << "                     ______sync_x" << endl;
     auto* rsp_cell = new msgrpc::Cell<ResponseBar>();
-    rsp_cell->has_value_ = true;
-    rsp_cell->value_.__set_rspa(req.reqa + k__sync_x__delta);
+
+    ResponseBar bar;
+    bar.__set_rspa(req.reqa + k__sync_x__delta);
+    rsp_cell->set_value(bar);
+
     return rsp_cell;
 }
 
@@ -735,10 +738,12 @@ msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 //---------------- implement interface in here:
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
     cout << "                     ______sync_y" << endl;
-
     auto* rsp_cell = new msgrpc::Cell<ResponseBar>();
-    rsp_cell->has_value_ = true;
-    rsp_cell->value_.__set_rspa(req.reqa + k__sync_y__delta);
+
+    ResponseBar bar;
+    bar.__set_rspa(req.reqa + k__sync_y__delta);
+    rsp_cell->set_value(bar);
+
     return rsp_cell;
 }
 
@@ -811,6 +816,7 @@ void rpc_main(std::function<void(Cell<ResponseBar>&)> f) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void save_rsp_from_other_services_to_db(Cell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
 void save_rsp_to_log(Cell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
 
@@ -829,7 +835,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) 
 
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
-        EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value_.rspa);
+        EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
     };
 
     std::thread thread_x(msgrpc_loop, x_service_id, [&] {rpc_main<SI_case1_x>(then_check);});
@@ -854,7 +860,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case2) 
 
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
-        EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value_.rspa);
+        EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value().rspa);
     };
 
     std::thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case2_x>(then_check);});
@@ -866,10 +872,10 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case2) 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& rsp_cell_1, Cell<ResponseBar>& rsp_cell_2)  {
-    if (rsp_cell_1.has_value_ && rsp_cell_2.has_value_) {
+void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1, Cell<ResponseBar>& cell_2)  {
+    if (cell_1.has_value_ && cell_2.has_value_) {
         ResponseBar bar;
-        bar.rspa = rsp_cell_1.value_.rspa + rsp_cell_2.value_.rspa;
+        bar.rspa = cell_1.value().rspa + cell_2.value().rspa;
         result.set_value(bar);
     }
 };
@@ -896,7 +902,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case3) 
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
-        EXPECT_EQ(expect_value, ___r.value_.rspa);
+        EXPECT_EQ(expect_value, ___r.value().rspa);
     };
 
     std::thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case3_x>(then_check);});
@@ -908,7 +914,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case3) 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void gen2(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp_cell_1)  {
     if (rsp_cell_1.has_value_) {
-        result.set_value(rsp_cell_1.value_);  //TODO: how to force people call set_value instead directly assign to .value_ field.
+        result.set_value(rsp_cell_1);  //TODO: how to force people call set_value instead directly assign to .value_ field.
     }
 };
 
@@ -937,7 +943,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case4) 
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
-        EXPECT_EQ(expect_value, ___r.value_.rspa);
+        EXPECT_EQ(expect_value, ___r.value().rspa);
     };
 
     std::thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case4>(then_check);});
@@ -952,7 +958,7 @@ void gen5(Cell<ResponseBar>& result, Cell<ResponseBar>& rsp)  {
         return result.set_failed_reason(rsp.failed_reason());
     }
 
-    return result.set_value(rsp.value_);
+    return result.set_value(rsp);
 };
 
 struct SI_case5 : MsgRpcSIBase<RequestFoo, ResponseBar> {

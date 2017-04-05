@@ -76,8 +76,19 @@ namespace msgrpc {
             updatables_.push_back(updatable);
         }
 
+        operator T&() {
+            return value_;
+        }
+
+        //TODO: add -> overload
+        const T& value() const {
+            return value_;
+        }
+
+    protected:
         std::vector<Updatable *> updatables_;
 
+    private:
         T value_;
     };
 

@@ -521,6 +521,21 @@ namespace msgrpc {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//interface implementation related elements:
+namespace msgrpc {
+    template<typename REQ, typename RSP>
+    msgrpc::Cell<RSP>* call_sync_impl(void(*f)(const REQ &, RSP &), const REQ &req) {
+        auto* rsp_cell = new msgrpc::Cell<RSP>();
+
+        RSP rsp;
+        f(req, rsp);
+
+        rsp_cell->set_value(rsp);
+        return rsp_cell;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 #include "test_util/UdpChannel.h"
 
 namespace demo {
@@ -542,23 +557,6 @@ namespace demo {
         }
     };
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -656,15 +654,13 @@ msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- implement interface in here:
+void ______sync_x_impl(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_rspa(req.reqa + k__sync_x__delta);
+}
+
 msgrpc::Cell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
     cout << "                     ______sync_x" << endl;
-    auto* rsp_cell = new msgrpc::Cell<ResponseBar>();
-
-    ResponseBar bar;
-    bar.__set_rspa(req.reqa + k__sync_x__delta);
-    rsp_cell->set_value(bar);
-
-    return rsp_cell;
+    return msgrpc::call_sync_impl(______sync_x_impl, req);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -735,26 +731,26 @@ msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//---------------- implement interface in here:
+void ______sync_y_impl(const RequestFoo& req, ResponseBar& rsp) {
+    rsp.__set_rspa(req.reqa + k__sync_y__delta);
+}
+
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
     cout << "                     ______sync_y" << endl;
-    auto* rsp_cell = new msgrpc::Cell<ResponseBar>();
-    ResponseBar bar;
-    bar.__set_rspa(req.reqa + k__sync_y__delta);
-    rsp_cell->set_value(bar);
-    return rsp_cell;
+    return msgrpc::call_sync_impl(______sync_y_impl, req);
 }
+
 
 struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
         return ctxt->track(InterfaceXStub().______sync_x(req));
     }
 };
-
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
     cout << "                     _____async_y" << endl;
     return SI_____async_y().run(req);
 }
+
 
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo& req) {
     cout << "                     _____async_y" << endl;

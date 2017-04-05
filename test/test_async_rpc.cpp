@@ -809,60 +809,61 @@ void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
     }
 }
 
-//void save_rsp_from_other_services_to_db(msgrpc::Cell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
-//void save_rsp_to_log(msgrpc::Cell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
-//
-//struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-//    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-//        auto rsp = ctxt->track(InterfaceYStub().______sync_y(req));
-//                   ctxt->track(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp));
-//                   ctxt->track(msgrpc::derive_action(save_rsp_to_log, rsp));
-//        return rsp;
-//    }
-//};
-//
-//TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) {
-//    // x ----(req)---->y (sync_y)
-//    // x <---(rsp)-----y
-//
-//    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
-//        EXPECT_TRUE(___r.has_value_);
-//        EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value_.rspa);
-//    };
-//
-//    std::thread thread_x(msgrpc_loop, x_service_id, [&] {rpc_main<SI_case1_x>(then_check);});
-//    std::thread thread_y(msgrpc_loop, y_service_id, []{});
-//    thread_x.join();
-//    thread_y.join();
-//}
-//
+void save_rsp_from_other_services_to_db(msgrpc::Cell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
+void save_rsp_to_log(msgrpc::Cell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
+
+struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        auto rsp = ctxt->track(InterfaceYStub().______sync_y(req));
+                   ctxt->track(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp));
+                   ctxt->track(msgrpc::derive_action(save_rsp_to_log, rsp));
+        return rsp;
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) {
+    // x ----(req)---->y (sync_y)
+    // x <---(rsp)-----y
+
+    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
+        EXPECT_TRUE(___r.has_value_);
+        EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value_.rspa);
+    };
+
+    std::thread thread_x(msgrpc_loop, x_service_id, [&] {rpc_main<SI_case1_x>(then_check);});
+    std::thread thread_y(msgrpc_loop, y_service_id, []{});
+    thread_x.join();
+    thread_y.join();
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-//    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-//        return ctxt->track(InterfaceYStub()._____async_y(req));
-//    }
-//};
-//
-//TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case2) {
-//    // x ----(req1)-------------------------->y  (async_y)
-//    //        y (sync_x) <=========(req2)=====y  (async_y)
-//    //        y (sync_x) ==========(rsp2)====>y  (async_y)
-//    // x <---(rsp1)---------------------------y  (async_y)
-//
-//    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
-//        EXPECT_TRUE(___r.has_value_);
-//        EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value_.rspa);
-//    };
-//
-//    std::thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case2_x>(then_check);});
-//    std::thread thread_y(msgrpc_loop, y_service_id, []{});
-//    thread_x.join();
-//    thread_y.join();
-//}
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        return ctxt->track(InterfaceYStub()._____async_y(req));
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case2) {
+    // x ----(req1)-------------------------->y  (async_y)
+    //        y (sync_x) <=========(req2)=====y  (async_y)
+    //        y (sync_x) ==========(rsp2)====>y  (async_y)
+    // x <---(rsp1)---------------------------y  (async_y)
+
+    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
+        EXPECT_TRUE(___r.has_value_);
+        EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value_.rspa);
+    };
+
+    std::thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case2_x>(then_check);});
+    std::thread thread_y(msgrpc_loop, y_service_id, []{});
+    thread_x.join();
+    thread_y.join();
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void merge_logic(msgrpc::Cell<ResponseBar>& result, msgrpc::Cell<ResponseBar>& rsp_cell_1, msgrpc::Cell<ResponseBar>& rsp_cell_2)  {
     if (rsp_cell_1.has_value_ && rsp_cell_2.has_value_) {
         ResponseBar bar;
@@ -874,34 +875,34 @@ void merge_logic(msgrpc::Cell<ResponseBar>& result, msgrpc::Cell<ResponseBar>& r
 ////TODO: fold into DSL
 ////TODO: add timeout handling
 ////TODO: add service discovery
-//struct SI_case3_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-//    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-//        auto ___1 = ctxt->track(InterfaceYStub()._____async_y(req));
-//        auto ___2 = ctxt->track(InterfaceYStub()._____async_y(req));
-//        return ctxt->track( msgrpc::derive_cell(merge_logic, ___1, ___2));
-//    }
-//};
-//
-//TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case3) {
-//    // x ----(req1)-------------------------->y  (async_y)
-//    //        y (sync_x) <=========(req2)=====y  (async_y)
-//    //        y (sync_x) ==========(rsp2)====>y  (async_y)
-//    //        y (sync_x) <=========(req3)=====y  (async_y)
-//    //        y (sync_x) ==========(rsp3)====>y  (async_y)
-//    // x <---(rsp1)---------------------------y  (async_y)
-//
-//    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
-//        EXPECT_TRUE(___r.has_value_);
-//        int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
-//        EXPECT_EQ(expect_value, ___r.value_.rspa);
-//    };
-//
-//    std::thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case3_x>(then_check);});
-//    std::thread thread_y(msgrpc_loop, y_service_id, []{});
-//    thread_x.join();
-//    thread_y.join();
-//}
-//
+struct SI_case3_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+        auto ___1 = ctxt->track(InterfaceYStub()._____async_y(req));
+        auto ___2 = ctxt->track(InterfaceYStub()._____async_y(req));
+        return ctxt->track( msgrpc::derive_cell(merge_logic, ___1, ___2));
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case3) {
+    // x ----(req1)-------------------------->y  (async_y)
+    //        y (sync_x) <=========(req2)=====y  (async_y)
+    //        y (sync_x) ==========(rsp2)====>y  (async_y)
+    //        y (sync_x) <=========(req3)=====y  (async_y)
+    //        y (sync_x) ==========(rsp3)====>y  (async_y)
+    // x <---(rsp1)---------------------------y  (async_y)
+
+    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
+        EXPECT_TRUE(___r.has_value_);
+        int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
+        EXPECT_EQ(expect_value, ___r.value_.rspa);
+    };
+
+    std::thread thread_x(msgrpc_loop, x_service_id, [&]{rpc_main<SI_case3_x>(then_check);});
+    std::thread thread_y(msgrpc_loop, y_service_id, []{});
+    thread_x.join();
+    thread_y.join();
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void gen2(msgrpc::Cell<ResponseBar> &result, msgrpc::Cell<ResponseBar> &rsp_cell_1)  {
     if (rsp_cell_1.has_value_) {

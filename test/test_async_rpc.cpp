@@ -761,6 +761,8 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo&
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+using namespace msgrpc;
+
 bool can_safely_exit = false;
 std::mutex can_safely_exit_mutex;
 std::condition_variable can_safely_exit_cv;
@@ -794,14 +796,14 @@ void create_delayed_exiting_thread() {
 
 
 template<typename SI>
-void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
+void rpc_main(std::function<void(Cell<ResponseBar>&)> f) {
     this_thread::sleep_for(milliseconds(30));
     RequestFoo foo; foo.reqa = k_req_init_value;
 
     auto* rsp_cell = SI().run(foo);
 
     if (rsp_cell != nullptr) {
-        derive_final_action([f](msgrpc::Cell<ResponseBar>& r) {
+        derive_final_action([f](Cell<ResponseBar>& r) {
             cout << "derive_final_action" << endl;
             f(r);
             create_delayed_exiting_thread();
@@ -809,14 +811,14 @@ void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
     }
 }
 
-void save_rsp_from_other_services_to_db(msgrpc::Cell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
-void save_rsp_to_log(msgrpc::Cell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
+void save_rsp_from_other_services_to_db(Cell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
+void save_rsp_to_log(Cell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
 
-struct SI_case1_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+struct SI_case1_x : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
         auto rsp = ctxt->track(InterfaceYStub().______sync_y(req));
-                   ctxt->track(msgrpc::derive_action(save_rsp_from_other_services_to_db, rsp));
-                   ctxt->track(msgrpc::derive_action(save_rsp_to_log, rsp));
+                   ctxt->track(derive_action(save_rsp_from_other_services_to_db, rsp));
+                   ctxt->track(derive_action(save_rsp_to_log, rsp));
         return rsp;
     }
 };
@@ -825,7 +827,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) 
     // x ----(req)---->y (sync_y)
     // x <---(rsp)-----y
 
-    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value_.rspa);
     };
@@ -838,8 +840,8 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct SI_case2_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+struct SI_case2_x : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
         return ctxt->track(InterfaceYStub()._____async_y(req));
     }
 };
@@ -850,7 +852,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case2) 
     //        y (sync_x) ==========(rsp2)====>y  (async_y)
     // x <---(rsp1)---------------------------y  (async_y)
 
-    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value_.rspa);
     };
@@ -864,7 +866,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case2) 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void merge_logic(msgrpc::Cell<ResponseBar>& result, msgrpc::Cell<ResponseBar>& rsp_cell_1, msgrpc::Cell<ResponseBar>& rsp_cell_2)  {
+void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& rsp_cell_1, Cell<ResponseBar>& rsp_cell_2)  {
     if (rsp_cell_1.has_value_ && rsp_cell_2.has_value_) {
         ResponseBar bar;
         bar.rspa = rsp_cell_1.value_.rspa + rsp_cell_2.value_.rspa;
@@ -875,11 +877,11 @@ void merge_logic(msgrpc::Cell<ResponseBar>& result, msgrpc::Cell<ResponseBar>& r
 ////TODO: fold into DSL
 ////TODO: add timeout handling
 ////TODO: add service discovery
-struct SI_case3_x : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+struct SI_case3_x : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
         auto ___1 = ctxt->track(InterfaceYStub()._____async_y(req));
         auto ___2 = ctxt->track(InterfaceYStub()._____async_y(req));
-        return ctxt->track( msgrpc::derive_cell(merge_logic, ___1, ___2));
+        return ctxt->track( derive_cell(merge_logic, ___1, ___2));
     }
 };
 
@@ -891,7 +893,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case3) 
     //        y (sync_x) ==========(rsp3)====>y  (async_y)
     // x <---(rsp1)---------------------------y  (async_y)
 
-    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
         EXPECT_EQ(expect_value, ___r.value_.rspa);
@@ -904,24 +906,24 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case3) 
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void gen2(msgrpc::Cell<ResponseBar> &result, msgrpc::Cell<ResponseBar> &rsp_cell_1)  {
+void gen2(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp_cell_1)  {
     if (rsp_cell_1.has_value_) {
         result.set_value(rsp_cell_1.value_);  //TODO: how to force people call set_value instead directly assign to .value_ field.
     }
 };
 
-void action1(msgrpc::Cell<ResponseBar> &r) { cout << "1/1 ----------------->>>> action1." << endl; };
+void action1(Cell<ResponseBar> &r) { cout << "1/1 ----------------->>>> action1." << endl; };
 
-struct SI_case4 : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+struct SI_case4 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
         auto ___1 = ctxt->track(InterfaceYStub()._____async_y(req));
-                    ctxt->track(msgrpc::derive_action(action1, ___1));
+                    ctxt->track(derive_action(action1, ___1));
 
-        auto ___2 = ctxt->track(msgrpc::derive_cell(gen2, ___1));
+        auto ___2 = ctxt->track(derive_cell(gen2, ___1));
 
         auto ___3 = ctxt->track(InterfaceYStub()._____async_y(req));
 
-        return ctxt->track(msgrpc::derive_cell(merge_logic, ___2, ___3));
+        return ctxt->track(derive_cell(merge_logic, ___2, ___3));
     }
 };
 
@@ -932,7 +934,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case4) 
     //        y (sync_x) <=========(req3)=====y  (async_y)
     //        y (sync_x) ==========(rsp3)====>y  (async_y)
     // x <---(rsp1)---------------------------y  (async_y)
-    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
         EXPECT_EQ(expect_value, ___r.value_.rspa);
@@ -945,7 +947,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case4) 
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void gen5(msgrpc::Cell<ResponseBar>& result, msgrpc::Cell<ResponseBar>& rsp)  {
+void gen5(Cell<ResponseBar>& result, Cell<ResponseBar>& rsp)  {
     if (rsp.is_failed()) {
         return result.set_failed_reason(rsp.failed_reason());
     }
@@ -953,17 +955,17 @@ void gen5(msgrpc::Cell<ResponseBar>& result, msgrpc::Cell<ResponseBar>& rsp)  {
     return result.set_value(rsp.value_);
 };
 
-struct SI_case5 : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
+struct SI_case5 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
         auto ___1 = ctxt->track(InterfaceYStub().______sync_y_failed(req));
-        return ctxt->track(msgrpc::derive_cell(gen5, ___1));
+        return ctxt->track(derive_cell(gen5, ___1));
     }
 };
 
 TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_______rpc_fails_______case5) {
     // x ----(req1)-------------------------->y  (______sync_y_failed)
     // x <---(rsp1)---------------------------y  (______sync_y_failed)
-    auto then_check = [](msgrpc::Cell<ResponseBar>& ___r) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_FALSE(___r.has_value_);
     };
 

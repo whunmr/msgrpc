@@ -1044,6 +1044,61 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rp
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4_failed>(then_check);});
     test_thread thread_y(y_service_id, []{});
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Cell<ResponseBar>& call__sync_y_failed(RpcContext &ctxt, Cell<ResponseBar> *___r) {
+    if (___r->is_failed()) {
+        return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___r->failed_reason());
+    }
+
+    RequestFoo req;
+    req.reqa = ___r->value().rspa;
+    return *(InterfaceYStub(ctxt).______sync_y_failed(req));
+}
+
+struct SI_case4_failed_2 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
+        {
+            auto ___2 = ___bind_rpc(call__sync_y_failed, ___1);
+            {
+                return ___bind_rpc(call__sync_y_again, ___2);
+            }
+        }
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rpc______case4__failure_propagation_2) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_FALSE(___r.has_value_);
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4_failed_2>(then_check);});
+    test_thread thread_y(y_service_id, []{});
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SI_case4_failed_3 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
+        {
+            auto ___2 = ___bind_rpc(call__sync_y_again, ___1);
+            {
+                return ___bind_rpc(call__sync_y_failed, ___2);
+            }
+        }
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rpc______case4__failure_propagation_3) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_FALSE(___r.has_value_);
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4_failed_3>(then_check);});
+    test_thread thread_y(y_service_id, []{});
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void gen2(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp_cell_1)  {
     if (rsp_cell_1.has_value_) {

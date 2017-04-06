@@ -23,12 +23,12 @@ namespace msgrpc {
         virtual void update() = 0;
     };
 
-
     template<typename T>
     struct CellBase : Updatable {
         typedef T value_type;
 
-        virtual ~CellBase() {}
+        virtual ~CellBase() { }
+
         bool has_value_{false};
         RpcResult status_ = {RpcResult::succeeded};
 
@@ -73,6 +73,7 @@ namespace msgrpc {
 
         void evaluate_all_derived_cells() {
             size_t size = updatables_.size();
+
             for (int i = 0; i < size; ++i) {
                 if (updatables_[i] != nullptr) {
                     updatables_[i]->update();

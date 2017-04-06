@@ -205,8 +205,8 @@ namespace msgrpc {
             call_each_args(std::forward<T>(args)...);
         }
 
-        DerivedAction(std::function<VT(T...)> logic, T &&... args) : bind_(logic, std::ref(args)...) {
-            call_each_args(std::forward<T>(args)...);
+        ~DerivedAction() {
+            cell_ = nullptr;
         }
 
         template<typename C, typename... Ts>
@@ -227,8 +227,11 @@ namespace msgrpc {
         }
 
         void update() override {
-            bind_();
+            if (! is_final_action_) {
+                return bind_();  //if not final action, may trigger self's destruction, can not continue running.
+            }
 
+            bind_();
             if (is_final_action_) {
                 delete cell_;
             }
@@ -242,7 +245,7 @@ namespace msgrpc {
 
     template<typename F, typename... Args>
     auto derive_action(RpcContext& ctxt, F &&f, Args &&... args) -> DerivedAction<decltype(f(*args...)), decltype(*args)...>* {
-        auto action = new DerivedAction<decltype(f(*args...)), decltype(*args)...>(std::forward<F>(f), std::ref(*args)...);
+        auto action = new DerivedAction<decltype(f(*args...)), decltype(*args)...>(/*is_final_action=*/false, std::forward<F>(f), std::ref(*args)...);
         ctxt.track(action);
         return action;
     }
@@ -472,7 +475,7 @@ namespace msgrpc {
                 return ret;
             }
 
-            derive_final_action([sender_id, rsp_header](msgrpc::Cell<RSP>& r) {
+            auto final_action = derive_final_action([sender_id, rsp_header](msgrpc::Cell<RSP>& r) {
                 if (r.has_value_) {
                     send_rsp_cell_value(sender_id, rsp_header, r);
                 } else {
@@ -960,17 +963,13 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________parallel_rpc_
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 struct SI_case3_ex : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
 
         auto ___2 = derive_async_cell(ctxt,
                                         [___1, &ctxt]() -> Cell<ResponseBar>* {
-                                            if (___1->is_failed()) {
-                                                return nullptr;
-                                            }
+                                            if (___1->is_failed()) { return nullptr; }
                                             RequestFoo req; req.reqa = ___1->value().rspa;
                                             return InterfaceYStub(ctxt).______sync_y(req);
                                         }

@@ -994,9 +994,12 @@ Cell<ResponseBar>* call__sync_y_again(RpcContext &ctxt, Cell<ResponseBar> *___r)
 struct SI_case4 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
-        auto ___2 = ___bind_rpc(call__sync_y_again, ___1);
-        auto ___3 = ___bind_rpc(call__sync_y_again, ___2);
-        return ___3;
+        {
+            auto ___2 = ___bind_rpc(call__sync_y_again, ___1);
+            {
+                return ___bind_rpc(call__sync_y_again, ___2);
+            }
+        }
     }
 };
 
@@ -1025,14 +1028,14 @@ void action1(Cell<ResponseBar> &r) { cout << "1/1 ----------------->>>> action1.
 
 struct SI_case5 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
-                    ___bind_action(action1, ___1);
-
-        auto ___2 = ___bind_cell(gen2, ___1);
-
         auto ___3 = InterfaceYStub(ctxt)._____async_y(req);
-
-        return ___bind_cell(merge_logic, ___2, ___3);
+        auto ___1 = InterfaceYStub(ctxt)._____async_y(req); ___bind_action(action1, ___1);
+        {
+            auto ___2 = ___bind_cell(gen2, ___1);
+            {
+                return ___bind_cell(merge_logic, ___2, ___3);
+            }
+        }
     }
 };
 

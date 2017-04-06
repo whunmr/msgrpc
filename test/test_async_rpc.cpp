@@ -252,11 +252,11 @@ namespace msgrpc {
         return new DerivedAction<decltype(f(*args...)), decltype(*args)...>(/*is_final_action=*/true, std::forward<F>(f), std::ref(*args)...);
     }
 
-    template<typename VT, typename... T>
-    struct DerivedCell : Cell<VT> {
-        DerivedCell(std::function<void(Cell<VT>&, T...)> logic, T&&... args)
+    template<typename T, typename... Args>
+    struct DerivedCell : Cell<T> {
+        DerivedCell(std::function<void(Cell<T>&, Args...)> logic, Args&&... args)
                 : bind_(logic, std::placeholders::_1, std::ref(args)...) {
-            call_each_args(std::forward<T>(args)...);
+            call_each_args(std::forward<Args>(args)...);
         }
 
         template<typename C, typename... Ts>
@@ -271,18 +271,58 @@ namespace msgrpc {
         }
 
         void update() override {
-            if (!CellBase<VT>::has_value_) {  //TODO:refactor to got_rsp, which can be got_value or got_error
+            if (!CellBase<T>::has_value_) {  //TODO:refactor to got_rsp, which can be got_value or got_error
                 bind_(*this);
             }
         }
 
-        using bind_type = decltype(std::bind(std::declval<std::function<void(Cell<VT>&, T...)>>(), std::placeholders::_1, std::ref(std::declval<T>())...));
+        using bind_type = decltype(std::bind(std::declval<std::function<void(Cell<T>&, Args...)>>(), std::placeholders::_1, std::ref(std::declval<Args>())...));
         bind_type bind_;
     };
 
     template<typename F, typename... Args>
     auto derive_cell(RpcContext& ctxt, F f, Args &&... args) -> DerivedCell<typename std::remove_reference<first_argument_type<F>>::type::value_type, decltype(*args)...>* {
         auto cell = new DerivedCell<typename std::remove_reference<first_argument_type<F>>::type::value_type, decltype(*args)...>(f, std::ref(*args)...);
+        ctxt.track(cell);
+        return cell;
+    }
+
+
+    template<typename T, typename... Args>
+    struct DerivedAsyncCell : Cell<T> {
+        DerivedAsyncCell(RpcContext& ctxt, std::function<Cell<T>*(void)> f, Args&&... args)
+          : ctxt_(ctxt), f_(f) {
+            call_each_args(std::forward<Args>(args)...);
+        }
+
+        template<typename C, typename... Ts>
+        void call_each_args(C &&c, Ts &&... args) {
+            c.register_listener(this);
+            call_each_args(std::forward<Ts>(args)...);
+        }
+
+        template<typename C>
+        void call_each_args(C &&c) {
+            c.register_listener(this);
+        }
+
+        void update() override {
+            if (!CellBase<T>::has_value_) {  //TODO:refactor to got_rsp, which can be got_value or got_error
+
+                Cell<T>* cell = f_();
+                if (cell != nullptr) {
+                    derive_action(ctxt_, [this](const Cell<T>& r) { this->Cell<T>::set_cell_value(r); }, cell);
+                }
+            }
+        }
+
+        RpcContext& ctxt_;
+        std::function<Cell<T>*(void)> f_;
+    };
+
+    template<typename F, typename... Args>
+    auto derive_async_cell(RpcContext& ctxt, F f, Args &&... args) -> DerivedAsyncCell<typename std::remove_pointer<typename std::result_of<F()>::type>::type::value_type, decltype(*args)...>* {
+        auto cell = new DerivedAsyncCell<typename std::remove_pointer<typename std::result_of<F()>::type>::type::value_type, decltype(*args)...>(ctxt, f, std::ref(*args)...);
         ctxt.track(cell);
         return cell;
     }
@@ -510,9 +550,14 @@ namespace msgrpc {
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
+    /*SI is short for service interaction*/
     template<typename T, typename U>
-    struct MsgRpcSIBase { /*SI is short for service interaction*/
-        msgrpc::Cell<U> *run(const T &req) {  //TODO: add parameter ctxt with default value == nullptr, if nullptr then new a contxt.
+    struct MsgRpcSIBase {
+        msgrpc::Cell<U> *run_nested_si(const T &req, RpcContext& ctxt) {
+            return do_run(req, ctxt);
+        }
+
+        msgrpc::Cell<U> *run(const T &req) {
             msgrpc::RpcContext *ctxt = new msgrpc::RpcContext();
 
             msgrpc::Cell<U> *result_cell = do_run(req, *ctxt);
@@ -579,7 +624,7 @@ using namespace demo;
 
 //constants for testing.
 const int k_req_init_value = 1;
-const int k__sync_y__delta = 1;
+const int k__sync_y__delta = 3;
 const int k__sync_x__delta = 17;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -915,25 +960,23 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________parallel_rpc_
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void init_sequential_async_request(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1) {
-    struct SI_2 : MsgRpcSIBase<RequestFoo, ResponseBar> {
-        virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-            return InterfaceYStub(ctxt).______sync_y(req);
-        }
-    };
 
-    RequestFoo req; req.reqa = k_req_init_value;
-    auto ___2 = SI_2().run(req);
-
-    derive_final_action([&result](msgrpc::Cell<ResponseBar>& r) {
-        result.set_value(r);
-    }, ___2);
-}
 
 struct SI_case3_ex : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
-        auto ___2 = derive_cell(ctxt, init_sequential_async_request, ___1);
+
+        auto ___2 = derive_async_cell(ctxt,
+                                        [___1, &ctxt]() -> Cell<ResponseBar>* {
+                                            if (___1->is_failed()) {
+                                                return nullptr;
+                                            }
+                                            RequestFoo req; req.reqa = ___1->value().rspa;
+                                            return InterfaceYStub(ctxt).______sync_y(req);
+                                        }
+                                        , ___1
+        );
+
         return ___2;
     }
 };
@@ -945,7 +988,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rp
     // x <---(rsp)-----y
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
-        EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
+        EXPECT_EQ(k_req_init_value + k__sync_y__delta * 2, ___r.value().rspa);
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case3_ex>(then_check);});

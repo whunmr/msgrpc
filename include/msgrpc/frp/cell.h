@@ -51,6 +51,14 @@ namespace msgrpc {
             return status_ != RpcResult::succeeded;
         }
 
+        void set_cell_value(const CellBase<T>& rhs) {
+            if (rhs.is_failed()) {
+                this->set_failed_reason(rhs.failed_reason());
+            } else {
+                this->set_value(rhs.value());
+            }
+        }
+
         void set_value(const T& value) {
             value_ = value;
             has_value_ = true;

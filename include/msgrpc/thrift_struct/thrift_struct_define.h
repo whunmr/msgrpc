@@ -4,19 +4,19 @@
 #include "thrift_struct_common.h"
 
 ////////////////////////////////////////////////////////////////////////////////
-#define ___expand_define_set_field_method__required(fid_, opt_or_req_, ftype_, fname_, struct_name_) \
+#define ___expand_define_set_field_method__required(fid_, opt_or_req_, ftype_, fname_, comment, struct_name_) \
     void struct_name_::__set_##fname_(const ftype_& val) {\
       this->fname_ = val;\
     }
 
-#define ___expand_define_set_field_method__optional(fid_, opt_or_req_, ftype_, fname_, struct_name_) \
+#define ___expand_define_set_field_method__optional(fid_, opt_or_req_, ftype_, fname_, comment, struct_name_) \
     void struct_name_::__set_##fname_(const ftype_& val) {\
       this->fname_ = val;\
       __isset.fname_ = true;\
     }
 
-#define ___expand_define_set_field_method(fid_, opt_or_req_, ftype_, fname_, struct_name_) \
-    ___expand_define_set_field_method__##opt_or_req_(fid_, opt_or_req_, ftype_, fname_, struct_name_)
+#define ___expand_define_set_field_method(fid_, opt_or_req_, ftype_, fname_, comment, struct_name_) \
+    ___expand_define_set_field_method__##opt_or_req_(fid_, opt_or_req_, ftype_, fname_, comment, struct_name_)
 
 ////////////////////////////////////////////////////////////////////////////////
 #define ___expand_read_field_case__required(fid_, opt_or_req_, ftype_, fname_, ...) \
@@ -43,7 +43,7 @@
             ___expand_read_field_case__##opt_or_req_(fid_, opt_or_req_, ftype_, fname_, __VA_ARGS__)
 
 ////////////////////////////////////////////////////////////////////////////////
-#define ___expand_read_declare_required_field_readed__required(fid_, opt_or_req_, ftype_, fname_, struct_name_)\
+#define ___expand_read_declare_required_field_readed__required(fid_, opt_or_req_, ftype_, fname_, comment, struct_name_)\
     bool isset_##fname_ = false;
 
 #define ___expand_read_declare_required_field_readed__optional(...)

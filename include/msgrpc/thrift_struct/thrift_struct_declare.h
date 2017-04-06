@@ -122,7 +122,7 @@
             ___expand_read_field_case__##opt_or_req_(fid_, opt_or_req_, ftype_, fname_, __VA_ARGS__)
 
 ////////////////////////////////////////////////////////////////////////////////
-#define ___expand_read_declare_required_field_readed__required(fid_, opt_or_req_, ftype_, fname_, struct_name_)\
+#define ___expand_read_declare_required_field_readed__required(fid_, opt_or_req_, ftype_, fname_, comment, struct_name_)\
     bool isset_##fname_ = false;
 
 #define ___expand_read_declare_required_field_readed__optional(...)

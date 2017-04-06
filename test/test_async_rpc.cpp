@@ -448,6 +448,14 @@ namespace msgrpc {
 namespace msgrpc {
 
     struct RpcStubBase {
+        RpcStubBase(RpcContext *ctxt) : ctxt_(ctxt) { }
+
+        ~RpcStubBase() {
+            ctxt_ = nullptr;
+        }
+
+        RpcContext *ctxt_;
+
         //TODO: split into .h and .cpp
         bool send_rpc_request_buf( msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index
                                  , const uint8_t *pbuf, uint32_t len, RpcRspCellSink* rpc_rsp_cell_sink) const {
@@ -506,7 +514,7 @@ namespace msgrpc {
 namespace msgrpc {
     template<typename T, typename U>
     struct MsgRpcSIBase { /*SI is short for service interaction*/
-        msgrpc::Cell<U> *run(const T &req) {
+        msgrpc::Cell<U> *run(const T &req) {  //TODO: add parameter ctxt with default value == nullptr, if nullptr then new a contxt.
             msgrpc::RpcContext *ctxt = new msgrpc::RpcContext();
 
             msgrpc::Cell<U> *result_cell = do_run(req, ctxt);
@@ -609,6 +617,7 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct InterfaceXStub : msgrpc::RpcStubBase {
+    using msgrpc::RpcStubBase::RpcStubBase;
     msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo&);
 };
 
@@ -668,6 +677,8 @@ msgrpc::Cell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct InterfaceYStub : msgrpc::RpcStubBase {
+    using msgrpc::RpcStubBase::RpcStubBase;
+
     msgrpc::Cell<ResponseBar>* ______sync_y(const RequestFoo&);
     msgrpc::Cell<ResponseBar>* _____async_y(const RequestFoo&);
     msgrpc::Cell<ResponseBar>* ______sync_y_failed(const RequestFoo&);
@@ -743,7 +754,7 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
 
 struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        return ctxt->track(InterfaceXStub().______sync_x(req));
+        return ctxt->track(InterfaceXStub(ctxt).______sync_x(req));
     }
 };
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
@@ -825,7 +836,7 @@ void save_rsp_to_log(Cell<ResponseBar>& r)                    { cout << "2/2 ---
 
 struct SI_case1 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        auto rsp = ctxt->track(InterfaceYStub().______sync_y(req));
+        auto rsp = ctxt->track(InterfaceYStub(ctxt).______sync_y(req));
                    ctxt->track(derive_action(save_rsp_from_other_services_to_db, rsp));
                    ctxt->track(derive_action(save_rsp_to_log, rsp));
         return rsp;
@@ -848,7 +859,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case2 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        return ctxt->track(InterfaceYStub()._____async_y(req));
+        return ctxt->track(InterfaceYStub(ctxt)._____async_y(req));
     }
 };
 
@@ -882,8 +893,8 @@ void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1, Cell<Resp
 ////TODO: add service discovery
 struct SI_case3 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        auto ___1 = ctxt->track(InterfaceYStub()._____async_y(req));
-        auto ___2 = ctxt->track(InterfaceYStub()._____async_y(req));
+        auto ___1 = ctxt->track(InterfaceYStub(ctxt)._____async_y(req));
+        auto ___2 = ctxt->track(InterfaceYStub(ctxt)._____async_y(req));
         return ctxt->track(derive_cell(merge_logic, ___1, ___2));
     }
 };
@@ -909,7 +920,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________parallel_rpc_
 void init_sequential_async_request(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1) {
     struct SI_2 : MsgRpcSIBase<RequestFoo, ResponseBar> {
         virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-            return ctxt->track(InterfaceYStub().______sync_y(req));
+            return ctxt->track(InterfaceYStub(ctxt).______sync_y(req));
         }
     };
 
@@ -923,8 +934,7 @@ void init_sequential_async_request(Cell<ResponseBar>& result, Cell<ResponseBar>&
 
 struct SI_case3_ex : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        auto ___1 = ctxt->track(InterfaceYStub().______sync_y(req));
-
+        auto ___1 = ctxt->track(InterfaceYStub(ctxt).______sync_y(req));
         auto ___2 = ctxt->track(derive_cell(init_sequential_async_request, ___1));
         return ___2;
     }
@@ -956,12 +966,12 @@ void action1(Cell<ResponseBar> &r) { cout << "1/1 ----------------->>>> action1.
 
 struct SI_case4 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        auto ___1 = ctxt->track(InterfaceYStub()._____async_y(req));
+        auto ___1 = ctxt->track(InterfaceYStub(ctxt)._____async_y(req));
                     ctxt->track(derive_action(action1, ___1));
 
         auto ___2 = ctxt->track(derive_cell(gen2, ___1));
 
-        auto ___3 = ctxt->track(InterfaceYStub()._____async_y(req));
+        auto ___3 = ctxt->track(InterfaceYStub(ctxt)._____async_y(req));
 
         return ctxt->track(derive_cell(merge_logic, ___2, ___3));
     }
@@ -995,7 +1005,7 @@ void gen5(Cell<ResponseBar>& result, Cell<ResponseBar>& rsp)  {
 
 struct SI_case5 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        auto ___1 = ctxt->track(InterfaceYStub().______sync_y_failed(req));
+        auto ___1 = ctxt->track(InterfaceYStub(ctxt).______sync_y_failed(req));
         return ctxt->track(derive_cell(gen5, ___1));
     }
 };

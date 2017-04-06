@@ -158,8 +158,8 @@ namespace msgrpc {
             }
         }
 
-        void set_binded_context(RpcContext* context) {
-            context_ = context;
+        void set_binded_context(RpcContext& context) {
+            context_ = &context;
         }
 
         virtual void reset_sequential_id() override {
@@ -279,8 +279,10 @@ namespace msgrpc {
     };
 
     template<typename F, typename... Args>
-    auto derive_cell(F f, Args &&... args) -> DerivedCell<typename std::remove_reference<first_argument_type<F>>::type::value_type, decltype(*args)...>* {
-        return new DerivedCell<typename std::remove_reference<first_argument_type<F>>::type::value_type, decltype(*args)...>(f, std::ref(*args)...);
+    auto derive_cell(RpcContext& ctxt, F f, Args &&... args) -> DerivedCell<typename std::remove_reference<first_argument_type<F>>::type::value_type, decltype(*args)...>* {
+        auto cell = new DerivedCell<typename std::remove_reference<first_argument_type<F>>::type::value_type, decltype(*args)...>(f, std::ref(*args)...);
+        ctxt.track(cell);
+        return cell;
     }
 }
 
@@ -448,13 +450,8 @@ namespace msgrpc {
 namespace msgrpc {
 
     struct RpcStubBase {
-        RpcStubBase(RpcContext *ctxt) : ctxt_(ctxt) { }
-
-        ~RpcStubBase() {
-            ctxt_ = nullptr;
-        }
-
-        RpcContext *ctxt_;
+        RpcStubBase(RpcContext& ctxt) : ctxt_(ctxt) { }
+        RpcContext& ctxt_;
 
         //TODO: split into .h and .cpp
         bool send_rpc_request_buf( msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index
@@ -498,14 +495,14 @@ namespace msgrpc {
                 return nullptr; //TODO: return false;
             }
 
-            Cell<U>* rsp_cell = new Cell<U>();
+            Cell<U>* rpc_result_cell = new Cell<U>();
 
-            if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rsp_cell)) {
-                delete rsp_cell;
+            if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rpc_result_cell)) {
+                delete rpc_result_cell;
                 return nullptr;
             }
 
-            return rsp_cell;
+            return ctxt_.track(rpc_result_cell);
         };
     };
 }
@@ -517,14 +514,14 @@ namespace msgrpc {
         msgrpc::Cell<U> *run(const T &req) {  //TODO: add parameter ctxt with default value == nullptr, if nullptr then new a contxt.
             msgrpc::RpcContext *ctxt = new msgrpc::RpcContext();
 
-            msgrpc::Cell<U> *result_cell = do_run(req, ctxt);
-            result_cell->set_binded_context(ctxt);
+            msgrpc::Cell<U> *result_cell = do_run(req, *ctxt);
+            result_cell->set_binded_context(*ctxt);
             ctxt->release_list_.remove(result_cell);
 
             return result_cell;
         }
 
-        virtual msgrpc::Cell<U> *do_run(const T &req, msgrpc::RpcContext *ctxt) = 0;
+        virtual msgrpc::Cell<U> *do_run(const T &req, msgrpc::RpcContext& ctxt) = 0;
     };
 }
 
@@ -753,8 +750,8 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
 
 
 struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext *ctxt) override {
-        return ctxt->track(InterfaceXStub(ctxt).______sync_x(req));
+    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext& ctxt) override {
+        return InterfaceXStub(ctxt).______sync_x(req);
     }
 };
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
@@ -835,10 +832,10 @@ void save_rsp_from_other_services_to_db(Cell<ResponseBar>& r) { cout << "1/2 ---
 void save_rsp_to_log(Cell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
 
 struct SI_case1 : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        auto rsp = ctxt->track(InterfaceYStub(ctxt).______sync_y(req));
-                   ctxt->track(derive_action(save_rsp_from_other_services_to_db, rsp));
-                   ctxt->track(derive_action(save_rsp_to_log, rsp));
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+        auto rsp = InterfaceYStub(ctxt).______sync_y(req);
+                   ctxt.track(derive_action(save_rsp_from_other_services_to_db, rsp));
+                   ctxt.track(derive_action(save_rsp_to_log, rsp));
         return rsp;
     }
 };
@@ -858,8 +855,8 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case2 : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        return ctxt->track(InterfaceYStub(ctxt)._____async_y(req));
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+        return InterfaceYStub(ctxt)._____async_y(req);
     }
 };
 
@@ -892,10 +889,10 @@ void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1, Cell<Resp
 ////TODO: add timeout handling
 ////TODO: add service discovery
 struct SI_case3 : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        auto ___1 = ctxt->track(InterfaceYStub(ctxt)._____async_y(req));
-        auto ___2 = ctxt->track(InterfaceYStub(ctxt)._____async_y(req));
-        return ctxt->track(derive_cell(merge_logic, ___1, ___2));
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+        auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
+        auto ___2 = InterfaceYStub(ctxt)._____async_y(req);
+        return derive_cell(ctxt, merge_logic, ___1, ___2);
     }
 };
 
@@ -919,8 +916,8 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________parallel_rpc_
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void init_sequential_async_request(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1) {
     struct SI_2 : MsgRpcSIBase<RequestFoo, ResponseBar> {
-        virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-            return ctxt->track(InterfaceYStub(ctxt).______sync_y(req));
+        virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+            return InterfaceYStub(ctxt).______sync_y(req);
         }
     };
 
@@ -933,9 +930,9 @@ void init_sequential_async_request(Cell<ResponseBar>& result, Cell<ResponseBar>&
 }
 
 struct SI_case3_ex : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        auto ___1 = ctxt->track(InterfaceYStub(ctxt).______sync_y(req));
-        auto ___2 = ctxt->track(derive_cell(init_sequential_async_request, ___1));
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
+        auto ___2 = derive_cell(ctxt, init_sequential_async_request, ___1);
         return ___2;
     }
 };
@@ -965,15 +962,15 @@ void gen2(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp_cell_1)  {
 void action1(Cell<ResponseBar> &r) { cout << "1/1 ----------------->>>> action1." << endl; };
 
 struct SI_case4 : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        auto ___1 = ctxt->track(InterfaceYStub(ctxt)._____async_y(req));
-                    ctxt->track(derive_action(action1, ___1));
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+        auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
+                    ctxt.track(derive_action(action1, ___1));
 
-        auto ___2 = ctxt->track(derive_cell(gen2, ___1));
+        auto ___2 = derive_cell(ctxt, gen2, ___1);
 
-        auto ___3 = ctxt->track(InterfaceYStub(ctxt)._____async_y(req));
+        auto ___3 = InterfaceYStub(ctxt)._____async_y(req);
 
-        return ctxt->track(derive_cell(merge_logic, ___2, ___3));
+        return derive_cell(ctxt, merge_logic, ___2, ___3);
     }
 };
 
@@ -1004,9 +1001,9 @@ void gen5(Cell<ResponseBar>& result, Cell<ResponseBar>& rsp)  {
 };
 
 struct SI_case5 : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext *ctxt) override {
-        auto ___1 = ctxt->track(InterfaceYStub(ctxt).______sync_y_failed(req));
-        return ctxt->track(derive_cell(gen5, ___1));
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+        auto ___1 = InterfaceYStub(ctxt).______sync_y_failed(req);
+        return derive_cell(ctxt, gen5, ___1);
     }
 };
 

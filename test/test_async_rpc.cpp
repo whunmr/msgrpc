@@ -293,7 +293,7 @@ namespace msgrpc {
 
     template<typename T, typename... Args>
     struct DerivedAsyncCell : Cell<T> {
-        DerivedAsyncCell(RpcContext& ctxt, std::function<Cell<T>*(void)> f, Args&&... args)
+        DerivedAsyncCell(RpcContext& ctxt, std::function<Cell<T>&(void)> f, Args&&... args)
           : ctxt_(ctxt), f_(f) {
             call_each_args(std::forward<Args>(args)...);
         }
@@ -312,20 +312,22 @@ namespace msgrpc {
         void update() override {
             if (!CellBase<T>::has_value_) {  //TODO:refactor to got_rsp, which can be got_value or got_error
 
-                Cell<T>* cell = f_();
-                if (cell != nullptr) {
-                    derive_action(ctxt_, [this](const Cell<T>& r) { this->Cell<T>::set_cell_value(r); }, cell);
+                Cell<T>& cell = f_();
+                if (cell.is_failed()) {
+                    this->Cell<T>::set_failed_reason(cell.failed_reason());
+                } else {
+                    derive_action(ctxt_, [this](const Cell<T>& r) { this->Cell<T>::set_cell_value(r); }, &cell);
                 }
             }
         }
 
         RpcContext& ctxt_;
-        std::function<Cell<T>*(void)> f_;
+        std::function<Cell<T>&(void)> f_;
     };
 
     template<typename F, typename... Args>
-    auto derive_async_cell(RpcContext& ctxt, F f, Args &&... args) -> DerivedAsyncCell<typename std::remove_pointer<typename std::result_of<F()>::type>::type::value_type, decltype(*args)...>* {
-        auto cell = new DerivedAsyncCell<typename std::remove_pointer<typename std::result_of<F()>::type>::type::value_type, decltype(*args)...>(ctxt, f, std::ref(*args)...);
+    auto derive_async_cell(RpcContext& ctxt, F f, Args &&... args) -> DerivedAsyncCell<typename std::remove_reference<typename std::result_of<F()>::type>::type::value_type, decltype(*args)...>* {
+        auto cell = new DerivedAsyncCell<typename std::remove_reference<typename std::result_of<F()>::type>::type::value_type, decltype(*args)...>(ctxt, f, std::ref(*args)...);
         ctxt.track(cell);
         return cell;
     }
@@ -587,12 +589,20 @@ namespace msgrpc {
         rsp_cell->set_value(rsp);
         return rsp_cell;
     }
+
+    template<typename T>
+    Cell<T>& failed_cell_with_reason(RpcContext &ctxt, const RpcResult& failed_reason) {
+        Cell<T>* cell = new Cell<T>();
+        cell->set_failed_reason(failed_reason);
+        ctxt.track(cell);
+        return *cell;
+    }
 }
 
 //interface implementation related macros:
 #define ___bind_rpc(logic, ...) \
         derive_async_cell( ctxt \
-                         , [&ctxt, __VA_ARGS__]() -> Cell<ResponseBar>* { \
+                         , [&ctxt, __VA_ARGS__]() -> Cell<ResponseBar>& { \
                                     return logic(ctxt, __VA_ARGS__); \
                             } \
                          , __VA_ARGS__);
@@ -981,14 +991,14 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________parallel_rpc_
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Cell<ResponseBar>* call__sync_y_again(RpcContext &ctxt, Cell<ResponseBar> *___r) {
+Cell<ResponseBar>& call__sync_y_again(RpcContext &ctxt, Cell<ResponseBar> *___r) {
     if (___r->is_failed()) {
-        return nullptr;
+        return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___r->failed_reason());
     }
 
     RequestFoo req;
     req.reqa = ___r->value().rspa;
-    return InterfaceYStub(ctxt).______sync_y(req);
+    return *(InterfaceYStub(ctxt).______sync_y(req)); //TODO: let rpc request return reference to cell
 }
 
 struct SI_case4 : MsgRpcSIBase<RequestFoo, ResponseBar> {
@@ -1004,10 +1014,6 @@ struct SI_case4 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 };
 
 TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rpc______case4) {
-    // x ----(req)---->y (sync_y)
-    // x <---(rsp)-----y
-    // x ----(req)---->y (sync_y)
-    // x <---(rsp)-----y
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         EXPECT_EQ(k_req_init_value + k__sync_y__delta * 3, ___r.value().rspa);
@@ -1017,6 +1023,27 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rp
     test_thread thread_y(y_service_id, []{});
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SI_case4_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+        auto ___1 = InterfaceYStub(ctxt).______sync_y_failed(req);
+        {
+            auto ___2 = ___bind_rpc(call__sync_y_again, ___1);
+            {
+                return ___bind_rpc(call__sync_y_again, ___2);
+            }
+        }
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rpc______case4__failure_propagation) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_FALSE(___r.has_value_);
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4_failed>(then_check);});
+    test_thread thread_y(y_service_id, []{});
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void gen2(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp_cell_1)  {
     if (rsp_cell_1.has_value_) {
@@ -1084,6 +1111,4 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_______rpc_fails_____
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//TODO: test case for sequential sending out async request instead of parallel one in case4.
-//TODO: add nested depencency between async rpc request, like we do in __def_mi
 //TODO: handle timeout and timer

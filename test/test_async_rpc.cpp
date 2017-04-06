@@ -241,8 +241,10 @@ namespace msgrpc {
     };
 
     template<typename F, typename... Args>
-    auto derive_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(*args...)), decltype(*args)...>* {
-        return new DerivedAction<decltype(f(*args...)), decltype(*args)...>(std::forward<F>(f), std::ref(*args)...);
+    auto derive_action(RpcContext& ctxt, F &&f, Args &&... args) -> DerivedAction<decltype(f(*args...)), decltype(*args)...>* {
+        auto action = new DerivedAction<decltype(f(*args...)), decltype(*args)...>(std::forward<F>(f), std::ref(*args)...);
+        ctxt.track(action);
+        return action;
     }
 
     template<typename F, typename... Args>
@@ -430,7 +432,6 @@ namespace msgrpc {
                 return ret;
             }
 
-            //TODO: make args of lambda to be reference & ??
             derive_final_action([sender_id, rsp_header](msgrpc::Cell<RSP>& r) {
                 if (r.has_value_) {
                     send_rsp_cell_value(sender_id, rsp_header, r);
@@ -834,8 +835,8 @@ void save_rsp_to_log(Cell<ResponseBar>& r)                    { cout << "2/2 ---
 struct SI_case1 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         auto rsp = InterfaceYStub(ctxt).______sync_y(req);
-                   ctxt.track(derive_action(save_rsp_from_other_services_to_db, rsp));
-                   ctxt.track(derive_action(save_rsp_to_log, rsp));
+                   derive_action(ctxt, save_rsp_from_other_services_to_db, rsp);
+                   derive_action(ctxt, save_rsp_to_log, rsp);
         return rsp;
     }
 };
@@ -964,7 +965,7 @@ void action1(Cell<ResponseBar> &r) { cout << "1/1 ----------------->>>> action1.
 struct SI_case4 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
-                    ctxt.track(derive_action(action1, ___1));
+                    derive_action(ctxt, action1, ___1);
 
         auto ___2 = derive_cell(ctxt, gen2, ___1);
 

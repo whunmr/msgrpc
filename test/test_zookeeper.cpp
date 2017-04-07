@@ -118,13 +118,35 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
 
 {///////////////////////////////////////////////////////////////////////////////TODO:
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
-        auto ___2 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(6000), rollback_transaction);
+        auto ___2 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(3000), rollback_transaction);
         auto ___3 = (___1, ___2) --> merge_logic;
         return ___3;
 }
 
 
+Cell<ResponseBar>& init_another_rpc_request(RpcContext &ctxt, Cell<ResponseBar> *___r) {
+    RequestFoo req; req.reqa = ___r->value().rspa;
+    return *(InterfaceYStub(ctxt).______sync_y_failed(req));
+}
 
+{///////////////////////////////////////////////////////////////////////////////TODO:
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
+        auto ___2 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(3000), rollback_transaction);
+        auto ___3 = (___1, ___2) --> init_another_rpc_request --> timeout(___ms(1000), rollback_transaction);
+        return ___3;
+}
+
+{///////////////////////////////////////////////////////////////////////////////TODO:
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
+             ___1 --> action1;
+
+        auto ___2 = InterfaceYStub(ctxt).______sync_y(req);
+             ___2 --> action1;
+             ___2 --> action2;
+
+        auto ___3 = (___1, ___2) --> merge_logic --> timeout(___ms(5000), rollback_transaction);
+        return ___3;
+}
 
 //TODO: multiple rpc, send rpc request to multiple interface provider.
 //TODO: add filter and map keywords, such as map, filter, all, any, success, failure

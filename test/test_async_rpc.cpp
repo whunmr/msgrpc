@@ -50,14 +50,19 @@ namespace msgrpc {
 }
 
 namespace msgrpc {
+    const uint32_t k_invalid_sequence_id = 0;
+
     typedef uint32_t rpc_sequence_id_t;
     struct RpcSequenceId : msgrpc::Singleton<RpcSequenceId> {
         rpc_sequence_id_t get() {
+            if (sequence_id_ == k_invalid_sequence_id) {
+                ++sequence_id_;
+            }
             return ++sequence_id_;
         }
 
     private:
-        atomic_uint sequence_id_ = {0};
+        atomic_uint sequence_id_ = {k_invalid_sequence_id};
     };
 }
 
@@ -1243,6 +1248,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_______rpc_with_timer
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7>(then_check);});
     //test_thread thread_y(y_service_id, []{});
+    test_thread thread_timer(timer_service_id, []{});
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1252,6 +1258,8 @@ struct SI_case8 : MsgRpcSIBase<RequestFoo, ResponseBar> {
         set_timer(___ms(2000), k_msgrpc_timeout_msg, &sequential_num);
 
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req/*, ___ms(2000)*/);
+
+
         return ___1;
     }
 };

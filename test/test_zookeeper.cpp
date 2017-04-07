@@ -47,6 +47,13 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         return ___1;
 }
 
+{///////////////////////////////////////////////////////////////////////////////TODO:
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
+                    ___1 --> save_rsp_from_other_services_to_db;
+                    ___1 --> save_rsp_to_log;
+        return ___1;
+}
+
 
 {
         auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
@@ -54,6 +61,13 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         return ___bind_cell(merge_logic, ___1, ___2);
 }
 
+{///////////////////////////////////////////////////////////////////////////////TODO:
+        auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
+        auto ___2 = InterfaceYStub(ctxt)._____async_y(req);
+        auto ___3 = (___1, ___2) --> merge_logic;
+}
+
+
 {
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
         {
@@ -64,38 +78,11 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         }
 }
 
-{
-        auto ___1 = InterfaceYStub(ctxt).______sync_y_failed(req);
-        {
-            auto ___2 = ___bind_rpc(call__sync_y_again, ___1);
-            {
-                return ___bind_rpc(call__sync_y_again, ___2);
-            }
-        }
-}
-
-
-{
+{///////////////////////////////////////////////////////////////////////////////TODO:
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
-        {
-            auto ___2 = ___bind_rpc(call__sync_y_failed, ___1);
-            {
-                return ___bind_rpc(call__sync_y_again, ___2);
-            }
-        }
+        auto ___2 = ___1 --> call__sync_y_again;
+        auto ___3 = ___2 --> call__sync_y_again;
 }
-
-
-{
-        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
-        {
-            auto ___2 = ___bind_rpc(call__sync_y_again, ___1);
-            {
-                return ___bind_rpc(call__sync_y_failed, ___2);
-            }
-        }
-}
-
 
 {
         auto ___3 = InterfaceYStub(ctxt)._____async_y(req);
@@ -108,18 +95,51 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         }
 }
 
-
-{
-        auto ___1 = InterfaceYStub(ctxt).______sync_y_failed(req);
-        return ___bind_cell(gen5, ___1);
+{///////////////////////////////////////////////////////////////////////////////TODO:
+                auto ___3 =   InterfaceYStub(ctxt)._____async_y(req);
+                auto ___1 =   InterfaceYStub(ctxt)._____async_y(req);
+                     ___1 --> action1;
+         auto ___2 = ___1 --> gen2;
+         auto ___4 = (___2, ___3) --> merge_logic;
 }
 
-
-{
-        auto ___1 = InterfaceYStub(ctxt).______sync_y(req/*, ___ms(2000)*/);
-
+{///////////////////////////////////////////////////////////////////////////////TODO:
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
         return ___1;
 }
+
+{///////////////////////////////////////////////////////////////////////////////TODO:
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
+        auto ___2 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(6000), rollback_transaction);
+        auto ___3 = (___1, ___2) --> merge_logic;
+        return ___3;
+}
+
+
+{///////////////////////////////////////////////////////////////////////////////TODO:
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
+        auto ___2 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(6000), rollback_transaction);
+        auto ___3 = (___1, ___2) --> merge_logic;
+        return ___3;
+}
+
+
+
+
+//TODO: multiple rpc, send rpc request to multiple interface provider.
+//TODO: add filter and map keywords, such as map, filter, all, any, success, failure
+
+//TODO: will not implement loop construct in SI, but we can call SI in loop in outside of SI.
+//      but we need an loop style example
+//      void sending_following_ids(id_batch_index) {
+//           if (id_batch_index == last_batch) { return loop_finish_cell(); };
+//
+//           auto rsp_cell =   SyncIdService.send_one_batch(get_ids_in_batch(id_batch_index));
+//                rsp_cell --> sending_following_ids();
+//      }
+//      void on_sync_id_msg() {
+//           sending_following_ids(start_batch_id);
+//      }
 
 
 #endif

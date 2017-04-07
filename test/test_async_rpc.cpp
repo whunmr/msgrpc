@@ -1243,6 +1243,7 @@ struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_______rpc_with_timer_guard_______case7) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_FALSE(___r.has_value_);
+        EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7>(then_check);});

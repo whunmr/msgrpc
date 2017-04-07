@@ -14,8 +14,9 @@ namespace msgrpc {
         succeeded = 0
         , deferred = 1
         , failed  = 2
-        , method_not_found = 3
+        , timeout = 3
         , iface_not_found =  4
+        , method_not_found = 5
     };
 
     struct Updatable {

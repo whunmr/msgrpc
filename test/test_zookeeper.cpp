@@ -40,6 +40,11 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         return InterfaceYStub(ctxt)._____async_y(req);
 }
 
+//TODO add service name in the rpc, and using service discovery
+{
+        return InterfaceYStub(ctxt)._____async_y(req);
+}
+
 {
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
                     ___bind_action(save_rsp_from_other_services_to_db, ___1);
@@ -47,13 +52,26 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         return ___1;
 }
 
-{///////////////////////////////////////////////////////////////////////////////TODO:
+{///////////////////////////////////////////////////////////////////////////////TODO style 1
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
                     ___1 --> save_rsp_from_other_services_to_db;
                     ___1 --> save_rsp_to_log;
         return ___1;
 }
 
+{///////////////////////////////////////////////////////////////////////////////TODO other sytle 1:
+        req = transform_req_func(req);
+
+        auto ___1 = ___rpc(demo, InterfaceYStub, ______sync_y, req) {
+                    ___step(save_rsp_from_other_services_to_db);
+                    ___step(save_rsp_to_log);
+        }
+
+        return ___1;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 {
         auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
@@ -61,7 +79,7 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         return ___bind_cell(merge_logic, ___1, ___2);
 }
 
-{///////////////////////////////////////////////////////////////////////////////TODO:
+{///////////////////////////////////////////////////////////////////////////////TODO
         auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
         auto ___2 = InterfaceYStub(ctxt)._____async_y(req);
         auto ___3 = (___1, ___2) --> merge_logic;
@@ -78,7 +96,7 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         }
 }
 
-{///////////////////////////////////////////////////////////////////////////////TODO:
+{///////////////////////////////////////////////////////////////////////////////TODO
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
         auto ___2 = ___1 --> call__sync_y_again;
         auto ___3 = ___2 --> call__sync_y_again;
@@ -95,7 +113,7 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         }
 }
 
-{///////////////////////////////////////////////////////////////////////////////TODO:
+{///////////////////////////////////////////////////////////////////////////////TODO
                 auto ___3 =   InterfaceYStub(ctxt)._____async_y(req);
                 auto ___1 =   InterfaceYStub(ctxt)._____async_y(req);
                      ___1 --> action1;
@@ -103,12 +121,17 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
          auto ___4 = (___2, ___3) --> merge_logic;
 }
 
-{///////////////////////////////////////////////////////////////////////////////TODO:
+{///////////////////////////////////////////////////////////////////////////////TODO
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
         return ___1;
 }
 
-{///////////////////////////////////////////////////////////////////////////////TODO:
+{///////////////////////////////////////////////////////////////////////////////TODO2:
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), retry(3times), rollback_transaction);
+        return ___1;
+}
+
+{///////////////////////////////////////////////////////////////////////////////TODO
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
         auto ___2 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(6000));
         auto ___3 = (___1, ___2) --> merge_logic;
@@ -116,7 +139,7 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
 }
 
 
-{///////////////////////////////////////////////////////////////////////////////TODO:
+{///////////////////////////////////////////////////////////////////////////////TODO
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
         auto ___2 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(3000), rollback_transaction);
         auto ___3 = (___1, ___2) --> merge_logic;
@@ -134,14 +157,15 @@ Cell<ResponseBar>& init_another_rpc_request(RpcContext &ctxt, Cell<ResponseBar> 
     return *(InterfaceYStub(ctxt).______sync_y_failed(req)) --> merge_logic --> timeout(___ms(5000), rollback_transaction);
 }
 
-{///////////////////////////////////////////////////////////////////////////////TODO:
+{///////////////////////////////////////////////////////////////////////////////TODO
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
         auto ___2 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(3000), rollback_transaction);
         auto ___3 = (___1, ___2) --> init_another_rpc_request --> timeout(___ms(1000), rollback_transaction);
         return ___3;
 }
 
-{///////////////////////////////////////////////////////////////////////////////TODO:
+
+{///////////////////////////////////////////////////////////////////////////////TODO
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
              ___1 --> action1;
 
@@ -152,24 +176,32 @@ Cell<ResponseBar>& init_another_rpc_request(RpcContext &ctxt, Cell<ResponseBar> 
         auto ___3 = ___2 --> init_another_rpc_request2;
              ___3 --> action3;
 
-        auto ___3 = (___1, ___2) --> merge_logic --> timeout(___ms(5000), rollback_transaction);
-        return ___3;
+        auto ___4 = (___1, ___2) --> merge_logic --> timeout(___ms(5000), rollback_transaction);
+        return ___4;
 }
 
-//TODO: multiple rpc, send rpc request to multiple interface provider.
-//TODO: add filter and map keywords, such as map, filter, all, any, success, failure
+{///////////////////////////////////////////////////////////////////////////////TODO
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
+        return ___1;
+}
 
-//TODO: will not implement loop construct in SI, but we can call SI in loop in outside of SI.
+
+//TODO multiple rpc, send rpc request to multiple interface provider.
+//TODO add filter and map keywords, such as map, filter, all, any, success, failure
+
+//TODO will not implement loop construct in SI, but we can call SI in loop in outside of SI.
 //      but we need an loop style example
-//      void sending_following_ids(id_batch_index) {
+//
+//      cell sending_following_ids(id_batch_index) {
 //           if (id_batch_index == last_batch) { return loop_finish_cell(); };
 //
 //           auto rsp_cell =   SyncIdService.send_one_batch(get_ids_in_batch(id_batch_index));
-//                rsp_cell --> sending_following_ids();
+//                rsp_cell --> sending_following_ids(rsp_cell.value.batch_id++);
+//         return rsp_cell;
 //      }
+//
 //      void on_sync_id_msg() {
 //           sending_following_ids(start_batch_id);
 //      }
-
 
 #endif

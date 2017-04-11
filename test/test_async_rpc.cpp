@@ -979,7 +979,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) 
     test_thread thread_y(y_service_id, []{});
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void save_rsp_from_other_services_to_db(Cell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
 void save_rsp_to_log(Cell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
 
@@ -1004,7 +1004,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case2) 
     test_thread thread_y(y_service_id, []{});
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1, Cell<ResponseBar>& cell_2)  {
@@ -1272,3 +1272,15 @@ TEST_F(MsgRpcTest, should_able_to__support___timer_api) {
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case8>(then_check);});
     test_thread thread_timer(timer_service_id, []{});
 }
+
+#if 0
+{
+    auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
+    return ___1;
+}
+
+{
+    auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), retry(3times), rollback_transaction);
+    return ___1;
+}
+#endif

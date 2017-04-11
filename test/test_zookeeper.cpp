@@ -180,10 +180,18 @@ Cell<ResponseBar>& init_another_rpc_request(RpcContext &ctxt, Cell<ResponseBar> 
         return ___4;
 }
 
-{///////////////////////////////////////////////////////////////////////////////TODO
-        auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
-        return ___1;
-}
+
+///////////////////////////////////////////////////////////////////////////////TODO
+define_SI{
+    auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
+
+    auto ___3 = ___1 --> InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(200), rollback_transaction);
+    auto ___4 = ___1 --> InterfaceYStub(ctxt).______sync_z(req) --> timeout(___ms(200), rollback_transaction);
+
+    auto ___5 = (___3, ___4) --> another_rpc_request --> timeout(___ms(100));
+    return ___5 ;
+
+} ___as(si_foo, timeout___ms(250), retry(3), rollback_transaction);
 
 
 //TODO multiple rpc, send rpc request to multiple interface provider.

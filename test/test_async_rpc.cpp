@@ -15,7 +15,6 @@ using namespace std::chrono;
 #include "demo/demo_api_declare.h"
 
 //TODO: make long long as timeout_len_t for timer funcs
-
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
     template <typename T> struct Ret {};
@@ -31,7 +30,7 @@ namespace msgrpc {
 
     struct Config {
         void init_with(MsgChannel *msg_channel, msgrpc::msg_id_t request_msg_id, msgrpc::msg_id_t response_msg_id, msgrpc::msg_id_t set_timer_msg_id, msgrpc::msg_id_t timeout_msg_id) {
-            instance().msg_channel_ = msg_channel;
+            msg_channel_ = msg_channel;
             request_msg_id_  = request_msg_id;
             response_msg_id_ = response_msg_id;
             set_timer_msg_id_ = set_timer_msg_id;
@@ -92,16 +91,42 @@ namespace msgrpc {
     };
 }
 
+//TODO: extract to set timer interface
+void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data);
+////////////////////////////////////////////////////////////////////////////////
+const msgrpc::service_id_t x_service_id = 2222;
+const msgrpc::service_id_t y_service_id = 3333;
+const msgrpc::service_id_t timer_service_id = 5555;
+
+const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
+const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
+const msgrpc::msg_id_t k_msgrpc_set_timer_msg = 103;
+const msgrpc::msg_id_t k_msgrpc_timeout_msg = 104;
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
 
     struct RpcRspCellSink {
         virtual void set_rpc_rsp(const RspMsgHeader& rsp_header, const char* msg, size_t len) = 0;
+        virtual void set_timeout() = 0;
+
         virtual void set_sequential_id(const rpc_sequence_id_t& seq_id) = 0;
         virtual void reset_sequential_id() = 0;
     };
 
     struct RpcRspDispatcher : msgrpc::ThreadLocalSingleton<RpcRspDispatcher> {
+        void on_rsp_handler_timeout(rpc_sequence_id_t sequence_id) {
+            auto iter = id_func_map_.find(sequence_id);
+            if (iter == id_func_map_.end()) {
+                cout << "WARNING: not existing handler to remove caused by timeout. seq id: " << sequence_id << endl;
+                return;
+            }
+
+            RpcRspCellSink* cell = (iter->second);
+            assert(cell != nullptr && "cell should be notnull when find in dispatch map.");
+            cell->set_timeout();
+        }
+
         void remove_rsp_handler(rpc_sequence_id_t sequence_id) {
             auto iter = id_func_map_.find(sequence_id);
             if (iter == id_func_map_.end()) {
@@ -206,6 +231,10 @@ namespace msgrpc {
             }
 
             CellBase<T>::set_value(rsp);
+        }
+
+        virtual void set_timeout() override {
+            CellBase<T>::set_failed_reason(RpcResult::timeout);
         }
 
         /*Cell* timeout(long long timeout_len, size_t retry_times, ) {
@@ -334,7 +363,15 @@ namespace msgrpc {
                 if (cell.is_failed()) {
                     this->Cell<T>::set_failed_reason(cell.failed_reason());
                 } else {
-                    derive_action(ctxt_, [this](const Cell<T>& r) { this->Cell<T>::set_cell_value(r); }, &cell);
+                    derive_action( ctxt_
+                                 , [this](const Cell<T>& rsp) {
+                                        if (rsp.is_failed()) {
+                                            this->Cell<T>::set_failed_reason(rsp.failed_reason());
+                                        } else {
+                                            this->Cell<T>::set_cell_value(rsp);
+                                        }
+                                   }
+                                 , &cell);
                 }
             }
         }
@@ -352,18 +389,29 @@ namespace msgrpc {
 
 
     template<typename T>
-    struct TimeoutCell : CellBase<T> {
+    struct TimeoutCell : Cell<T> {
         TimeoutCell(RpcContext& ctxt, long long timeout_ms, size_t retry_times, std::function<Cell<T>* (void)> f)
-            : ctxt_(ctxt), f_(f) {
+          : ctxt_(ctxt), retry_times_(retry_times), f_(f) {
+
             rpc_cell_ = f_();
-            assert(rpc_cell_ != nullptr && "should return a not nullptr to cell from function bind on TimeoutCell.");
+            assert(rpc_cell_ != nullptr && rpc_cell_->has_seq_id_ && "should return a not nullptr to cell from function bind on TimeoutCell.");
+
+            set_timer(timeout_ms, msgrpc::Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rpc_cell_->seq_id_));
 
             if (rpc_cell_->is_failed()) {
                 this->Cell<T>::set_failed_reason(rpc_cell_->failed_reason());
             } else {
                 derive_action( ctxt_
-                             , [this](const Cell<T>& r) {
-                                    this->Cell<T>::set_cell_value(r);
+                             , [this](const Cell<T>& rsp) {
+                                    if (rsp.is_timeout()) {
+                                        //retry if not reach retry_times limit, otherwise assign failed_reason(timeout or failed) to TimeoutCell.
+                                        cout << "--------------->inner rsp cell of TimeoutCell is timeout" << endl;
+                                        this->Cell<T>::set_failed_reason(rsp.failed_reason());
+                                    } else if (rsp.is_failed()) {
+                                        this->Cell<T>::set_failed_reason(rsp.failed_reason());
+                                    } else {
+                                        this->Cell<T>::set_cell_value(rsp);
+                                    }
                                }
                              , rpc_cell_);
             }
@@ -375,6 +423,7 @@ namespace msgrpc {
         Cell<T>* rpc_cell_;
 
         RpcContext& ctxt_;
+        size_t retry_times_;
         std::function<Cell<T>* (void)> f_;
     };
 
@@ -386,15 +435,6 @@ namespace msgrpc {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-const msgrpc::service_id_t x_service_id = 2222;
-const msgrpc::service_id_t y_service_id = 3333;
-const msgrpc::service_id_t timer_service_id = 5555;
-
-const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
-const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
-const msgrpc::msg_id_t k_msgrpc_set_timer_msg = 103;
-const msgrpc::msg_id_t k_msgrpc_timeout_msg = 104;
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
     struct IfaceImplBase {
@@ -671,8 +711,11 @@ namespace msgrpc {
 #include "test_util/UdpChannel.h"
 
 namespace demo {
-    struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::Singleton<UdpMsgChannel> {
+
+    struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::ThreadLocalSingleton<UdpMsgChannel> {
         virtual bool send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
+            cout << "send msg to : " << remote_service_id << endl;
+
             if (msg_id != k_msgrpc_set_timer_msg && msg_id != k_msgrpc_timeout_msg) {
                 cout << ((remote_service_id == x_service_id) ? "X <------ " : "   ------> Y") << endl;
             }
@@ -729,11 +772,19 @@ namespace demo {
 
             timer_info& ti = *(timer_info*)msg;
 
-            std::thread timer_thread([ti]{
+            msgrpc::MsgChannel* msg_channel = msgrpc::Config::instance().msg_channel_;
+            UdpChannel* g_real_udp_channel_in_set_timer_thread = g_msg_channel;
+
+            std::thread timer_thread([ti, msg_channel, g_real_udp_channel_in_set_timer_thread]{
+
+                //store g_real_udp_channel_in_set_timer_thread into thread_local g_msg_channel,
+                //which will be used during msg_channel->send_msg
+                g_msg_channel = g_real_udp_channel_in_set_timer_thread;
+
                 this_thread::sleep_for(milliseconds(ti.millionseconds_));
-                msgrpc::Config::instance().msg_channel_->send_msg(
-                        ti.service_id_, k_msgrpc_timeout_msg, (const char*)&ti, sizeof(ti));
+                msg_channel->send_msg(ti.service_id_, k_msgrpc_timeout_msg, (const char*)&ti, sizeof(ti));
             });
+
             timer_thread.detach();
         }
     };
@@ -744,9 +795,11 @@ namespace msgrpc {
         void on_timeout(const char* msg, size_t len) {
             assert(msg != nullptr && len == sizeof(timer_info));
             timer_info& ti = *(timer_info*)msg;
-            cout << "got timeout msg, user data: " << *(int*)(ti.user_data_) << endl;
 
+            rpc_sequence_id_t seq_id =  (rpc_sequence_id_t)((uintptr_t)(ti.user_data_));
+            cout << "got timeout msg, user data: " << seq_id << endl;
 
+            RpcRspDispatcher::instance().on_rsp_handler_timeout(seq_id);
         }
     };
 }
@@ -761,7 +814,7 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
     test_service::instance().current_service_id_ = udp_port;
 
     UdpChannel channel(udp_port,
-                       [&init_func](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+                       [&init_func, udp_port](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
                            if (0 == strcmp(msg, "init")) {
                                return init_func();
                            } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
@@ -769,8 +822,10 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func) {
                            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
                                return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
                            } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
+                               cout << udp_port << " receive demo::SetTimerHandler::instance().set_timer(msg, len);" << endl;
                                return demo::SetTimerHandler::instance().set_timer(msg, len);
                            } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
+                               cout << udp_port << " receive msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);" << endl;
                                return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
                            } else {
                                cout << "got unknow msg with id: " << msg_id << endl;
@@ -1303,23 +1358,12 @@ void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* 
 //TODO: handle concor case: when a detached rpc's cell are not in dependency graph of final result cell,
 //      if the result cell finished, can not release response handler of the detached cell.
 
-template<long long _TIMER_LEN, size_t _RETRY_TIMES, void(*_TIMEOUT_FUNC)(), typename F>
-struct MsgRpcAction {
-    Cell<ResponseBar>* run() {
-        _TIMEOUT_FUNC();
-        return new Cell<ResponseBar>;
-    }
-};
-
 void timeout_action_func(void) {
-    cout << "\ntimeout_action_func" << endl;
+    cout << "timeout_action_func" << endl;
 }
 
 struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
-        //auto ___1 = construct_timeout_cell();
-
-
         auto ___1 = construct_timeout_cell( ctxt
                                           , ___ms(2000)
                                           , ___retry(0)
@@ -1327,7 +1371,6 @@ struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
         //___1 = construct_timeout_cell()
         //       ___1 --> if_timeout --> rollback_all_related_commits
-
 
         //auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
         //auto ___1 = MsgRpcAction<___ms(2000), ___retry(0), timeout_action_func>().run();
@@ -1353,14 +1396,14 @@ struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
             //static int sequential_num = 22;
             //set_timer(___ms(2000), k_msgrpc_timeout_msg, &sequential_num);
 
-        return new Cell<ResponseBar>;
+        return ___1;
     }
 };
 
 TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_______rpc_with_timer_guard_______case7) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_FALSE(___r.has_value_);
-        EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
+        EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7>(then_check);});
@@ -1371,8 +1414,8 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_______rpc_with_timer
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case8 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        //static int sequential_num = 22;
-        //set_timer(___ms(2000), k_msgrpc_timeout_msg, &sequential_num);
+        static int sequential_num = 22;
+        set_timer(___ms(2000), k_msgrpc_set_timer_msg, &sequential_num);
 
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req/*, ___ms(2000)*/);
                     //___bind_timer(timeout_action, ___ms(2000), ___1);
@@ -1381,7 +1424,7 @@ struct SI_case8 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-TEST_F(MsgRpcTest, DISABLED_should_able_to__support___timer_api) {
+TEST_F(MsgRpcTest, should_able_to__support___timer_api) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         //EXPECT_FALSE(___r.has_value_);
     };
@@ -1402,19 +1445,3 @@ TEST_F(MsgRpcTest, DISABLED_should_able_to__support___timer_api) {
 }
 #endif
 
-struct Foo {
-    void run(RequestFoo& req) {
-        struct Action_1348 /*: MsgRpcAction<timeout_len, retry_times, timeout_func>*/ {
-            Action_1348() {run();}
-            void run() {
-                cout << "he" << endl;
-            }
-        } action1360;
-    }
-};
-
-TEST(fff, aaa) {
-    Foo foo;
-    RequestFoo req;
-    foo.run(req);
-}

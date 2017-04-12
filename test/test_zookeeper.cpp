@@ -85,7 +85,7 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         auto ___3 = (___1, ___2) --> merge_logic;
 }
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 {
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
         {
@@ -102,6 +102,19 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         auto ___3 = ___2 --> call__sync_y_again;
 }
 
+{///////////////////////////////////////////////////////////////////////////////TODO
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
+        {
+            auto ___2 = ___1 --> call__sync_y_again;
+            {
+                auto ___3 = ___2 --> call__sync_y_again;
+            }
+        }
+
+        return ___3;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 {
         auto ___3 = InterfaceYStub(ctxt)._____async_y(req);
         auto ___1 = InterfaceYStub(ctxt)._____async_y(req); ___bind_action(action1, ___1);
@@ -146,7 +159,6 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
         return ___3;
 }
 
-
 Cell<ResponseBar>& init_another_rpc_request(RpcContext &ctxt, Cell<ResponseBar> *___r) {
     RequestFoo req; req.reqa = ___r->value().rspa;
     return *(InterfaceYStub(ctxt).______sync_y_failed(req));
@@ -164,7 +176,6 @@ Cell<ResponseBar>& init_another_rpc_request(RpcContext &ctxt, Cell<ResponseBar> 
         return ___3;
 }
 
-
 {///////////////////////////////////////////////////////////////////////////////TODO
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
              ___1 --> action1;
@@ -179,7 +190,6 @@ Cell<ResponseBar>& init_another_rpc_request(RpcContext &ctxt, Cell<ResponseBar> 
         auto ___4 = (___1, ___2) --> merge_logic --> timeout(___ms(5000), rollback_transaction);
         return ___4;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////TODO
 define_SI{

@@ -48,6 +48,10 @@ namespace msgrpc {
             return status_;
         }
 
+        bool is_timeout() const {
+            return status_ == RpcResult::timeout;
+        }
+
         bool is_failed() const {
             return status_ != RpcResult::succeeded;
         }
@@ -100,7 +104,7 @@ namespace msgrpc {
         }
 
     protected:
-        std::vector<Updatable *> updatables_;
+        std::vector<Updatable *> updatables_;     //TODO: using list to save memory
 
     private:
         T value_;

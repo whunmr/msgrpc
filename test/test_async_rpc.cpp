@@ -14,6 +14,8 @@ using namespace std::chrono;
 
 #include "demo/demo_api_declare.h"
 
+//TODO: make long long as timeout_len_t for timer funcs
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
     template <typename T> struct Ret {};
@@ -140,7 +142,7 @@ namespace msgrpc {
             (iter->second)->set_rpc_rsp(*rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
 
             //if this rsp finishes a SI, the handler (iter->second) will be release in whole SI context teardown;
-            //otherwise, we should erase this very rsp only.
+            //otherwise, we should erase this very rsp handler only.
             delete_rsp_handler_if_exist(rsp_header->sequence_id_);
         }
 
@@ -205,6 +207,13 @@ namespace msgrpc {
 
             CellBase<T>::set_value(rsp);
         }
+
+        /*Cell* timeout(long long timeout_len, size_t retry_times, ) {
+            //TODO: refactor to extract timer interface
+            //static int sequential_num = 22;
+            //set_timer(___ms(2000), k_msgrpc_timeout_msg, &sequential_num);
+            return this;
+        }*/
     };
 
     template<typename VT, typename... T>
@@ -337,6 +346,41 @@ namespace msgrpc {
     template<typename F, typename... Args>
     auto derive_async_cell(RpcContext& ctxt, F f, Args &&... args) -> DerivedAsyncCell<typename std::remove_reference<typename std::result_of<F()>::type>::type::value_type, decltype(*args)...>* {
         auto cell = new DerivedAsyncCell<typename std::remove_reference<typename std::result_of<F()>::type>::type::value_type, decltype(*args)...>(ctxt, f, std::ref(*args)...);
+        ctxt.track(cell);
+        return cell;
+    }
+
+
+    template<typename T>
+    struct TimeoutCell : CellBase<T> {
+        TimeoutCell(RpcContext& ctxt, long long timeout_ms, size_t retry_times, std::function<Cell<T>* (void)> f)
+            : ctxt_(ctxt), f_(f) {
+            rpc_cell_ = f_();
+            assert(rpc_cell_ != nullptr && "should return a not nullptr to cell from function bind on TimeoutCell.");
+
+            if (rpc_cell_->is_failed()) {
+                this->Cell<T>::set_failed_reason(rpc_cell_->failed_reason());
+            } else {
+                derive_action( ctxt_
+                             , [this](const Cell<T>& r) {
+                                    this->Cell<T>::set_cell_value(r);
+                               }
+                             , rpc_cell_);
+            }
+        }
+
+        void update() override {
+        }
+
+        Cell<T>* rpc_cell_;
+
+        RpcContext& ctxt_;
+        std::function<Cell<T>* (void)> f_;
+    };
+
+    template<typename F>
+    auto construct_timeout_cell(RpcContext& ctxt, long long timeout_ms, size_t retry_times, F f) -> TimeoutCell<typename std::remove_pointer<typename std::result_of<F()>::type>::type::value_type>* {
+        auto cell = new TimeoutCell<typename std::remove_pointer<typename std::result_of<F()>::type>::type::value_type>(ctxt, timeout_ms, retry_times, f);
         ctxt.track(cell);
         return cell;
     }
@@ -1220,6 +1264,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_______rpc_fails_____
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define ___ms(...) __VA_ARGS__
+#define ___retry(...) __VA_ARGS__
 
 void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data) {
     msgrpc::service_id_t service_id = test_service::instance().current_service_id_;
@@ -1242,33 +1287,77 @@ void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* 
 
     action can be a local, quick, sync, method.
     action can be a remote, slow, async, rpc.
+    action can be a SI, which contains lots of actions
     action can be a collection of rpc calls, which are remote, slow, async
 
     action maybe a timer_guard_action, which has timeout value, retry_times, and retry {action}.
+
+    timeout_rollback_action is also an {action};
+    if timeout_rollback_action is an SI action, the timeout SI should running in a new context.
+    when timer is out, and timeout {action} start running, the timer gurded cell should filled with error timeout.
 #endif
 
 //TODO: cancel registered response msg handler when timeout
 //TODO: invoke timeout handler func when timeout
 //TODO: invoke timeout handler SI func when timeout
-void timeout_action_func() {
-    cout << "timeout_action_func" << endl;
+//TODO: handle concor case: when a detached rpc's cell are not in dependency graph of final result cell,
+//      if the result cell finished, can not release response handler of the detached cell.
+
+template<long long _TIMER_LEN, size_t _RETRY_TIMES, void(*_TIMEOUT_FUNC)(), typename F>
+struct MsgRpcAction {
+    Cell<ResponseBar>* run() {
+        _TIMEOUT_FUNC();
+        return new Cell<ResponseBar>;
+    }
+};
+
+void timeout_action_func(void) {
+    cout << "\ntimeout_action_func" << endl;
 }
 
 struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
-             //___1.timeout(timeout_action_func, ___ms(2000));
+    virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
+        //auto ___1 = construct_timeout_cell();
+
+
+        auto ___1 = construct_timeout_cell( ctxt
+                                          , ___ms(2000)
+                                          , ___retry(0)
+                                          , [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); });
+
+        //___1 = construct_timeout_cell()
+        //       ___1 --> if_timeout --> rollback_all_related_commits
+
+
+        //auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
+        //auto ___1 = MsgRpcAction<___ms(2000), ___retry(0), timeout_action_func>().run();
+
+        //___1.timeout(___ms(2000), ___retry(0), timeout_action_func);
+        //auto ___1 = ___time_guard_action(___ms(2000), ___retry(0), timeout_action_func, InterfaceYStub(ctxt).______sync_y(req));
+        //auto ___1 =  struct Action1281 : MsgRpcAction<___ms(2000), ___retry(0), timeout_action_func, InterfaceYStub(ctxt).______sync_y(req) > { Cell* run(){ return nullptr;} }();
+
+        /*auto ___2 = ___action(sync_local_action_foo);
+               ___2.timeout(timeout_action_func, ___ms(2000));
+
+        auto ___3 = ___1 --> ___action(SI_foo.run());
+             ___3.timeout(timeout_action_func, ___ms(2000));
+
+        auto ___4 = ___3 --> ___action(sync_local_action(func_foo));
+             ___4.timeout(timeout_action_func, ___ms(2000));
+
+        auto ___5 = ___4 --> ___action(sync_local_action(func_foo));
+             ___5.timeout(timeout_rollback_SI, ___ms(2000));*/
 
             //___1.bind_timer(timeout_si, ___ms(2000), ___1);
             //___1.bind_timer(timeout_action_func, ___ms(2000), retry(3times));
             //static int sequential_num = 22;
             //set_timer(___ms(2000), k_msgrpc_timeout_msg, &sequential_num);
 
-        return ___1;
+        return new Cell<ResponseBar>;
     }
 };
 
-TEST_F(MsgRpcTest, DISABLED_should_able_to__support_simple_async_rpc_______rpc_with_timer_guard_______case7) {
+TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_______rpc_with_timer_guard_______case7) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_FALSE(___r.has_value_);
         EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
@@ -1312,3 +1401,20 @@ TEST_F(MsgRpcTest, DISABLED_should_able_to__support___timer_api) {
     return ___1;
 }
 #endif
+
+struct Foo {
+    void run(RequestFoo& req) {
+        struct Action_1348 /*: MsgRpcAction<timeout_len, retry_times, timeout_func>*/ {
+            Action_1348() {run();}
+            void run() {
+                cout << "he" << endl;
+            }
+        } action1360;
+    }
+};
+
+TEST(fff, aaa) {
+    Foo foo;
+    RequestFoo req;
+    foo.run(req);
+}

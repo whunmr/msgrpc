@@ -123,6 +123,10 @@ namespace msgrpc {
             }
 
             RpcRspCellSink* cell = (iter->second);
+
+            cell->reset_sequential_id();
+            id_func_map_.erase(iter);
+
             assert(cell != nullptr && "cell should be notnull when find in dispatch map.");
             cell->set_timeout();
         }
@@ -391,29 +395,41 @@ namespace msgrpc {
     template<typename T>
     struct TimeoutCell : Cell<T> {
         TimeoutCell(RpcContext& ctxt, long long timeout_ms, size_t retry_times, std::function<Cell<T>* (void)> f)
-          : ctxt_(ctxt), retry_times_(retry_times), f_(f) {
+          : ctxt_(ctxt), timeout_ms_(timeout_ms), retry_times_(retry_times), f_(f) {
+            invoke_rpc_once(timeout_ms);
+        }
 
+        void invoke_rpc_once(long long int timeout_ms) {
             rpc_cell_ = f_();
             assert(rpc_cell_ != nullptr && rpc_cell_->has_seq_id_ && "should return a not nullptr to cell from function bind on TimeoutCell.");
 
-            set_timer(timeout_ms, msgrpc::Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rpc_cell_->seq_id_));
+            set_timer(timeout_ms, Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rpc_cell_->seq_id_));
 
             if (rpc_cell_->is_failed()) {
-                this->Cell<T>::set_failed_reason(rpc_cell_->failed_reason());
+                this->set_failed_reason(rpc_cell_->failed_reason());
             } else {
-                derive_action( ctxt_
-                             , [this](const Cell<T>& rsp) {
-                                    if (rsp.is_timeout()) {
-                                        //retry if not reach retry_times limit, otherwise assign failed_reason(timeout or failed) to TimeoutCell.
-                                        cout << "--------------->inner rsp cell of TimeoutCell is timeout" << endl;
-                                        this->Cell<T>::set_failed_reason(rsp.failed_reason());
-                                    } else if (rsp.is_failed()) {
-                                        this->Cell<T>::set_failed_reason(rsp.failed_reason());
-                                    } else {
-                                        this->Cell<T>::set_cell_value(rsp);
-                                    }
-                               }
-                             , rpc_cell_);
+                bind_timeout_cell(*rpc_cell_);
+            }
+        }
+
+        void bind_timeout_cell(Cell<T>& cell_to_bind) {
+            derive_action( ctxt_
+                         , [this](const Cell<T>& rsp) {
+                                if (rsp.is_timeout()) {
+                                    retry_rpc_if_need(rsp);
+                                } else {
+                                    this->set_cell_value(rsp);
+                                }
+                           }
+                         , &cell_to_bind);
+        }
+
+        void retry_rpc_if_need(const Cell<T> &rsp) {
+            if (retry_times_ > 0) {
+                --retry_times_;
+                invoke_rpc_once(timeout_ms_);
+            } else {
+                set_failed_reason(rsp.failed_reason());
             }
         }
 
@@ -423,6 +439,7 @@ namespace msgrpc {
         Cell<T>* rpc_cell_;
 
         RpcContext& ctxt_;
+        long long timeout_ms_;
         size_t retry_times_;
         std::function<Cell<T>* (void)> f_;
     };
@@ -1358,7 +1375,7 @@ struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
 
-        auto ___1 = rpc(ctxt, ___ms(2000), ___retry(0), do_rpc_sync_y);
+        auto ___1 = rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);
 
         //___1 = rpc()
         //       ___1 --> if_timeout --> rollback_all_related_commits

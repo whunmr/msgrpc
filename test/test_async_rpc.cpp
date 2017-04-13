@@ -454,8 +454,11 @@ namespace msgrpc {
         void update() override {
             cout << "TimeoutCell update()" << endl;
             assert(sizeof...(Args) != 0 && "should not call update if this cell do not dependent other cells.");
+
+            //TODO: check status of both trigger cells
             if (!CellBase<T>::got_value_or_error()) {
-                bind_();
+                //bind_();
+                invoke_rpc_once(timeout_ms_);
             }
         }
 
@@ -1406,9 +1409,7 @@ struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
         auto ___2 = rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y_after_1, ___1);
 
-
         //auto ___2 = ___1 --> rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);    /*case1*/
-
         //   ___1 --> if_timeout --> rollback_all_related_commits                     /*case0*/
 
         //auto ___1 = InterfaceYStub(ctxt).______sync_y(req);

@@ -218,6 +218,20 @@ namespace msgrpc {
 
     template<typename T>
     struct Cell : CellBase<T>, RspCellBase {
+        template<typename C, typename... Ts>
+        void register_as_listener(C &&c, Ts &&... args) {
+            c.register_listener(this);
+            register_as_listener(std::forward<Ts>(args)...);
+        }
+
+        template<typename C>
+        void register_as_listener(C &&c) {
+            c.register_listener(this);
+        }
+
+        void register_as_listener() {
+        }
+
         virtual void set_rpc_rsp(const RspMsgHeader& rsp_header, const char* msg, size_t len) override {
             if (rsp_header.rpc_result_ != RpcResult::succeeded) {
                 cout << "rsp_header->rpc_result_: " << (int)rsp_header.rpc_result_ << endl;
@@ -253,7 +267,7 @@ namespace msgrpc {
     struct DerivedAction : Updatable {
         DerivedAction(bool is_final_action, std::function<T(Args...)> logic, Args &&... args)
                 : is_final_action_(is_final_action), bind_(logic, std::ref(args)...) {
-            call_each_args(std::forward<Args>(args)...);
+            register_as_listener(std::forward<Args>(args)...);
         }
 
         ~DerivedAction() {
@@ -261,13 +275,13 @@ namespace msgrpc {
         }
 
         template<typename C, typename... Ts>
-        void call_each_args(C &&c, Ts &&... args) {
+        void register_as_listener(C &&c, Ts &&... args) {
             c.register_listener(this);
-            call_each_args(std::forward<Ts>(args)...);
+            register_as_listener(std::forward<Ts>(args)...);
         }
 
         template<typename C>
-        void call_each_args(C &&c) {
+        void register_as_listener(C &&c) {
             c.register_listener(this);
 
             if (is_final_action_) {
@@ -310,18 +324,7 @@ namespace msgrpc {
     struct DerivedCell : Cell<T> {
         DerivedCell(std::function<void(Cell<T>&, Args...)> logic, Args&&... args)
                 : bind_(logic, std::placeholders::_1, std::ref(args)...) {
-            call_each_args(std::forward<Args>(args)...);
-        }
-
-        template<typename C, typename... Ts>
-        void call_each_args(C &&c, Ts &&... args) {
-            c.register_listener(this);
-            call_each_args(std::forward<Ts>(args)...);
-        }
-
-        template<typename C>
-        void call_each_args(C &&c) {
-            c.register_listener(this);
+            Cell<T>::register_as_listener(std::forward<Args>(args)...);
         }
 
         void update() override {
@@ -346,18 +349,7 @@ namespace msgrpc {
     struct DerivedAsyncCell : Cell<T> {
         DerivedAsyncCell(RpcContext& ctxt, std::function<Cell<T>&(void)> f, Args&&... args)
           : ctxt_(ctxt), f_(f) {
-            call_each_args(std::forward<Args>(args)...);
-        }
-
-        template<typename C, typename... Ts>
-        void call_each_args(C &&c, Ts &&... args) {
-            c.register_listener(this);
-            call_each_args(std::forward<Ts>(args)...);
-        }
-
-        template<typename C>
-        void call_each_args(C &&c) {
-            c.register_listener(this);
+            Cell<T>::register_as_listener(std::forward<Args>(args)...);
         }
 
         void update() override {
@@ -399,7 +391,7 @@ namespace msgrpc {
             if (sizeof...(args) == 0) {
                 invoke_rpc_once(timeout_ms);
             } else {
-                call_each_args(std::forward<Args>(args)...);
+                Cell<T>::register_as_listener(std::forward<Args>(args)...);
             }
         }
 
@@ -435,20 +427,6 @@ namespace msgrpc {
             } else {
                 this->set_failed_reason(rsp.failed_reason());
             }
-        }
-
-        template<typename C, typename... Ts>
-        void call_each_args(C &&c, Ts &&... args) {
-            c.register_listener(this);
-            call_each_args(std::forward<Ts>(args)...);
-        }
-
-        template<typename C>
-        void call_each_args(C &&c) {
-            c.register_listener(this);
-        }
-
-        void call_each_args() {
         }
 
         void update() override {
@@ -1436,7 +1414,11 @@ struct SI_case8 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-TEST_F(MsgRpcTest, DISABLED_should_able_to__support_rpc_with_timeout_and_retry_______case8) {
+bool drop_msg_with_seq_id() {
+    return false;
+}
+
+TEST_F(MsgRpcTest, DISABLED_should_able_to__support_rpc_with_timeout_and_retry___and_got_result_from_retry_______case8) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());

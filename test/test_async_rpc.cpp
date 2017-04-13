@@ -99,11 +99,46 @@ namespace msgrpc {
     };
 }
 
+////////////////////////////////////////////////////////////////////////////////
+namespace demo {
+    struct timer_info {
+        long long millionseconds_;
+        msgrpc::service_id_t service_id_;
+        void *user_data_;
+    };
+
+    struct TimerMgr : msgrpc::ThreadLocalSingleton<TimerMgr> {
+        void cancel_timer(msgrpc::rpc_sequence_id_t id) {
+            canceled_timer_ids_.push_back(id);
+        }
+
+        bool should_ignore(const char* msg, size_t len) {
+            assert(msg != nullptr && len == sizeof(timer_info));
+            timer_info& ti = *(timer_info*)msg;
+
+            msgrpc::rpc_sequence_id_t seq_id =  (msgrpc::rpc_sequence_id_t)((uintptr_t)(ti.user_data_));
+            if (std::find(canceled_timer_ids_.begin(), canceled_timer_ids_.end(), seq_id) != canceled_timer_ids_.end()) {
+                return true;
+            }
+
+            return false;
+        }
+
+        void reset() {
+            canceled_timer_ids_.clear();
+        }
+
+        std::vector<msgrpc::rpc_sequence_id_t> canceled_timer_ids_;
+    };
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //TODO: extract to set timer interface
 void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data);
 void cancel_timer(msgrpc::msg_id_t timeout_msg_id, void* user_data) {
-    //TODO: do real cancel timer or drop timer notify msg
-    cout << "fake cancel timer for timer id" << (msgrpc::rpc_sequence_id_t)((uintptr_t)(user_data)) << endl;
+    cout << "cancel timer for timer id: " << (msgrpc::rpc_sequence_id_t)((uintptr_t)(user_data)) << endl;
+    demo::TimerMgr::instance().cancel_timer(msgrpc::rpc_sequence_id_t((uintptr_t)user_data));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -801,14 +836,7 @@ struct test_service : msgrpc::ThreadLocalSingleton<test_service> {
     msgrpc::service_id_t current_service_id_;
 };
 
-////////////////////////////////////////////////////////////////////////////////
 namespace demo {
-    struct timer_info {
-        long long millionseconds_;
-        msgrpc::service_id_t service_id_;
-        void* user_data_;
-    };
-
     struct SetTimerHandler : msgrpc::ThreadLocalSingleton<SetTimerHandler> {
         void set_timer(const char* msg, size_t len) {
             static unsigned short entry_times = 0;
@@ -875,7 +903,9 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, s
             } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
                 return demo::SetTimerHandler::instance().set_timer(msg, len);
             } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
-                return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
+                if (! TimerMgr::instance().should_ignore(msg, len)) {
+                    return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
+                }
             } else {
                 cout << "got unknow msg with id: " << msg_id << endl;
             }
@@ -1061,6 +1091,7 @@ struct MsgRpcTest : public ::testing::Test {
         can_safely_exit = false;
 
         RpcSequenceId::instance().reset();
+        TimerMgr::instance().reset();
     }
 
     virtual void TearDown() {

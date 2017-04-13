@@ -1456,35 +1456,59 @@ void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* 
     when timer is out, and timeout {action} start running, the timer gurded cell should filled with error timeout.
 #endif
 
-//TODO: cancel registered response msg handler when timeout
 //TODO: invoke timeout handler func when timeout
 //TODO: invoke timeout handler SI func when timeout
 //TODO: handle concor case: when a detached rpc's cell are not in dependency graph of final result cell,
 //      if the result cell finished, can not release response handler of the detached cell.
 
-void timeout_action_func(void) {
-    cout << "timeout_action_func" << endl;
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+struct SI_case7_timeout : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
 
-        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);  //seq_id: 1, 2
+        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);
         return ___1;
     }
 };
 
-TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case7) {
+TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case7_timeout) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_FALSE(___r.has_value_);
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                , drop_all_msg);
-    test_thread thread_timer(timer_service_id, []{}                        , not_drop_msg);
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7_timeout>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                        , drop_all_msg);
+    test_thread thread_timer(timer_service_id, []{}                                , not_drop_msg);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//timeout test cases:
+//TODO: rpc() when timeout
+//TODO: call action when timeout
+//TODO: drive cell when timeout
+
+struct SI_case7_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
+        auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto do_rpc_rollback = [&ctxt, req](Cell<ResponseBar>& ___1) { cout << "rollback" << endl; return InterfaceYStub(ctxt).______sync_y(req); };
+
+        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);
+        auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback, ___1);
+
+        return ___2;
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case7_timeout_action) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_FALSE(___r.has_value_);
+        EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7_timeout_action>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                               , drop_all_msg);
+    test_thread thread_timer(timer_service_id, []{}                                       , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1605,10 +1629,6 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
 #if 0
         //auto ___2 = ___1 --> rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);    /*case1*/
         //     ___1 --> if_timeout --> rollback_all_related_commits                     /*case0*/
@@ -1650,4 +1670,3 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case
 }
 
 #endif
-

@@ -405,15 +405,19 @@ namespace msgrpc {
 
         void invoke_rpc_once(long long int timeout_ms) {
             Cell<T>* rpc_cell_ = bind_();
-            assert(rpc_cell_ != nullptr && rpc_cell_->has_seq_id_ && "should return a not nullptr to cell from function bind on TimeoutCell.");
+            if (rpc_cell_ == nullptr) {
+                //init rpc is deferred, because trigger cells are not ready to continue;
+                return;
+            }
 
-            set_timer(timeout_ms, Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rpc_cell_->seq_id_));
+            assert(rpc_cell_ != nullptr && "should return a not nullptr to cell from function bind on TimeoutCell.");
 
             if (rpc_cell_->is_failed()) {
-                this->set_failed_reason(rpc_cell_->failed_reason());
-            } else {
-                bind_timeout_cell(*rpc_cell_);
+                return this->set_failed_reason(rpc_cell_->failed_reason());
             }
+
+            set_timer(timeout_ms, Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rpc_cell_->seq_id_));
+            bind_timeout_cell(*rpc_cell_);
         }
 
         void bind_timeout_cell(Cell<T>& cell_to_bind) {
@@ -438,12 +442,10 @@ namespace msgrpc {
         }
 
         void update() override {
-            cout << "TimeoutCell update()" << endl;
             assert(sizeof...(Args) != 0 && "should not call update if this cell do not dependent other cells.");
 
             //TODO: check status of both trigger cells
             if (!CellBase<T>::got_value_or_error()) {
-                //bind_();
                 invoke_rpc_once(timeout_ms_);
             }
         }
@@ -453,7 +455,7 @@ namespace msgrpc {
         size_t retry_times_;
         std::function<Cell<T>* (Args...)> f_;
 
-        using bind_type = decltype(std::bind(std::declval<std::function<Cell<T>* (Args...)>>(), std::declval<Args>()...));
+        using bind_type = decltype(std::bind(std::declval<std::function<Cell<T>* (Args...)>>(), std::ref(std::declval<Args>())...));
         bind_type bind_;
     };
 
@@ -611,7 +613,7 @@ namespace msgrpc {
                 }
             }, rsp_cell);
 
-            return RpcResult::deferred;
+            return RpcResult::succeeded;
         }
     };
 }
@@ -1471,13 +1473,25 @@ struct SI_case9 : MsgRpcSIBase<RequestFoo, ResponseBar> {
         };
 
         auto do_rpc_sync_y_after_1 = [&ctxt, req](Cell<ResponseBar>& rsp) {
+            cout << "rsp status: " << (int)rsp.failed_reason() << endl;
+            if (rsp.is_failed()) {
+                return &msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, rsp.failed_reason());
+            }
+            return InterfaceYStub(ctxt).______sync_y(req);
+        };
+
+        auto do_rpc_sync_y_after_2 = [&ctxt, req](Cell<ResponseBar>& rsp) {
+            if (rsp.is_failed()) {
+                return &msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, rsp.failed_reason());
+            }
             return InterfaceYStub(ctxt).______sync_y(req);
         };
 
         auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);
         auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y_after_1, ___1);
-        auto ___3 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y_after_1, ___2);
-        return ___3;
+        //auto ___3 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y_after_2, ___2);
+        //auto ___4 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y_after_2, ___3);
+        return ___2;
     }
 };
 
@@ -1490,6 +1504,37 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case9>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}                                , drop_all_msg);
     test_thread thread_timer(timer_service_id, []{}                        , not_drop_msg);
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SI_case10 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
+        auto do_rpc_sync_y = [&ctxt, req]() {
+            return InterfaceYStub(ctxt).______sync_y(req);
+        };
+
+        auto do_rpc_sync_y_after_1 = [&ctxt, req](Cell<ResponseBar>& rsp) {
+            if (rsp.is_failed()) {
+                return &msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, rsp.failed_reason());
+            }
+            return InterfaceYStub(ctxt).______sync_y(req);
+        };
+
+        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);
+        auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y_after_1, ___1);
+        auto ___3 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y_after_1, ___2);
+        return ___3;
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case10) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_FALSE(___r.has_value_);
+        EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case10>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                 , drop_all_msg);
+    test_thread thread_timer(timer_service_id, []{}                         , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1533,5 +1578,16 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case
     auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), retry(3times), rollback_transaction);
     return ___1;
 }
+
+
+cell's bind_() may return when  rpc send failed,  success when rpc send but not got response,
+also may return timeout caused by trigger cell's timeout status.
+
+cell's status:
+succeeded,
+timeout,
+failed,  (!= succeeded)
+succeeded and has_value_
+got_value_or_error:  has_value_ or is_failed
 #endif
 

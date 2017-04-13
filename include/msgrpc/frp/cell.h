@@ -12,11 +12,10 @@ namespace msgrpc {
 
     enum class RpcResult : unsigned short {
         succeeded = 0
-        , deferred = 1
-        , failed  = 2
-        , timeout = 3
-        , iface_not_found =  4
-        , method_not_found = 5
+        , failed  = 1
+        , timeout = 2
+        , iface_not_found =  3
+        , method_not_found = 4
     };
 
     struct Updatable {

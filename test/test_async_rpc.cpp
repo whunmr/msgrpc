@@ -66,6 +66,10 @@ namespace msgrpc {
             return sequence_id_;
         }
 
+        void reset() {
+            sequence_id_ = k_invalid_sequence_id;
+        }
+
     private:
         atomic_uint sequence_id_ = {k_invalid_sequence_id};
     };
@@ -792,22 +796,30 @@ namespace demo {
 
     struct SetTimerHandler : msgrpc::ThreadLocalSingleton<SetTimerHandler> {
         void set_timer(const char* msg, size_t len) {
+            static unsigned short entry_times = 0;
+            ++entry_times;
+
             assert(msg != nullptr && len == sizeof(timer_info));
             timer_info& ti = *(timer_info*)msg;
 
-            msgrpc::MsgChannel* msg_channel = msgrpc::Config::instance().msg_channel_;
-            UdpChannel* g_real_udp_channel_in_set_timer_thread = g_msg_channel;
+            unsigned short temp_udp_port = timer_service_id + entry_times;
 
-            std::thread timer_thread([ti, msg_channel, g_real_udp_channel_in_set_timer_thread]{
+            std::thread timer_thread([ti, temp_udp_port]{
+                msgrpc::Config::instance().init_with(&UdpMsgChannel::instance()
+                        , k_msgrpc_request_msg_id
+                        , k_msgrpc_response_msg_id
+                        , k_msgrpc_set_timer_msg
+                        , k_msgrpc_timeout_msg);
 
-                //store g_real_udp_channel_in_set_timer_thread into thread_local g_msg_channel,
-                //which will be used during msg_channel->send_msg
-                g_msg_channel = g_real_udp_channel_in_set_timer_thread;
-
-                this_thread::sleep_for(milliseconds(ti.millionseconds_));
-                msg_channel->send_msg(ti.service_id_, k_msgrpc_timeout_msg, (const char*)&ti, sizeof(ti));
+                UdpChannel channel(temp_udp_port,
+                   [ti](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+                       if (0 == strcmp(msg, "init")) {
+                           this_thread::sleep_for(milliseconds(ti.millionseconds_));
+                           msgrpc::Config::instance().msg_channel_->send_msg(ti.service_id_, k_msgrpc_timeout_msg, (const char*)&ti, sizeof(ti));
+                       }
+                   }
+                );
             });
-
             timer_thread.detach();
         }
     };
@@ -1032,6 +1044,8 @@ std::condition_variable can_safely_exit_cv;
 struct MsgRpcTest : public ::testing::Test {
     virtual void SetUp() {
         can_safely_exit = false;
+
+        RpcSequenceId::instance().reset();
     }
 
     virtual void TearDown() {
@@ -1085,6 +1099,10 @@ void rpc_main(std::function<void(Cell<ResponseBar>&)> f) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 auto not_drop_msg = [](const char* msg, size_t len) {
     return false;
+};
+
+auto drop_all_msg = [](const char* msg, size_t len) {
+    return true;
 };
 
 auto drop_msg_with_seq_id(std::initializer_list<int> seq_ids_to_drop) -> std::function<bool(const char*, size_t)> {
@@ -1404,12 +1422,11 @@ void timeout_action_func(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
 
-        auto ___1 = rpc(ctxt, ___ms(1000), ___retry(1), do_rpc_sync_y);
+        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);  //seq_id: 1, 2
         return ___1;
     }
 };
@@ -1421,8 +1438,8 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7>(then_check);}, not_drop_msg);
-    //test_thread thread_y(y_service_id, []{});
-    test_thread thread_timer(timer_service_id, []{}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                , drop_all_msg);
+    test_thread thread_timer(timer_service_id, []{}                        , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1430,7 +1447,7 @@ struct SI_case8 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
 
-        auto ___1 = rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);  //seq_id: 1, 2
+        auto ___1 = rpc(ctxt, ___ms(100), ___retry(2), do_rpc_sync_y);  //seq_id: 1, 2, 3
         return ___1;
     }
 };
@@ -1442,8 +1459,8 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case8>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, drop_msg_with_seq_id({1}) );
-    test_thread thread_timer(timer_service_id, []{}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                , drop_msg_with_seq_id({1, 2}) );
+    test_thread thread_timer(timer_service_id, []{}                        , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1457,9 +1474,9 @@ struct SI_case9 : MsgRpcSIBase<RequestFoo, ResponseBar> {
             return InterfaceYStub(ctxt).______sync_y(req);
         };
 
-        auto ___1 = rpc(ctxt, ___ms(1000), ___retry(1), do_rpc_sync_y);
-        auto ___2 = rpc(ctxt, ___ms(1000), ___retry(1), do_rpc_sync_y_after_1, ___1);
-        auto ___3 = rpc(ctxt, ___ms(1000), ___retry(1), do_rpc_sync_y_after_1, ___2);
+        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);
+        auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y_after_1, ___1);
+        auto ___3 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y_after_1, ___2);
         return ___3;
     }
 };
@@ -1471,8 +1488,8 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case9>(then_check);}, not_drop_msg);
-    //test_thread thread_y(y_service_id, []{});
-    test_thread thread_timer(timer_service_id, []{}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                , drop_all_msg);
+    test_thread thread_timer(timer_service_id, []{}                        , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

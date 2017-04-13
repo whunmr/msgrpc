@@ -56,10 +56,14 @@ namespace msgrpc {
     typedef uint32_t rpc_sequence_id_t;
     struct RpcSequenceId : msgrpc::Singleton<RpcSequenceId> {
         rpc_sequence_id_t get() {
+            ++sequence_id_;
+
+            //skip value of k_invalid_sequence_id
             if (sequence_id_ == k_invalid_sequence_id) {
                 ++sequence_id_;
             }
-            return ++sequence_id_;
+
+            return sequence_id_;
         }
 
     private:
@@ -836,11 +840,11 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, s
             if (0 == strcmp(msg, "init")) {
                 return init_func();
             } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
-                return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
-            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
                 if (! should_drop(msg, len)) {
-                    return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
+                    return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
                 }
+            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+                return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
             } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
                 return demo::SetTimerHandler::instance().set_timer(msg, len);
             } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
@@ -1078,7 +1082,24 @@ void rpc_main(std::function<void(Cell<ResponseBar>&)> f) {
 }
 
 
-auto not_drop_msg = [](const char* msg, size_t len) {return false;};
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+auto not_drop_msg = [](const char* msg, size_t len) {
+    return false;
+};
+
+auto drop_msg_with_seq_id(std::initializer_list<int> seq_ids_to_drop) -> std::function<bool(const char*, size_t)> {
+    return [seq_ids_to_drop](const char* msg, size_t len) -> bool {
+        assert(len >= sizeof(msgrpc::ReqMsgHeader));
+        msgrpc::ReqMsgHeader* req = (msgrpc::ReqMsgHeader*)(msg);
+        for (int seq_to_drop : seq_ids_to_drop) {
+            if (req->sequence_id_ == seq_to_drop) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1409,23 +1430,19 @@ struct SI_case8 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
 
-        auto ___1 = rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);
+        auto ___1 = rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);  //seq_id: 1, 2
         return ___1;
     }
 };
 
-bool drop_msg_with_seq_id() {
-    return false;
-}
-
-TEST_F(MsgRpcTest, DISABLED_should_able_to__support_rpc_with_timeout_and_retry___and_got_result_from_retry_______case8) {
+TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_result_from_retry_______case8) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
-        EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
+        EXPECT_EQ(RpcResult::succeeded, ___r.failed_reason());
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case8>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}, drop_msg_with_seq_id({1}) );
     test_thread thread_timer(timer_service_id, []{}, not_drop_msg);
 }
 

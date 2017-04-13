@@ -844,7 +844,7 @@ namespace msgrpc {
     };
 }
 
-void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, void(*req_filter_func)(const char* msg, size_t len)) {
+void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char* msg, size_t len)> should_drop) {
     msgrpc::Config::instance().init_with(&UdpMsgChannel::instance()
                                         , k_msgrpc_request_msg_id
                                         , k_msgrpc_response_msg_id
@@ -854,21 +854,23 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, v
     test_service::instance().current_service_id_ = udp_port;
 
     UdpChannel channel(udp_port,
-                       [&init_func, udp_port](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-                           if (0 == strcmp(msg, "init")) {
-                               return init_func();
-                           } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
-                               return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
-                           } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                               return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
-                           } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
-                               return demo::SetTimerHandler::instance().set_timer(msg, len);
-                           } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
-                               return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
-                           } else {
-                               cout << "got unknow msg with id: " << msg_id << endl;
-                           }
-                       }
+        [&init_func, udp_port, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+            if (0 == strcmp(msg, "init")) {
+                return init_func();
+            } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
+                return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+                if (! should_drop(msg, len)) {
+                    return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
+                }
+            } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
+                return demo::SetTimerHandler::instance().set_timer(msg, len);
+            } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
+                return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
+            } else {
+                cout << "got unknow msg with id: " << msg_id << endl;
+            }
+        }
     );
 }
 
@@ -1098,7 +1100,7 @@ void rpc_main(std::function<void(Cell<ResponseBar>&)> f) {
 }
 
 
-auto not_drop_msg = [](const char* msg, size_t len){};
+auto not_drop_msg = [](const char* msg, size_t len) {return false;};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

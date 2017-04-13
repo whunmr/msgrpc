@@ -28,11 +28,17 @@ namespace msgrpc {
         typedef T value_type;
 
         virtual ~CellBase() { }
+        void update() override {/**/}
 
         bool has_value_{false};
-        RpcResult status_ = {RpcResult::succeeded};
 
-        void update() override {/**/}
+        /*cell's status:
+            succeeded, may not has_value_;
+            timeout,
+            has_error,  (!= succeeded)  (include sending failed and timeout)
+            has_value,  (succeeded and has_value_)
+            has_value_or_error:  has_value_ or has_error*/
+        RpcResult status_ = {RpcResult::succeeded};
 
         void set_failed_reason(RpcResult ret) {
             status_ = ret;
@@ -43,24 +49,24 @@ namespace msgrpc {
             return status_;
         }
 
-        RpcResult status() const {
-            return status_;
-        }
-
-        bool is_timeout() const {
+        inline bool is_timeout() const {
             return status_ == RpcResult::timeout;
         }
 
-        bool is_failed() const {
+        inline bool has_error() const {
             return status_ != RpcResult::succeeded;
         }
 
-        bool got_value_or_error() const {
-            return has_value_ || is_failed();
+        inline bool has_value_or_error() const {
+            return has_value() || has_error();
+        }
+
+        inline bool has_value() const {
+            return has_value_;
         }
 
         void set_cell_value(const CellBase<T>& rhs) {
-            if (rhs.is_failed()) {
+            if (rhs.has_error()) {
                 this->set_failed_reason(rhs.failed_reason());
             } else {
                 this->set_value(rhs.value());

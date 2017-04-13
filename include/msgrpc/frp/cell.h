@@ -32,12 +32,11 @@ namespace msgrpc {
 
         bool has_value_{false};
 
-        /*cell's status:
-            succeeded, may not has_value_;
-            timeout,
-            has_error,  (!= succeeded)  (include sending failed and timeout)
-            has_value,  (succeeded and has_value_)
-            has_value_or_error:  has_value_ or has_error*/
+        //cell's status:
+        //  empty:   succeeded, not has_value_;
+        //  value:   succeeded, has_value_;
+        //  error:   failed or timeout
+
         RpcResult status_ = {RpcResult::succeeded};
 
         void set_failed_reason(RpcResult ret) {
@@ -63,6 +62,10 @@ namespace msgrpc {
 
         inline bool has_value() const {
             return has_value_;
+        }
+
+        inline bool is_empty() const {
+            return ! has_value_or_error();
         }
 
         void set_cell_value(const CellBase<T>& rhs) {

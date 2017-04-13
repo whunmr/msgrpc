@@ -1506,6 +1506,42 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SI_case10 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
+        auto do_rpc_sync_y = [&ctxt, req]() {
+            return InterfaceYStub(ctxt).______sync_y(req);
+        };
+
+        auto do_rpc_sync_y_after_1 = [&ctxt, req](Cell<ResponseBar>& ___1, Cell<ResponseBar>& ___2) -> Cell<demo::ResponseBar>* {
+            if (___1.is_empty() || ___2.is_empty()) {
+                return nullptr;
+            }
+
+            if (___1.has_error() || ___2.has_error()) {
+                return &msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___1.failed_reason());
+            }
+
+            return InterfaceYStub(ctxt).______sync_y(req);
+        };
+
+        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y); //seq_id: 1, 3
+        auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y); //seq_id: 2, 4
+        auto ___3 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y_after_1, ___1, ___2);
+        return ___3;
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case10) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_FALSE(___r.has_value_);
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case10>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                 , drop_msg_with_seq_id({1, 2, 3, 4}));
+    test_thread thread_timer(timer_service_id, []{}                         , not_drop_msg);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if 0
 //auto ___2 = ___1 --> rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);    /*case1*/

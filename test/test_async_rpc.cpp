@@ -249,11 +249,11 @@ namespace msgrpc {
         }*/
     };
 
-    template<typename VT, typename... T>
+    template<typename T, typename... Args>
     struct DerivedAction : Updatable {
-        DerivedAction(bool is_final_action, std::function<VT(T...)> logic, T &&... args)
+        DerivedAction(bool is_final_action, std::function<T(Args...)> logic, Args &&... args)
                 : is_final_action_(is_final_action), bind_(logic, std::ref(args)...) {
-            call_each_args(std::forward<T>(args)...);
+            call_each_args(std::forward<Args>(args)...);
         }
 
         ~DerivedAction() {
@@ -290,7 +290,7 @@ namespace msgrpc {
 
         bool is_final_action_ = {false};
         RspCellBase* cell_ = {nullptr};
-        using bind_type = decltype(std::bind(std::declval<std::function<VT(T...)>>(), std::ref(std::declval<T>())...));
+        using bind_type = decltype(std::bind(std::declval<std::function<T(Args...)>>(), std::ref(std::declval<Args>())...));
         bind_type bind_;
     };
 
@@ -325,7 +325,7 @@ namespace msgrpc {
         }
 
         void update() override {
-            if (!CellBase<T>::has_value_) {  //TODO:refactor to got_rsp, which can be got_value or got_error
+            if (!CellBase<T>::got_value_or_error()) {
                 bind_(*this);
             }
         }
@@ -392,15 +392,19 @@ namespace msgrpc {
     }
 
 
-    template<typename T>
+    template<typename T, typename... Args>
     struct TimeoutCell : Cell<T> {
-        TimeoutCell(RpcContext& ctxt, long long timeout_ms, size_t retry_times, std::function<Cell<T>* (void)> f)
-          : ctxt_(ctxt), timeout_ms_(timeout_ms), retry_times_(retry_times), f_(f) {
-            invoke_rpc_once(timeout_ms);
+        TimeoutCell(RpcContext& ctxt, long long timeout_ms, size_t retry_times, std::function<Cell<T>* (Args...)> f, Args&&... args)
+          : ctxt_(ctxt), timeout_ms_(timeout_ms), retry_times_(retry_times), f_(f), bind_(f, args...) {
+            if (sizeof...(args) == 0) {
+                invoke_rpc_once(timeout_ms);
+            } else {
+                call_each_args(std::forward<Args>(args)...);
+            }
         }
 
         void invoke_rpc_once(long long int timeout_ms) {
-            rpc_cell_ = f_();
+            Cell<T>* rpc_cell_ = bind_();
             assert(rpc_cell_ != nullptr && rpc_cell_->has_seq_id_ && "should return a not nullptr to cell from function bind on TimeoutCell.");
 
             set_timer(timeout_ms, Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rpc_cell_->seq_id_));
@@ -429,24 +433,45 @@ namespace msgrpc {
                 --retry_times_;
                 invoke_rpc_once(timeout_ms_);
             } else {
-                set_failed_reason(rsp.failed_reason());
+                this->set_failed_reason(rsp.failed_reason());
             }
         }
 
-        void update() override {
+        template<typename C, typename... Ts>
+        void call_each_args(C &&c, Ts &&... args) {
+            c.register_listener(this);
+            call_each_args(std::forward<Ts>(args)...);
         }
 
-        Cell<T>* rpc_cell_;
+        template<typename C>
+        void call_each_args(C &&c) {
+            c.register_listener(this);
+        }
+
+        void call_each_args() {
+        }
+
+        void update() override {
+            cout << "TimeoutCell update()" << endl;
+            assert(sizeof...(Args) != 0 && "should not call update if this cell do not dependent other cells.");
+            if (!CellBase<T>::got_value_or_error()) {
+                bind_();
+            }
+        }
 
         RpcContext& ctxt_;
         long long timeout_ms_;
         size_t retry_times_;
-        std::function<Cell<T>* (void)> f_;
+        std::function<Cell<T>* (Args...)> f_;
+
+        using bind_type = decltype(std::bind(std::declval<std::function<Cell<T>* (Args...)>>(), std::declval<Args>()...));
+        bind_type bind_;
     };
 
-    template<typename F>
-    auto rpc(RpcContext &ctxt, long long timeout_ms, size_t retry_times, F f) -> TimeoutCell<typename std::remove_pointer<typename std::result_of<F()>::type>::type::value_type>* {
-        auto cell = new TimeoutCell<typename std::remove_pointer<typename std::result_of<F()>::type>::type::value_type>(ctxt, timeout_ms, retry_times, f);
+    template<typename F, typename... Args>
+    auto rpc(RpcContext &ctxt, long long timeout_ms, size_t retry_times, F f, Args &&... args)
+      -> TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>* {
+        auto cell = new TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>(ctxt, timeout_ms, retry_times, f, std::ref(*args)...);
         ctxt.track(cell);
         return cell;
     }
@@ -1375,10 +1400,16 @@ struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
 
+        auto do_rpc_sync_y_after_1 = [&ctxt, req](Cell<ResponseBar>& ___1) { return InterfaceYStub(ctxt).______sync_y(req); };
+
         auto ___1 = rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);
 
-        //___1 = rpc()
-        //       ___1 --> if_timeout --> rollback_all_related_commits
+        auto ___2 = rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y_after_1, ___1);
+
+
+        //auto ___2 = ___1 --> rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);    /*case1*/
+
+        //   ___1 --> if_timeout --> rollback_all_related_commits                     /*case0*/
 
         //auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
         //auto ___1 = MsgRpcAction<___ms(2000), ___retry(0), timeout_action_func>().run();
@@ -1404,7 +1435,7 @@ struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
             //static int sequential_num = 22;
             //set_timer(___ms(2000), k_msgrpc_timeout_msg, &sequential_num);
 
-        return ___1;
+        return ___2;
     }
 };
 

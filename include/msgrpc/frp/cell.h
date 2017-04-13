@@ -56,7 +56,7 @@ namespace msgrpc {
             return status_ != RpcResult::succeeded;
         }
 
-        bool got_response() const {
+        bool got_value_or_error() const {
             return has_value_ || is_failed();
         }
 

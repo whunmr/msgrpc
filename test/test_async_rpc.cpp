@@ -1399,17 +1399,39 @@ void timeout_action_func(void) {
     cout << "timeout_action_func" << endl;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
-        auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto do_rpc_sync_y = [&ctxt, req]() {
+            return InterfaceYStub(ctxt).______sync_y(req);
+        };
 
-        auto do_rpc_sync_y_after_1 = [&ctxt, req](Cell<ResponseBar>& ___1) { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto do_rpc_sync_y_after_1 = [&ctxt, req](Cell<ResponseBar>& rsp) {
+            return InterfaceYStub(ctxt).______sync_y(req);
+        };
 
-        auto ___1 = rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);
+        auto ___1 = rpc(ctxt, ___ms(1000), ___retry(1), do_rpc_sync_y);
+        auto ___2 = rpc(ctxt, ___ms(1000), ___retry(1), do_rpc_sync_y_after_1, ___1);
+        auto ___3 = rpc(ctxt, ___ms(1000), ___retry(1), do_rpc_sync_y_after_1, ___2);
+        return ___3;
+    }
+};
 
-        auto ___2 = rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y_after_1, ___1);
+TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case7) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_FALSE(___r.has_value_);
+        EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
+    };
 
-        //auto ___2 = ___1 --> rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);    /*case1*/
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7>(then_check);});
+    //test_thread thread_y(y_service_id, []{});
+    test_thread thread_timer(timer_service_id, []{});
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if 0
+//auto ___2 = ___1 --> rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);    /*case1*/
         //   ___1 --> if_timeout --> rollback_all_related_commits                     /*case0*/
 
         //auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
@@ -1435,21 +1457,7 @@ struct SI_case7 : MsgRpcSIBase<RequestFoo, ResponseBar> {
             //___1.bind_timer(timeout_action_func, ___ms(2000), retry(3times));
             //static int sequential_num = 22;
             //set_timer(___ms(2000), k_msgrpc_timeout_msg, &sequential_num);
-
-        return ___2;
-    }
-};
-
-TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc_______rpc_with_timer_guard_______case7) {
-    auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_FALSE(___r.has_value_);
-        EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
-    };
-
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7>(then_check);});
-    //test_thread thread_y(y_service_id, []{});
-    test_thread thread_timer(timer_service_id, []{});
-}
+#endif
 
 #if 0
 {

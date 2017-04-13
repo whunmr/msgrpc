@@ -101,6 +101,11 @@ namespace msgrpc {
 
 //TODO: extract to set timer interface
 void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data);
+void cancel_timer(msgrpc::msg_id_t timeout_msg_id, void* user_data) {
+    //TODO: do real cancel timer or drop timer notify msg
+    cout << "fake cancel timer for timer id" << (msgrpc::rpc_sequence_id_t)((uintptr_t)(user_data)) << endl;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 const msgrpc::service_id_t x_service_id = 2222;
 const msgrpc::service_id_t y_service_id = 3333;
@@ -410,7 +415,7 @@ namespace msgrpc {
                 return;
             }
 
-            assert(rpc_cell_ != nullptr && "should return a not nullptr to cell from function bind on TimeoutCell.");
+            is_rpc_started_ = true;
 
             if (rpc_cell_->has_error()) {
                 return this->set_failed_reason(rpc_cell_->failed_reason());
@@ -426,6 +431,10 @@ namespace msgrpc {
                                 if (rsp.is_timeout()) {
                                     retry_rpc_if_need(rsp);
                                 } else {
+                                    if (rsp.has_value()) {
+                                        assert(rsp.has_seq_id_);
+                                        cancel_timer(Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rsp.seq_id_));
+                                    }
                                     this->set_cell_value(rsp);
                                 }
                            }
@@ -445,7 +454,9 @@ namespace msgrpc {
             assert(sizeof...(Args) != 0 && "should not call update if this cell do not dependent other cells.");
 
             //TODO: check status of both trigger cells
-            if (!CellBase<T>::has_value_or_error()) {
+            //TODO: set rpc_has_started_ to true, after bind_() invoked
+            bool should_start_rpc = !CellBase<T>::has_value_or_error() && !is_rpc_started_;
+            if (should_start_rpc) {
                 invoke_rpc_once(timeout_ms_);
             }
         }
@@ -454,6 +465,8 @@ namespace msgrpc {
         long long timeout_ms_;
         size_t retry_times_;
         std::function<Cell<T>* (Args...)> f_;
+
+        bool is_rpc_started_ = {false};
 
         using bind_type = decltype(std::bind(std::declval<std::function<Cell<T>* (Args...)>>(), std::ref(std::declval<Args>())...));
         bind_type bind_;
@@ -1070,7 +1083,7 @@ struct test_thread : std::thread {
 void create_delayed_exiting_thread() {
     std::thread thread_delayed_exiting(
             []{
-                this_thread::sleep_for(milliseconds(30));
+                this_thread::sleep_for(milliseconds(1000));
 
                 lock_guard<mutex> lk(can_safely_exit_mutex);
                 can_safely_exit = true;
@@ -1206,7 +1219,6 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________parallel_rpc_
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case3>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Cell<ResponseBar>& call__sync_y_again(RpcContext &ctxt, Cell<ResponseBar> *___r) {
@@ -1445,6 +1457,26 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SI_case7_cancel_timer_after_success : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
+        auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+
+        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);  //seq_id: 1, 2
+        return ___1;
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case7_cancel_timer_after_success) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_TRUE(___r.has_value());
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7_cancel_timer_after_success>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                                           , not_drop_msg);
+    test_thread thread_timer(timer_service_id, []{}                                                   , not_drop_msg);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case8 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
@@ -1524,8 +1556,8 @@ struct SI_case10 : MsgRpcSIBase<RequestFoo, ResponseBar> {
             return InterfaceYStub(ctxt).______sync_y(req);
         };
 
-        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y); //seq_id: 1, 3
-        auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y); //seq_id: 2, 4
+        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);     //seq_id: 1, 3
+        auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);     //seq_id: 2, 4
         auto ___3 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y_after_1, ___1, ___2);
         return ___3;
     }
@@ -1543,9 +1575,12 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+
 #if 0
-//auto ___2 = ___1 --> rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);    /*case1*/
-        //   ___1 --> if_timeout --> rollback_all_related_commits                     /*case0*/
+        //auto ___2 = ___1 --> rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);    /*case1*/
+        //     ___1 --> if_timeout --> rollback_all_related_commits                     /*case0*/
 
         //auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
         //auto ___1 = MsgRpcAction<___ms(2000), ___retry(0), timeout_action_func>().run();

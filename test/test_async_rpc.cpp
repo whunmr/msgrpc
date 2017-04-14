@@ -456,6 +456,7 @@ namespace msgrpc {
                 return this->set_failed_reason(rpc_cell_->failed_reason());
             }
 
+            assert(rpc_cell_->has_seq_id_ && "only support add timer guard on cells with seq_id.");
             set_timer(timeout_ms, Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rpc_cell_->seq_id_));
             bind_timeout_cell(*rpc_cell_);
         }
@@ -467,7 +468,7 @@ namespace msgrpc {
                                     retry_rpc_if_need(rsp);
                                 } else {
                                     if (rsp.has_value()) {
-                                        assert(rsp.has_seq_id_);
+                                        assert(rsp.has_seq_id_ && "only support add timer guard on cells with seq_id.");
                                         cancel_timer(Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rsp.seq_id_));
                                     }
                                     this->set_cell_value(rsp);
@@ -1366,14 +1367,9 @@ void action1(Cell<ResponseBar> &r) { cout << "1/1 ----------------->>>> action1.
 struct SI_case500 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         auto ___3 = InterfaceYStub(ctxt)._____async_y(req);
-
         auto ___1 = InterfaceYStub(ctxt)._____async_y(req); ___bind_action(action1, ___1);
-        {
-            auto ___2 = ___bind_cell(gen2, ___1);
-            {
-                return ___bind_cell(merge_logic, ___2, ___3);
-            }
-        }
+                    auto ___2 = ___bind_cell(gen2, ___1);
+                                return ___bind_cell(merge_logic, ___2, ___3);
     }
 };
 
@@ -1486,15 +1482,18 @@ TEST_F(MsgRpcTest, should_able_to_support__rpc_with_timer_and_retry___case700) {
 struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
-        auto do_rpc_rollback = [&ctxt, req](Cell<ResponseBar>& ___1) { cout << "rollback" << endl; return SI_case300().run(req); };
+        auto do_rpc_rollback = [&ctxt, req](Cell<ResponseBar>& ___1) { cout << "rollback" << endl; return InterfaceYStub(ctxt).______sync_y(req); };
 
         auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);
-        auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback, ___1);
-        return ___2;
+                    auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback, ___1);
+
+        //TODO: wait rollback action ___2 finished, then return value of ___1;
+
+        return ___1;
     }
 };
 
-TEST_F(MsgRpcTest, DISABLED__should_able_to_support__SI_with_rollback_action__after__rpc_failed_______case701) {
+TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_action__after__rpc_failed_______case701) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_EQ(false, ___r.has_value_);
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());

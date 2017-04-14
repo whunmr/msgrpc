@@ -14,7 +14,7 @@ using namespace std::chrono;
 
 #include "demo/demo_api_declare.h"
 
-//TODO: make long long as timeout_len_t for timer funcs
+//TODO: refactor long long as unsigned long long, and typedef to timeout_len_t for timer funcs
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
     template <typename T> struct Ret {};
@@ -1468,7 +1468,7 @@ struct SI_case700_timeout : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support__rpc_with_timer_and_retry___case700) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_FALSE(___r.has_value_);
+        EXPECT_EQ(false, ___r.has_value_);
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
@@ -1490,14 +1490,13 @@ struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
         auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);
         auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback, ___1);
-
         return ___2;
     }
 };
 
-TEST_F(MsgRpcTest, DISABLED_should_able_to_support__SI_with_rollback_action__after__rpc_failed_______case701) {
+TEST_F(MsgRpcTest, DISABLED__should_able_to_support__SI_with_rollback_action__after__rpc_failed_______case701) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_FALSE(___r.has_value_);
+        EXPECT_EQ(false, ___r.has_value_);
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
@@ -1518,7 +1517,7 @@ struct SI_case702_cancel_timer_after_success : MsgRpcSIBase<RequestFoo, Response
 
 TEST_F(MsgRpcTest, should_able_to_support__cancel_timer_after__retry_rpc_succeeded_______case702) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.has_value());
+        EXPECT_EQ(true, ___r.has_value());
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case702_cancel_timer_after_success>(then_check);}, not_drop_msg);
@@ -1538,7 +1537,7 @@ struct SI_case8 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_result_from_retry_______case8) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.has_value_);
+        EXPECT_EQ(true, ___r.has_value_);
         EXPECT_EQ(RpcResult::succeeded, ___r.failed_reason());
     };
 
@@ -1578,7 +1577,7 @@ struct SI_case900 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation__through_sequential_rpcs_______case900) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_FALSE(___r.has_value_);
+        EXPECT_EQ(false, ___r.has_value_);
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
@@ -1615,13 +1614,14 @@ struct SI_case1000 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1000) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_FALSE(___r.has_value_);
+        EXPECT_EQ(false, ___r.has_value_);
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1000>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                 , drop_msg_with_seq_id({1, 2, 3, 4}));
-    test_thread thread_timer(timer_service_id, []{}                         , not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                   , drop_msg_with_seq_id({1, 2, 3, 4}));
+    test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #if 0

@@ -1168,13 +1168,13 @@ auto drop_msg_with_seq_id(std::initializer_list<int> seq_ids_to_drop) -> std::fu
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct SI_case1 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+struct SI_case100 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         return InterfaceYStub(ctxt)._____async_y(req);
     }
 };
 
-TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) {
+TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case100) {
     // x ----(req1)-------------------------->y  (async_y)
     //        x (sync_x) <=========(req2)=====y  (async_y)
     //        x (sync_x) ==========(rsp2)====>y  (async_y)
@@ -1184,7 +1184,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) 
         EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1>(then_check);}, not_drop_msg);
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case100>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
@@ -1192,7 +1192,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case1) 
 void save_rsp_from_other_services_to_db(Cell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
 void save_rsp_to_log(Cell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
 
-struct SI_case2 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+struct SI_case200 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
                     ___bind_action(save_rsp_from_other_services_to_db, ___1);
@@ -1201,7 +1201,7 @@ struct SI_case2 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case2) {
+TEST_F(MsgRpcTest, should_able_to_support___SI_with_single_rpc____which_bind_with_actions______________case200) {
     // x ----(req)---->y (sync_y)
     // x <---(rsp)-----y
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -1209,7 +1209,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc______________case2) 
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&] {rpc_main<SI_case2>(then_check);}, not_drop_msg);
+    test_thread thread_x(x_service_id, [&] {rpc_main<SI_case200>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
@@ -1224,7 +1224,7 @@ void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1, Cell<Resp
     }
 };
 
-struct SI_case3 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+struct SI_case300 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
         auto ___2 = InterfaceYStub(ctxt)._____async_y(req);
@@ -1232,7 +1232,7 @@ struct SI_case3 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________parallel_rpc______case3) {
+TEST_F(MsgRpcTest, should_able_to_support__SI_with_concurrent_rpc__and__merge_multiple_rpc_result________case300) {
     // x ----(req1)-------------------------->y  (async_y)
     // x ----(req1)-------------------------->y  (async_y)
     //        x (sync_x) <=========(req2)=====y  (async_y)
@@ -1247,7 +1247,7 @@ TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________parallel_rpc_
         EXPECT_EQ(expect_value, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case3>(then_check);}, not_drop_msg);
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case300>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
@@ -1262,7 +1262,7 @@ Cell<ResponseBar>& call__sync_y_again(RpcContext &ctxt, Cell<ResponseBar> *___r)
     return *(InterfaceYStub(ctxt).______sync_y(req)); //TODO: let rpc request return reference to cell
 }
 
-struct SI_case4 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+struct SI_case400 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
         {
@@ -1274,18 +1274,18 @@ struct SI_case4 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rpc______case4) {
+TEST_F(MsgRpcTest, should_able_to_support__SI_with_sequential_rpc______case400) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         EXPECT_EQ(k_req_init_value + k__sync_y__delta * 3, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4>(then_check);}, not_drop_msg);
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case400>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct SI_case4_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
+struct SI_case401_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         auto ___1 = InterfaceYStub(ctxt).______sync_y_failed(req);
         {
@@ -1297,12 +1297,10 @@ struct SI_case4_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rpc______case4__failure_propagation) {
-    auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_FALSE(___r.has_value_);
-    };
+TEST_F(MsgRpcTest, should_able_to_support___failure_propagation_in_SI_with_sequential_rpcs______case401) {
+    auto then_check = [](Cell<ResponseBar>& ___r) { EXPECT_FALSE(___r.has_value_); };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4_failed>(then_check);}, not_drop_msg);
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case401_failed>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
@@ -1330,9 +1328,7 @@ struct SI_case4_failed_2 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 };
 
 TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rpc______case4__failure_propagation_2) {
-    auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_FALSE(___r.has_value_);
-    };
+    auto then_check = [](Cell<ResponseBar>& ___r) { EXPECT_FALSE(___r.has_value_); };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4_failed_2>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}, not_drop_msg);
@@ -1352,9 +1348,7 @@ struct SI_case4_failed_3 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 };
 
 TEST_F(MsgRpcTest, should_able_to__support_simple_async_rpc________sequential_rpc______case4__failure_propagation_3) {
-    auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_FALSE(___r.has_value_);
-    };
+    auto then_check = [](Cell<ResponseBar>& ___r) { EXPECT_FALSE(___r.has_value_); };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4_failed_3>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}, not_drop_msg);
@@ -1491,7 +1485,7 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case
 struct SI_case7_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
-        auto do_rpc_rollback = [&ctxt, req](Cell<ResponseBar>& ___1) { cout << "rollback" << endl; return InterfaceYStub(ctxt).______sync_y(req); };
+        auto do_rpc_rollback = [&ctxt, req](Cell<ResponseBar>& ___1) { cout << "rollback" << endl; return SI_case300().run(req); };
 
         auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);
         auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback, ___1);
@@ -1500,14 +1494,14 @@ struct SI_case7_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 
-TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry_______case7_timeout_action) {
+TEST_F(MsgRpcTest, DISABLED___should_able_to__support_rpc_with_timeout_and_retry_______case7_timeout_action) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_FALSE(___r.has_value_);
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case7_timeout_action>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                               , drop_all_msg);
+    test_thread thread_y(y_service_id, []{}                                               , drop_msg_with_seq_id({1, 2}) );
     test_thread thread_timer(timer_service_id, []{}                                       , not_drop_msg);
 }
 

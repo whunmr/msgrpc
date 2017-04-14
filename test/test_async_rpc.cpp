@@ -1479,6 +1479,13 @@ TEST_F(MsgRpcTest, should_able_to_support__rpc_with_timer_and_retry___case700) {
 //TODO: call action when timeout
 //TODO: drive cell when timeout
 
+
+void return_first_after_others_got_value(Cell<ResponseBar> &result, Cell<ResponseBar> &___1, Cell<ResponseBar> &___2, Cell<ResponseBar> &___3)  {
+    if (___2.has_value_ && ___3.has_value_) {
+        result.set_cell_value(___1);
+    }
+};
+
 struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
@@ -1486,10 +1493,9 @@ struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
         auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);
                     auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback, ___1);
+                    auto ___3 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback, ___1);
 
-        //TODO: wait rollback action ___2 finished, then return value of ___1;
-
-        return ___1;
+        return ___bind_cell(return_first_after_others_got_value, ___1, ___2, ___3);
     }
 };
 

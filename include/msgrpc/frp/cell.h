@@ -23,20 +23,13 @@ namespace msgrpc {
         virtual void update() = 0;
     };
 
-    template<typename T>
-    struct CellBase : Updatable {
-        typedef T value_type;
-
-        virtual ~CellBase() { }
-        void update() override {/**/}
-
+    struct CellStatus {
         bool has_value_{false};
 
         //cell's status:
         //  empty:   succeeded, not has_value_;
         //  value:   succeeded, has_value_;
         //  error:   failed or timeout
-
         RpcResult status_ = {RpcResult::succeeded};
 
         void set_failed_reason(RpcResult ret) {
@@ -68,6 +61,31 @@ namespace msgrpc {
             return ! has_value_or_error();
         }
 
+        void evaluate_all_derived_cells() {
+            size_t size = updatables_.size();
+
+            for (int i = 0; i < size; ++i) {
+                if (updatables_[i] != nullptr) {
+                    updatables_[i]->update();
+                }
+            }
+        }
+
+        void register_listener(Updatable *updatable) {
+            updatables_.push_back(updatable);
+        }
+
+      protected:
+        std::vector<Updatable *> updatables_;
+    };
+
+    template<typename T>
+    struct CellBase : Updatable, CellStatus {
+        typedef T value_type;
+
+        virtual ~CellBase() { }
+        void update() override {/**/}
+
         void set_cell_value(const CellBase<T>& rhs) {
             if (rhs.has_error()) {
                 this->set_failed_reason(rhs.failed_reason());
@@ -88,21 +106,8 @@ namespace msgrpc {
             evaluate_all_derived_cells();
         }
 
-        void evaluate_all_derived_cells() {
-            size_t size = updatables_.size();
-
-            for (int i = 0; i < size; ++i) {
-                if (updatables_[i] != nullptr) {
-                    updatables_[i]->update();
-                }
-            }
-        }
-
-        void register_listener(Updatable *updatable) {
-            updatables_.push_back(updatable);
-        }
-
         operator T&() {
+            assert(has_value_);
             return value_;
         }
 
@@ -110,9 +115,6 @@ namespace msgrpc {
             assert(this->has_value_ && "can not access value_ field, if cell do not has_value_.");
             return value_;
         }
-
-    protected:
-        std::vector<Updatable *> updatables_;     //TODO: using list to save memory
 
     private:
         T value_;

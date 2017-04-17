@@ -515,6 +515,14 @@ namespace msgrpc {
         ctxt.track(cell);
         return cell;
     }
+
+    template<typename F, typename... Args>
+    auto rpc(RpcContext &ctxt, long long timeout_ms, F f, Args &&... args)
+      -> TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>* {
+        auto cell = new TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>(ctxt, timeout_ms, /*retry_times=*/0, f, std::ref(*args)...);
+        ctxt.track(cell);
+        return cell;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -768,11 +776,11 @@ namespace msgrpc {
     }
 
     template<typename T>
-    Cell<T>& failed_cell_with_reason(RpcContext &ctxt, const RpcResult& failed_reason) {
+    Cell<T>* failed_cell_with_reason(RpcContext &ctxt, const RpcResult& failed_reason) {
         Cell<T>* cell = new Cell<T>();
         cell->set_failed_reason(failed_reason);
         ctxt.track(cell);
-        return *cell;
+        return cell;
     }
 }
 
@@ -1166,6 +1174,21 @@ auto drop_msg_with_seq_id(std::initializer_list<int> seq_ids_to_drop) -> std::fu
     };
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#define ___ms(...) __VA_ARGS__
+#define ___retry(...) __VA_ARGS__
+
+void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data) {
+    msgrpc::service_id_t service_id = test_service::instance().current_service_id_;
+
+    timer_info ti;
+    ti.millionseconds_ = millionseconds;
+    ti.service_id_ = test_service::instance().current_service_id_;
+    ti.user_data_ = user_data;
+
+    Config::instance().msg_channel_->send_msg(timer_service_id, timeout_msg_id, (const char*)&ti, sizeof(ti));
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1255,7 +1278,7 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_concurrent_rpc__and__merge_mu
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Cell<ResponseBar>& call__sync_y_again(RpcContext &ctxt, Cell<ResponseBar> *___r) {
     if (___r->has_error()) {
-        return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___r->failed_reason());
+        return *msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___r->failed_reason());
     }
 
     RequestFoo req;
@@ -1308,7 +1331,7 @@ TEST_F(MsgRpcTest, should_able_to_support___failure_propagation_in_SI_with_seque
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Cell<ResponseBar>& call__sync_y_failed(RpcContext &ctxt, Cell<ResponseBar> *___r) {
     if (___r->has_error()) {
-        return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___r->failed_reason());
+        return *msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___r->failed_reason());
     }
 
     RequestFoo req;
@@ -1336,12 +1359,36 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SI_case4021_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
+
+        auto init_first_rpc               = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto call_sync_y_failed_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return & call__sync_y_failed(ctxt, &___r); };
+
+        auto ___1 = rpc(ctxt, ___ms(100), init_first_rpc);  /* 1, 2*/
+        auto ___2 = rpc(ctxt, ___ms(100), call_sync_y_failed_after___1, ___1);
+
+        return ___2;
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_of_sequential_rpc______case4021) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_EQ(false, ___r.has_value_);
+        EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4021_failed>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                          , drop_msg_with_seq_id({1}) );
+    test_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case403_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
-        {
-            auto ___2 = ___bind_rpc(call__sync_y_again, ___1);
-            {
+        auto ___1 = InterfaceYStub(ctxt).______sync_y(req); {
+            auto ___2 = ___bind_rpc(call__sync_y_again, ___1); {
                 return ___bind_rpc(call__sync_y_failed, ___2);
             }
         }
@@ -1414,21 +1461,6 @@ TEST_F(MsgRpcTest, should_able_to_support_failure_propagation__during__bind_cell
 //TODO: add service discovery
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define ___ms(...) __VA_ARGS__
-#define ___retry(...) __VA_ARGS__
-
-void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data) {
-    msgrpc::service_id_t service_id = test_service::instance().current_service_id_;
-
-    timer_info ti;
-    ti.millionseconds_ = millionseconds;
-    ti.service_id_ = test_service::instance().current_service_id_;
-    ti.user_data_ = user_data;
-
-    Config::instance().msg_channel_->send_msg(timer_service_id, timeout_msg_id, (const char*)&ti, sizeof(ti));
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #if 0
     define everything as {action}
 
@@ -1475,38 +1507,62 @@ TEST_F(MsgRpcTest, should_able_to_support__rpc_with_timer_and_retry___case700) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //timeout test cases:
-//TODO: rpc() when timeout
+//TODO: call rpc when timeout
 //TODO: call action when timeout
 //TODO: drive cell when timeout
 
-
 void return_first_after_others_got_value(Cell<ResponseBar> &result, Cell<ResponseBar> &___1, Cell<ResponseBar> &___2, Cell<ResponseBar> &___3)  {
-    if (___2.has_value_ && ___3.has_value_) {
+    if (___1.has_value()) {
+        return result.set_cell_value(___1);
+    }
+
+    if (___2.has_value_or_error() && ___3.has_value_or_error()) {
         result.set_cell_value(___1);
     }
 };
 
+void run_action__if___1_timeout(Cell<ResponseBar> &r) {
+    cout << "run_action__if___1_timeout" << endl;
+}
+
 struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
-        auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
-        auto do_rpc_rollback = [&ctxt, req](Cell<ResponseBar>& ___1) { cout << "rollback" << endl; return InterfaceYStub(ctxt).______sync_y(req); };
+        auto do_rpc_sync_y   = [&ctxt, req]() {
+            return InterfaceYStub(ctxt).______sync_y(req);
+        };
 
-        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);
-                    auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback, ___1);
-                    auto ___3 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback, ___1);
+        auto do_rpc_rollback_if___1_timeout = [&ctxt, req](Cell<ResponseBar>& ___1) {
+            return ___1.is_timeout() ? InterfaceYStub(ctxt).______sync_y(req) : nullptr;
+        };
+
+        auto ___1 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_sync_y);  /* 1, 2*/
+                    ___bind_action(run_action__if___1_timeout, ___1);
+
+                    auto ___2 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback_if___1_timeout, ___1); /*3, ...*/
+                    auto ___3 = rpc(ctxt, ___ms(100), ___retry(1), do_rpc_rollback_if___1_timeout, ___1);
 
         return ___bind_cell(return_first_after_others_got_value, ___1, ___2, ___3);
     }
 };
 
-TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_action__after__rpc_failed_______case701) {
+TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc__after__rpc_failed_______case701) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_EQ(false, ___r.has_value_);
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case701_timeout_action>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                                 , drop_msg_with_seq_id({1, 2}) );
+    test_thread thread_y(y_service_id, []{}                                                 , drop_msg_with_seq_id({1, 2, 3}) );
+    test_thread thread_timer(timer_service_id, []{}                                         , not_drop_msg);
+}
+
+TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc___do_not_rollback__if_rpc_succeeded_______case7011) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_EQ(true, ___r.has_value_);
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case701_timeout_action>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                                 , not_drop_msg);
     test_thread thread_timer(timer_service_id, []{}                                         , not_drop_msg);
 }
 
@@ -1526,8 +1582,8 @@ TEST_F(MsgRpcTest, should_able_to_support__cancel_timer_after__retry_rpc_succeed
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case702_cancel_timer_after_success>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                                           , not_drop_msg);
-    test_thread thread_timer(timer_service_id, []{}                                                   , not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                                             , not_drop_msg);
+    test_thread thread_timer(timer_service_id, []{}                                                     , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1560,14 +1616,14 @@ struct SI_case900 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
         auto do_rpc_sync_y_after_1 = [&ctxt, req](Cell<ResponseBar>& rsp) {
             if (rsp.has_error()) {
-                return &msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, rsp.failed_reason());
+                return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, rsp.failed_reason());
             }
             return InterfaceYStub(ctxt).______sync_y(req);
         };
 
         auto do_rpc_sync_y_after_2 = [&ctxt, req](Cell<ResponseBar>& rsp) {
             if (rsp.has_error()) {
-                return &msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, rsp.failed_reason());
+                return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, rsp.failed_reason());
             }
             return InterfaceYStub(ctxt).______sync_y(req);
         };
@@ -1604,7 +1660,7 @@ struct SI_case1000 : MsgRpcSIBase<RequestFoo, ResponseBar> {
             }
 
             if (___1.has_error() || ___2.has_error()) {
-                return &msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___1.failed_reason());
+                return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___1.failed_reason());
             }
 
             return InterfaceYStub(ctxt).______sync_y(req);

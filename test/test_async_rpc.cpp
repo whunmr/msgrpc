@@ -1277,27 +1277,6 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_concurrent_rpc__and__merge_mu
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Cell<ResponseBar>& call__sync_y_again(RpcContext &ctxt, Cell<ResponseBar> *___r) {
-    if (___r->has_error()) {
-        return *msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___r->failed_reason());
-    }
-
-    RequestFoo req;
-    req.reqa = ___r->value().rspa;
-    return *(InterfaceYStub(ctxt).______sync_y(req)); //TODO: let rpc request return reference to cell
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Cell<ResponseBar>& call__sync_y_failed(RpcContext &ctxt, Cell<ResponseBar> *___r) {
-    if (___r->has_error()) {
-        return *msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___r->failed_reason());
-    }
-
-    RequestFoo req;
-    req.reqa = ___r->value().rspa;
-    return *(InterfaceYStub(ctxt).______sync_y_failed(req));
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Cell<ResponseBar>* call__sync_y_again_ptr(RpcContext &ctxt, Cell<ResponseBar>& ___r) {
     if (___r.has_error()) {
         return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___r.failed_reason());
@@ -1396,24 +1375,6 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4021_failed>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}                                          , not_drop_msg );
     test_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct SI_case403_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___1 = InterfaceYStub(ctxt).______sync_y(req); {
-            auto ___2 = ___bind_rpc(call__sync_y_again, ___1); {
-                return ___bind_rpc(call__sync_y_failed, ___2);
-            }
-        }
-    }
-};
-
-TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during_end_of_SI_with_sequential_rpcs___case403) {
-    auto then_check = [](Cell<ResponseBar>& ___r) { EXPECT_FALSE(___r.has_value_); };
-
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case403_failed>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

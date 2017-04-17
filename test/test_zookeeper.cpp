@@ -47,8 +47,8 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
 
 {
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
-                    ___bind_action(save_rsp_from_other_services_to_db, ___1);
-                    ___bind_action(save_rsp_to_log, ___1);
+                    ___action(save_rsp_from_other_services_to_db, ___1);
+                    ___action(save_rsp_to_log, ___1);
         return ___1;
 }
 
@@ -76,7 +76,7 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
 {
         auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
         auto ___2 = InterfaceYStub(ctxt)._____async_y(req);
-        return ___bind_cell(merge_logic, ___1, ___2);
+        return ___cell(merge_logic, ___1, ___2);
 }
 
 {///////////////////////////////////////////////////////////////////////////////TODO
@@ -89,9 +89,9 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
 {
         auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
         {
-            auto ___2 = ___bind_rpc(call__sync_y_again, ___1);
+            auto ___2 = ___async_cell(call__sync_y_again, ___1);
             {
-                return ___bind_rpc(call__sync_y_again, ___2);
+                return ___async_cell(call__sync_y_again, ___2);
             }
         }
 }
@@ -117,11 +117,11 @@ TEST(async_rpc, DISABLED_should_able_to_connect_to_zookeeper) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 {
         auto ___3 = InterfaceYStub(ctxt)._____async_y(req);
-        auto ___1 = InterfaceYStub(ctxt)._____async_y(req); ___bind_action(action1, ___1);
+        auto ___1 = InterfaceYStub(ctxt)._____async_y(req); ___action(action1, ___1);
         {
-            auto ___2 = ___bind_cell(gen2, ___1);
+            auto ___2 = ___cell(gen2, ___1);
             {
-                return ___bind_cell(merge_logic, ___2, ___3);
+                return ___cell(merge_logic, ___2, ___3);
             }
         }
 }

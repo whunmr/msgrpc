@@ -467,7 +467,7 @@ namespace msgrpc {
                                 if (rsp.is_timeout()) {
                                     retry_rpc_if_need(rsp);
                                 } else {
-                                    if (rsp.has_value()) {
+                                    if (rsp.has_value_or_error()) {
                                         assert(rsp.has_seq_id_ && "only support add timer guard on cells with seq_id.");
                                         cancel_timer(Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rsp.seq_id_));
                                     }
@@ -677,7 +677,6 @@ namespace msgrpc {
         }
     };
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
@@ -1083,7 +1082,7 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
 
 
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo& req) {
-    cout << "                     _____async_y" << endl;
+    cout << "                     ______sync_y_failed" << endl;
     return nullptr;
 }
 
@@ -1366,22 +1365,24 @@ struct SI_case4021_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
         auto init_first_rpc               = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
         auto call_sync_y_failed_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return & call__sync_y_failed(ctxt, &___r); };
+        auto call_sync_y_again            = [&ctxt](Cell<ResponseBar>& ___r) { return & call__sync_y_again (ctxt, &___r); };
 
         auto ___1 = ___rpc(___ms(100), init_first_rpc);  /* 1, 2*/
         auto ___2 = ___rpc(___ms(100), call_sync_y_failed_after___1, ___1);
+        auto ___3 = ___rpc(___ms(100), call_sync_y_again, ___2);
 
-        return ___2;
+        return ___3;
     }
 };
 
 TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_of_sequential_rpc______case4021) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_EQ(false, ___r.has_value_);
-        EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
+        EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4021_failed>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                          , drop_msg_with_seq_id({1}) );
+    test_thread thread_y(y_service_id, []{}                                          , not_drop_msg );
     test_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
 }
 

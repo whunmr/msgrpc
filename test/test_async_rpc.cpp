@@ -1429,30 +1429,8 @@ TEST_F(MsgRpcTest, should_able_to_support_failure_propagation__during__bind_cell
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//TODO: handle timeout and timer
 //TODO: add service discovery
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#if 0
-    define everything as {action}
-
-    action may return cell
-    action may return void
-
-    action can be a local, quick, sync, method.
-    action can be a remote, slow, async, rpc.
-    action can be a SI, which contains lots of actions
-    action can be a collection of rpc calls, which are remote, slow, async
-
-    action maybe a timer_guard_action, which has timeout value, retry_times, and retry {action}.
-
-    timeout_rollback_action is also an {action};
-    if timeout_rollback_action is an SI action, the timeout SI should running in a new context.
-    when timer is out, and timeout {action} start running, the timer gurded cell should filled with error timeout.
-#endif
-
-//TODO: invoke timeout handler func when timeout
-//TODO: invoke timeout handler SI func when timeout
 //TODO: handle concor case: when a detached rpc's cell are not in dependency graph of final result cell,
 //      if the result cell finished, can not release response handler of the detached cell.
 
@@ -1652,47 +1630,3 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1000) {
     test_thread thread_y(y_service_id, []{}                                   , drop_msg_with_seq_id({1, 2, 3, 4}));
     test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#if 0
-        //auto ___2 = ___1 --> rpc(ctxt, ___ms(1000), ___retry(2), do_rpc_sync_y);    /*case1*/
-        //     ___1 --> if_timeout --> rollback_all_related_commits                     /*case0*/
-
-        //auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
-        //auto ___1 = MsgRpcAction<___ms(2000), ___retry(0), timeout_action_func>().run();
-
-        //___1.timeout(___ms(2000), ___retry(0), timeout_action_func);
-        //auto ___1 = ___time_guard_action(___ms(2000), ___retry(0), timeout_action_func, InterfaceYStub(ctxt).______sync_y(req));
-        //auto ___1 =  struct Action1281 : MsgRpcAction<___ms(2000), ___retry(0), timeout_action_func, InterfaceYStub(ctxt).______sync_y(req) > { Cell* run(){ return nullptr;} }();
-
-        /*auto ___2 = ___action(sync_local_action_foo);
-               ___2.timeout(timeout_action_func, ___ms(2000));
-
-        auto ___3 = ___1 --> ___action(SI_foo.run());
-             ___3.timeout(timeout_action_func, ___ms(2000));
-
-        auto ___4 = ___3 --> ___action(sync_local_action(func_foo));
-             ___4.timeout(timeout_action_func, ___ms(2000));
-
-        auto ___5 = ___4 --> ___action(sync_local_action(func_foo));
-             ___5.timeout(timeout_rollback_SI, ___ms(2000));*/
-
-            //___1.bind_timer(timeout_si, ___ms(2000), ___1);
-            //___1.bind_timer(timeout_action_func, ___ms(2000), retry(3times));
-            //static int sequential_num = 22;
-            //set_timer(___ms(2000), k_msgrpc_timeout_msg, &sequential_num);
-#endif
-
-#if 0
-{
-    auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), rollback_transaction);
-    return ___1;
-}
-
-{
-    auto ___1 = InterfaceYStub(ctxt).______sync_y(req) --> timeout(___ms(2000), retry(3times), rollback_transaction);
-    return ___1;
-}
-
-#endif

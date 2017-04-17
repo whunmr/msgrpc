@@ -1318,48 +1318,31 @@ Cell<ResponseBar>* call__sync_y_failed_ptr(RpcContext &ctxt, Cell<ResponseBar>& 
     req.reqa = ___r.value().rspa;
     return InterfaceYStub(ctxt).______sync_y_failed(req);
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct SI_case400 : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
-        {
-            auto ___2 = ___bind_rpc(call__sync_y_again, ___1);
-            {
-                return ___bind_rpc(call__sync_y_again, ___2);
-            }
-        }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SI_case4001 : MsgRpcSIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
+        auto init_first_rpc        = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto call_sync_y_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y_again_ptr(ctxt, ___r); };
+        auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y_again_ptr(ctxt, ___r); };
+
+        auto ___1 = ___rpc(___ms(100), init_first_rpc);
+        auto ___2 = ___rpc(___ms(100), call_sync_y_after___1, ___1);
+        auto ___3 = ___rpc(___ms(100), call_sync_y_after___2, ___2);
+
+        return ___3;
     }
 };
 
-TEST_F(MsgRpcTest, should_able_to_support__SI_with_sequential_rpc______case400) {
+TEST_F(MsgRpcTest, should_able_to_support__SI_with_sequential_rpc______case4001) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         EXPECT_EQ(k_req_init_value + k__sync_y__delta * 3, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case400>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct SI_case401_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___1 = InterfaceYStub(ctxt).______sync_y_failed(req);
-        {
-            auto ___2 = ___bind_rpc(call__sync_y_again, ___1);
-            {
-                return ___bind_rpc(call__sync_y_again, ___2);
-            }
-        }
-    }
-};
-
-TEST_F(MsgRpcTest, should_able_to_support___failure_propagation_in_SI_with_sequential_rpcs______case401) {
-    auto then_check = [](Cell<ResponseBar>& ___r) { EXPECT_FALSE(___r.has_value_); };
-
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case401_failed>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4001>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                   , not_drop_msg );
+    test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1367,11 +1350,11 @@ struct SI_case4011_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto init_first_rpc        = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y_failed(req); };
         auto call_sync_y_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y_again_ptr(ctxt, ___r); };
-        auto call_sync_y_again     = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y_again_ptr(ctxt, ___r); };
+        auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y_again_ptr(ctxt, ___r); };
 
         auto ___1 = ___rpc(___ms(100), init_first_rpc);
         auto ___2 = ___rpc(___ms(100), call_sync_y_after___1, ___1);
-        auto ___3 = ___rpc(___ms(100), call_sync_y_again, ___2);
+        auto ___3 = ___rpc(___ms(100), call_sync_y_after___2, ___2);
 
         return ___3;
     }

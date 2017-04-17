@@ -1470,8 +1470,8 @@ void join_rollback_cells(Cell<ResponseBar> &result, Cell<ResponseBar> &___1, Cel
     }
 };
 
-void run_action__if___1_timeout(CellBase<bool> &r) {
-    cout << "run_action__if___1_timeout" << endl;
+void run_customized_action(CellBase<bool> &r) {
+    cout << "run_customized_action" << endl;
 }
 
 struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
@@ -1480,7 +1480,7 @@ struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
         auto do_rpc_rollback = [&ctxt, req](CellBase<bool>& ___1) { return InterfaceYStub(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);  //seq_id: 1, 2
-                    ___action(run_action__if___1_timeout, ___1->timeout());
+                    ___action(run_customized_action, ___1->timeout());
 
                     auto ___2 = ___rpc(___ms(10), ___retry(1), do_rpc_rollback, ___1->timeout()); //seq_id: 3, ...
                     auto ___3 = ___rpc(___ms(10), ___retry(1), do_rpc_rollback, ___1->timeout());

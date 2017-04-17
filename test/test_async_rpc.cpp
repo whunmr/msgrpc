@@ -1340,25 +1340,6 @@ Cell<ResponseBar>& call__sync_y_failed(RpcContext &ctxt, Cell<ResponseBar> *___r
     return *(InterfaceYStub(ctxt).______sync_y_failed(req));
 }
 
-struct SI_case402_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
-    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
-        {
-            auto ___2 = ___bind_rpc(call__sync_y_failed, ___1);
-            {
-                return ___bind_rpc(call__sync_y_again, ___2);
-            }
-        }
-    }
-};
-
-TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_of_sequential_rpc______case402) {
-    auto then_check = [](Cell<ResponseBar>& ___r) { EXPECT_FALSE(___r.has_value_); };
-
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case402_failed>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case4021_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
@@ -1367,7 +1348,7 @@ struct SI_case4021_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {
         auto call_sync_y_failed_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return & call__sync_y_failed(ctxt, &___r); };
         auto call_sync_y_again            = [&ctxt](Cell<ResponseBar>& ___r) { return & call__sync_y_again (ctxt, &___r); };
 
-        auto ___1 = ___rpc(___ms(100), init_first_rpc);  /* 1, 2*/
+        auto ___1 = ___rpc(___ms(100), init_first_rpc);
         auto ___2 = ___rpc(___ms(100), call_sync_y_failed_after___1, ___1);
         auto ___3 = ___rpc(___ms(100), call_sync_y_again, ___2);
 
@@ -1385,7 +1366,6 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
     test_thread thread_y(y_service_id, []{}                                          , not_drop_msg );
     test_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case403_failed : MsgRpcSIBase<RequestFoo, ResponseBar> {

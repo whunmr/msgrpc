@@ -24,6 +24,8 @@ namespace msgrpc {
     };
 
     struct CellStatus {
+        virtual ~CellStatus() = default;
+
         bool has_value_{false};
 
         //cell's status:
@@ -79,11 +81,44 @@ namespace msgrpc {
         std::vector<Updatable *> updatables_;
     };
 
+    struct RpcContext {
+        ~RpcContext() {
+            for (auto* r: release_list_) {
+                delete r;
+            }
+        }
+
+        template<typename T>
+        T track(T cell) {
+            release_list_.push_back(static_cast<Updatable*>(cell));
+            return cell;
+        }
+
+        std::list<Updatable*> release_list_;
+    };
+
+    struct CellContextBase {
+        virtual ~CellContextBase() {
+            if (context_ != nullptr) {
+                delete context_;
+                context_ = nullptr;
+            }
+        }
+
+        void set_binded_context(RpcContext& context) {
+            context_ = &context;
+        }
+
+        RpcContext* context_ = {nullptr};
+    };
+
     template<typename T>
-    struct CellBase : Updatable, CellStatus {
+    struct CellBase : Updatable, CellStatus, CellContextBase {
         typedef T value_type;
 
+        CellBase() : value_() { }
         virtual ~CellBase() { }
+
         void update() override {/**/}
 
         void set_cell_value(const CellBase<T>& rhs) {
@@ -118,22 +153,6 @@ namespace msgrpc {
 
     private:
         T value_;
-    };
-
-    struct RpcContext {
-        ~RpcContext() {
-            for (auto* r: release_list_) {
-                delete r;
-            }
-        }
-
-        template<typename T>
-        T track(T cell) {
-            release_list_.push_back(static_cast<Updatable*>(cell));
-            return cell;
-        }
-
-        std::list<Updatable*> release_list_;
     };
 }
 

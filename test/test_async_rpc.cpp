@@ -1108,8 +1108,7 @@ struct MsgRpcTest : public ::testing::Test {
 
 struct test_thread : std::thread {
     template<typename... Args>
-    test_thread(Args... args) : std::thread(msgrpc_loop, args...) {
-    }
+    test_thread(Args... args) : std::thread(msgrpc_loop, args...) { /**/ }
 
     ~test_thread() {
         join();
@@ -1479,12 +1478,8 @@ TEST_F(MsgRpcTest, should_able_to_support__rpc_with_timer_and_retry___case700) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//timeout test cases:
-//TODO: call rpc when timeout
-//TODO: call action when timeout
-//TODO: drive cell when timeout
-
-void return_first_after_others_got_value(Cell<ResponseBar> &result, Cell<ResponseBar> &___1, Cell<ResponseBar> &___2, Cell<ResponseBar> &___3)  {
+void join_rollback_cells(Cell<ResponseBar> &result, Cell<ResponseBar> &___1,
+                         Cell<ResponseBar> &___2, Cell<ResponseBar> &___3)  {
     if (___1.has_value()) {
         return result.set_cell_value(___1);
     }
@@ -1495,7 +1490,9 @@ void return_first_after_others_got_value(Cell<ResponseBar> &result, Cell<Respons
 };
 
 void run_action__if___1_timeout(Cell<ResponseBar> &r) {
-    cout << "run_action__if___1_timeout" << endl;
+    if (r.is_timeout()) {
+        cout << "run_action__if___1_timeout" << endl;
+    }
 }
 
 struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
@@ -1514,7 +1511,7 @@ struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
                     auto ___2 = ___rpc(___ms(100), ___retry(1), do_rpc_rollback_if___1_timeout, ___1); /*3, ...*/
                     auto ___3 = ___rpc(___ms(100), ___retry(1), do_rpc_rollback_if___1_timeout, ___1);
 
-        return ___cell(return_first_after_others_got_value, ___1, ___2, ___3);
+        return ___cell(join_rollback_cells, ___1, ___2, ___3);
     }
 };
 

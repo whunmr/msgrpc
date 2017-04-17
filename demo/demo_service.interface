@@ -18,6 +18,7 @@ namespace demo {
 
     typedef std::map <int32_t, std::string> map_int32_string;
     typedef std::map <std::string, EmbeddedStruct> map_string_struct;
+
     #define ___fields_of_struct___ResponseData(_, ...)                                             \
         _(1,  required, int32_t,                     pet_id,                (字段注释), __VA_ARGS__)\
         _(2,  required, std::string,                 pet_name,              (字段注释), __VA_ARGS__)\

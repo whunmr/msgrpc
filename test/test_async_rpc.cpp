@@ -50,30 +50,7 @@ namespace msgrpc {
     };
 }
 
-namespace msgrpc {
-    const uint32_t k_invalid_sequence_id = 0;
-
-    typedef uint32_t rpc_sequence_id_t;
-    struct RpcSequenceId : msgrpc::Singleton<RpcSequenceId> {
-        rpc_sequence_id_t get() {
-            ++sequence_id_;
-
-            //skip value of k_invalid_sequence_id
-            if (sequence_id_ == k_invalid_sequence_id) {
-                ++sequence_id_;
-            }
-
-            return sequence_id_;
-        }
-
-        void reset() {
-            sequence_id_ = k_invalid_sequence_id;
-        }
-
-    private:
-        atomic_uint sequence_id_ = {k_invalid_sequence_id};
-    };
-}
+#include <msgrpc/core/rpc_sequence_id.h>
 
 namespace msgrpc {
 
@@ -117,11 +94,7 @@ namespace demo {
             timer_info& ti = *(timer_info*)msg;
 
             msgrpc::rpc_sequence_id_t seq_id =  (msgrpc::rpc_sequence_id_t)((uintptr_t)(ti.user_data_));
-            if (std::find(canceled_timer_ids_.begin(), canceled_timer_ids_.end(), seq_id) != canceled_timer_ids_.end()) {
-                return true;
-            }
-
-            return false;
+            return std::find(canceled_timer_ids_.begin(), canceled_timer_ids_.end(), seq_id) != canceled_timer_ids_.end();
         }
 
         void reset() {
@@ -700,7 +673,7 @@ namespace msgrpc {
                 return false;
             }
 
-            auto seq_id = msgrpc::RpcSequenceId::instance().get();
+            auto seq_id = msgrpc::rpc_sequence_id::instance().get();
             msgrpc::RpcRspDispatcher::instance().register_rsp_Handler(seq_id, rpc_rsp_cell_sink);
 
             auto header = (msgrpc::ReqMsgHeader *) mem;
@@ -1100,7 +1073,7 @@ struct MsgRpcTest : public ::testing::Test {
     virtual void SetUp() {
         can_safely_exit = false;
 
-        RpcSequenceId::instance().reset();
+        rpc_sequence_id::instance().reset();
         TimerMgr::instance().reset();
     }
 

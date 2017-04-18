@@ -43,38 +43,6 @@ const int k_req_init_value = 1;
 const int k__sync_y__delta = 3;
 const int k__sync_x__delta = 17;
 
-void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char* msg, size_t len)> should_drop) {
-    msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
-                                        , &SimpleTimerAdapter::instance()
-                                        , k_msgrpc_request_msg_id
-                                        , k_msgrpc_response_msg_id
-                                        , k_msgrpc_set_timer_msg
-                                        , k_msgrpc_timeout_msg);
-
-    test_service::instance().current_service_id_ = udp_port;
-
-    UdpChannel channel(udp_port,
-        [&init_func, udp_port, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-            if (0 == strcmp(msg, "init")) {
-                return init_func();
-            } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
-                if (! should_drop(msg, len)) {
-                    return msgrpc::ReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
-                }
-            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                return msgrpc::RspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
-            } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
-                return demo::SetTimerHandler::instance().set_timer(msg, len);
-            } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
-                if (! TimerMgr::instance().should_ignore(msg, len)) {
-                    return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
-                }
-            } else {
-                std::cout << "got unknow msg with id: " << msg_id << std::endl;
-            }
-        }
-    );
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 //TODO: define following macros:
@@ -109,7 +77,7 @@ struct InterfaceXImpl : msgrpc::InterfaceImplBaseT<InterfaceXImpl, 1> {
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set: interface_implement_define.h
-InterfaceXImpl interfaceXImpl;
+InterfaceXImpl interfaceXImpl_auto_register_instance;
 msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
         , size_t len, msgrpc::RspMsgHeader& rsp_header
         , msgrpc::service_id_t& sender_id) {
@@ -182,7 +150,7 @@ struct InterfaceYImpl : msgrpc::InterfaceImplBaseT<InterfaceYImpl, 2> {
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set: interface_implement_define.h
-InterfaceYImpl interfaceYImpl;
+InterfaceYImpl interfaceYImpl_auto_register_instance;
 msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
                                              , size_t len, msgrpc::RspMsgHeader& rsp_header
                                              , msgrpc::service_id_t& sender_id) {
@@ -250,6 +218,7 @@ std::condition_variable can_safely_exit_cv;
 
 #include <condition_variable>
 #include <include/msgrpc/core/cell/derived_action.h>
+#include <test/details/msgrpc_test_loop.h>
 
 struct MsgRpcTest : public ::testing::Test {
     virtual void SetUp() {
@@ -267,7 +236,7 @@ struct MsgRpcTest : public ::testing::Test {
 
 struct test_thread : std::thread {
     template<typename... Args>
-    test_thread(Args... args) : std::thread(msgrpc_loop, args...) { /**/ }
+    test_thread(Args... args) : std::thread(msgrpc_test_loop, args...) { /**/ }
 
     ~test_thread() {
         join();

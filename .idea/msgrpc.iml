@@ -5,11 +5,11 @@
       <sourceFolder url="file://$MODULE_DIR$/demo/demo_api_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/demo_service.interface" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/demo_api_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_constants.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api.thrift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_types.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_constants.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api.thrift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_constants.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/components/rpc_timeout_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/components/req_msg_handler.h" isTestSource="false" />
@@ -50,6 +50,7 @@
       <sourceFolder url="file://$MODULE_DIR$/test/test_async_rpc.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/core/adapter/udp_msg_channel.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/core/adapter/simple_timer_adapter.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/details/msgrpc_test_loop.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/details/test_constants.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/details/set_timer_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/test_zookeeper.cpp" isTestSource="false" />

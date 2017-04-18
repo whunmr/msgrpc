@@ -673,7 +673,7 @@ namespace msgrpc {
                 return false;
             }
 
-            auto seq_id = msgrpc::rpc_sequence_id::instance().get();
+            auto seq_id = msgrpc::RpcSequenceId::instance().get();
             msgrpc::RpcRspDispatcher::instance().register_rsp_Handler(seq_id, rpc_rsp_cell_sink);
 
             auto header = (msgrpc::ReqMsgHeader *) mem;
@@ -1073,7 +1073,7 @@ struct MsgRpcTest : public ::testing::Test {
     virtual void SetUp() {
         can_safely_exit = false;
 
-        rpc_sequence_id::instance().reset();
+        RpcSequenceId::instance().reset();
         TimerMgr::instance().reset();
     }
 

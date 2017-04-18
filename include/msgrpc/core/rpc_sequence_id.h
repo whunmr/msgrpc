@@ -10,7 +10,7 @@ namespace msgrpc {
 
     const rpc_sequence_id_t k_invalid_rpc_sequence_id = 0;
 
-    struct rpc_sequence_id : msgrpc::Singleton<rpc_sequence_id> {
+    struct RpcSequenceId : msgrpc::Singleton<RpcSequenceId> {
         rpc_sequence_id_t get();
         void reset();
     };

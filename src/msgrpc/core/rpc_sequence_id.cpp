@@ -7,7 +7,7 @@ namespace {
 }
 
 namespace msgrpc {
-    rpc_sequence_id_t rpc_sequence_id::get() {
+    rpc_sequence_id_t RpcSequenceId::get() {
         ++sequence_id_;
 
         //skip value of k_invalid_rpc_sequence_id
@@ -18,7 +18,7 @@ namespace msgrpc {
         return sequence_id_;
     }
 
-    void rpc_sequence_id::reset() {
+    void RpcSequenceId::reset() {
         sequence_id_ = k_invalid_rpc_sequence_id;
     }
 }

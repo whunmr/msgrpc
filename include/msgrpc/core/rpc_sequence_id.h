@@ -1,5 +1,5 @@
-#ifndef MSGRPC_RPCSEQUENCEID_H
-#define MSGRPC_RPCSEQUENCEID_H
+#ifndef MSGRPC_RPC_SEQUENCE_ID_H
+#define MSGRPC_RPC_SEQUENCE_ID_H
 #include <cstdint>
 #include <msgrpc/util/singleton.h>
 
@@ -14,4 +14,4 @@ namespace msgrpc {
     };
 }
 
-#endif //MSGRPC_RPCSEQUENCEID_H
+#endif //MSGRPC_RPC_SEQUENCE_ID_H

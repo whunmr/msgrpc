@@ -48,7 +48,7 @@ set(SOURCE_FILES
         test/test_thrift_struct.cpp
         test/test_util/UdpChannel.h
         test/test_zookeeper.cpp
-        src/msgrpc/core/rpc_sequence_id.cpp)
+        src/msgrpc/core/rpc_sequence_id.cpp include/msgrpc/core/adapter/timer_adapter.h include/msgrpc/core/typedefs.h)
 
 add_executable(msgrpc ${SOURCE_FILES})
 

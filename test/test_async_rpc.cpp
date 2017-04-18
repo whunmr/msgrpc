@@ -9,6 +9,7 @@
 #include <atomic>
 #include <msgrpc/util/type_traits.h>
 
+
 using namespace std;
 using namespace std::chrono;
 
@@ -16,21 +17,20 @@ using namespace std::chrono;
 
 //TODO: refactor long long as unsigned long long, and typedef to timeout_len_t for timer funcs
 ////////////////////////////////////////////////////////////////////////////////
+
+#include <msgrpc/core/typedefs.h>
+#include <msgrpc/core/adapter/timer_adapter.h>
+
+
 namespace msgrpc {
     template <typename T> struct Ret {};
 
-    typedef unsigned short msg_id_t;
     typedef unsigned short service_id_t; //TODO: how to deal with different service id types
 
     struct MsgChannel {
         //TODO: extract common channel interface
         //TODO: check common return value type
         virtual bool send_msg(const service_id_t& remote_service_id, msg_id_t msg_id, const char* buf, size_t len) const = 0;
-    };
-
-    struct TimerAdapter {
-        virtual void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data) const = 0;
-        virtual void cancel_timer(msgrpc::msg_id_t timeout_msg_id, void* user_data) const = 0;
     };
 
     struct Config {

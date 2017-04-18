@@ -99,18 +99,16 @@ msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//---------------- implement iface_impl in here:
-void ______sync_x_impl(const RequestFoo& req, ResponseBar& rsp) {
-    rsp.__set_rspa(req.reqa + k__sync_x__delta);
-}
-
 msgrpc::Cell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
     std::cout << "                     ______sync_x" << std::endl;
-    return msgrpc::call_sync_impl(______sync_x_impl, req);
+
+    return msgrpc::call_sync_iface_igmpl<ResponseBar>(
+        [&req](ResponseBar &rsp) {
+            rsp.__set_rspa(req.reqa + k__sync_x__delta);
+        }
+    );
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 struct InterfaceYStub : msgrpc::IfaceStubBase {
@@ -179,31 +177,33 @@ msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void ______sync_y_impl(const RequestFoo& req, ResponseBar& rsp) {
-    rsp.__set_rspa(req.reqa + k__sync_y__delta);
-}
-
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
     std::cout << "                     ______sync_y" << std::endl;
-    return msgrpc::call_sync_impl(______sync_y_impl, req);
-}
 
+    return msgrpc::call_sync_iface_impl<ResponseBar>(
+            [&req](ResponseBar &rsp) {
+                rsp.__set_rspa(req.reqa + k__sync_y__delta);
+            }
+    );
+}
 
 struct SI_____async_y : msgrpc::SIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext& ctxt) override {
         return InterfaceXStub(ctxt).______sync_x(req);
     }
 };
+
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
     std::cout << "                     _____async_y" << std::endl;
     return SI_____async_y().run(req);
 }
 
-
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo& req) {
     std::cout << "                     ______sync_y_failed" << std::endl;
     return nullptr;
 }
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <include/msgrpc/core/cell/derived_action.h>
@@ -429,11 +429,8 @@ TEST_F(MsgRpcTest, should_able_to_support___parallel_rpcs_merge_after___1_transf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void gen6(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp)  {
-    if (rsp.has_error()) {
-        return result.set_failed_reason(rsp.failed_reason());
-    }
-
-    return result.set_value(rsp);
+    return rsp.has_error() ? result.set_failed_reason(rsp.failed_reason())
+                           : result.set_value(rsp);
 };
 
 struct SI_case600 : SIBase<RequestFoo, ResponseBar> {
@@ -454,7 +451,6 @@ TEST_F(MsgRpcTest, should_able_to_support_failure_propagation__during__bind_cell
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //TODO: add service discovery
-
 //TODO: handle concor case: when a detached rpc's cell are not in dependency graph of final result cell,
 //      if the result cell finished, can not release response handler of the detached cell.
 

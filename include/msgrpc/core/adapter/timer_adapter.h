@@ -6,6 +6,7 @@
 namespace msgrpc {
 
     struct timer_info {
+        //TODO: refactor long long as unsigned long long, and typedef to timeout_len_t for timer funcs
         long long millionseconds_;
         msgrpc::service_id_t service_id_;
         void *user_data_;

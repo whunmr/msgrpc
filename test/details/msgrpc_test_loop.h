@@ -45,5 +45,28 @@ void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_fu
     );
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+auto not_drop_msg = [](const char* msg, size_t len) {
+    return false;
+};
+
+auto drop_all_msg = [](const char* msg, size_t len) {
+    return true;
+};
+
+auto drop_msg_with_seq_id(std::initializer_list<int> seq_ids_to_drop) -> std::function<bool(const char*, size_t)> {
+    return [seq_ids_to_drop](const char* msg, size_t len) -> bool {
+        assert(len >= sizeof(msgrpc::ReqMsgHeader));
+        msgrpc::ReqMsgHeader* req = (msgrpc::ReqMsgHeader*)(msg);
+        for (int seq_to_drop : seq_ids_to_drop) {
+            if (req->sequence_id_ == seq_to_drop) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+}
+
 
 #endif //MSGRPC_MSGRPC_TEST_LOOP_H

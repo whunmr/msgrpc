@@ -6,11 +6,9 @@
 #include <type_traits>
 #include <future>
 #include <atomic>
-#include <msgrpc/util/type_traits.h>
 
 #include "demo/demo_api_declare.h"
 
-//TODO: refactor long long as unsigned long long, and typedef to timeout_len_t for timer funcs
 #include <msgrpc/core/typedefs.h>
 #include <msgrpc/core/adapter/timer_adapter.h>
 #include <msgrpc/core/rpc_sequence_id.h>
@@ -207,98 +205,13 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo&
     return nullptr;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-using namespace msgrpc;
-
-bool can_safely_exit = false;
-std::mutex can_safely_exit_mutex;
-std::condition_variable can_safely_exit_cv;
-
-#include <condition_variable>
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <include/msgrpc/core/cell/derived_action.h>
 #include <test/details/msgrpc_test_loop.h>
-
-struct MsgRpcTest : public ::testing::Test {
-    virtual void SetUp() {
-        can_safely_exit = false;
-
-        RpcSequenceId::instance().reset();
-        TimerMgr::instance().reset();
-    }
-
-    virtual void TearDown() {
-        std::unique_lock<std::mutex> lk(can_safely_exit_mutex);
-        can_safely_exit_cv.wait(lk, []{return can_safely_exit;});
-    }
-};
-
-struct test_thread : std::thread {
-    template<typename... Args>
-    test_thread(Args... args) : std::thread(msgrpc_test_loop, args...) { /**/ }
-
-    ~test_thread() {
-        join();
-    }
-};
-
-////////////////////////////////////////////////////////////////////////////////
-void create_delayed_exiting_thread() {
-    std::thread thread_delayed_exiting(
-            []{
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-                std::lock_guard<std::mutex> lk(can_safely_exit_mutex);
-                can_safely_exit = true;
-                can_safely_exit_cv.notify_one();
-
-                UdpChannel::close_all_channels();
-            });
-    thread_delayed_exiting.detach();
-}
-
-template<typename SI>
-void rpc_main(std::function<void(Cell<ResponseBar>&)> f) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    RequestFoo foo; foo.reqa = k_req_init_value;
-
-    auto* rsp_cell = SI().run(foo);
-
-    if (rsp_cell != nullptr) {
-        derive_final_action([f](Cell<ResponseBar>& r) {
-            f(r);
-            create_delayed_exiting_thread();
-        }, rsp_cell);
-    }
-}
+#include <test/details/msgrpc_test.h>
+using namespace msgrpc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-auto not_drop_msg = [](const char* msg, size_t len) {
-    return false;
-};
-
-auto drop_all_msg = [](const char* msg, size_t len) {
-    return true;
-};
-
-auto drop_msg_with_seq_id(std::initializer_list<int> seq_ids_to_drop) -> std::function<bool(const char*, size_t)> {
-    return [seq_ids_to_drop](const char* msg, size_t len) -> bool {
-        assert(len >= sizeof(msgrpc::ReqMsgHeader));
-        msgrpc::ReqMsgHeader* req = (msgrpc::ReqMsgHeader*)(msg);
-        for (int seq_to_drop : seq_ids_to_drop) {
-            if (req->sequence_id_ == seq_to_drop) {
-                return true;
-            }
-        }
-
-        return false;
-    };
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case100 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
         return InterfaceYStub(ctxt)._____async_y(req);

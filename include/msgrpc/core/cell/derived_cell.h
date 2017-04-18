@@ -2,6 +2,7 @@
 #define MSGRPC_DERIVE_CELL_H
 
 #include <msgrpc/core/cell/cell.h>
+#include <msgrpc/util/type_traits.h>
 
 namespace msgrpc {
 

@@ -52,6 +52,7 @@
       <sourceFolder url="file://$MODULE_DIR$/test/core/adapter/simple_timer_adapter.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/details/msgrpc_test_loop.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/details/test_constants.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/details/msgrpc_test.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/details/set_timer_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/test_zookeeper.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/test_thrift_struct.cpp" isTestSource="false" />

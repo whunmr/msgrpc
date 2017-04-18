@@ -5,18 +5,20 @@
       <sourceFolder url="file://$MODULE_DIR$/demo/demo_api_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/demo_service.interface" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/demo_api_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api.thrift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_constants.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_types.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_constants.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_constants.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api.thrift" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/components/rpc_timeout_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/components/req_msg_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/components/rsp_dispatcher.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/iface_impl/iface_impl_base_t.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/iface_impl/iface_impl_utility.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/iface_impl/iface_repository.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/iface_impl/iface_impl_base.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/service_interaction/si_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/rsp_sink.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/rsp_cell_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_async_cell.h" isTestSource="false" />

@@ -9,10 +9,6 @@
 #include <atomic>
 #include <msgrpc/util/type_traits.h>
 
-
-using namespace std;
-using namespace std::chrono;
-
 #include "demo/demo_api_declare.h"
 
 //TODO: refactor long long as unsigned long long, and typedef to timeout_len_t for timer funcs
@@ -52,7 +48,7 @@ namespace msgrpc {
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
-    struct RpcRspCellSink {
+    struct RspSink {
         virtual void set_rpc_rsp(const RspMsgHeader& rsp_header, const char* msg, size_t len) = 0;
         virtual void set_timeout() = 0;
 
@@ -64,11 +60,11 @@ namespace msgrpc {
         void on_rsp_handler_timeout(rpc_sequence_id_t sequence_id) {
             auto iter = id_func_map_.find(sequence_id);
             if (iter == id_func_map_.end()) {
-                cout << "WARNING: not existing handler to remove caused by timeout. seq id: " << sequence_id << endl;
+                std::cout << "WARNING: not existing handler to remove caused by timeout. seq id: " << sequence_id << std::endl;
                 return;
             }
 
-            RpcRspCellSink* cell = (iter->second);
+            RspSink* cell = (iter->second);
 
             cell->reset_sequential_id();
             id_func_map_.erase(iter);
@@ -80,14 +76,14 @@ namespace msgrpc {
         void remove_rsp_handler(rpc_sequence_id_t sequence_id) {
             auto iter = id_func_map_.find(sequence_id);
             if (iter == id_func_map_.end()) {
-                cout << "WARNING: not existing handler to remove: id: " << sequence_id << endl;
+                std::cout << "WARNING: not existing handler to remove: id: " << sequence_id << std::endl;
                 return;
             }
 
             id_func_map_.erase(iter);
         }
 
-        void register_rsp_Handler(rpc_sequence_id_t sequence_id, RpcRspCellSink* sink) {
+        void register_rsp_Handler(rpc_sequence_id_t sequence_id, RspSink* sink) {
             assert(sink != nullptr && "can not register null callback");
             assert(id_func_map_.find(sequence_id) == id_func_map_.end() && "should register with unique id.");
             id_func_map_[sequence_id] = sink;
@@ -95,14 +91,14 @@ namespace msgrpc {
         }
 
         void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            //cout << "DEBUG: local received msg----------->: " << string(msg, len) << endl;
+            //std::cout << "DEBUG: local received msg----------->: " << string(msg, len) << std::endl;
             if (msg == nullptr) {
-                cout << "invalid rpc rsp with msg == nullptr";
+                std::cout << "invalid rpc rsp with msg == nullptr";
                 return;
             }
 
             if (len < sizeof(RspMsgHeader)) {
-                cout << "WARNING: invalid rsp msg" << endl;
+                std::cout << "WARNING: invalid rsp msg" << std::endl;
                 return;
             }
 
@@ -110,7 +106,7 @@ namespace msgrpc {
 
             auto iter = id_func_map_.find(rsp_header->sequence_id_);
             if (iter == id_func_map_.end()) {
-                cout << "WARNING: can not find rsp handler" << endl;
+                std::cout << "WARNING: can not find rsp handler" << std::endl;
                 return;
             }
 
@@ -129,10 +125,10 @@ namespace msgrpc {
             }
         }
 
-        std::map<rpc_sequence_id_t, RpcRspCellSink*> id_func_map_;
+        std::map<rpc_sequence_id_t, RspSink*> id_func_map_;
     };
 
-    struct RspCellBase : RpcRspCellSink {
+    struct RspCellBase : RspSink {
         virtual ~RspCellBase() {
             if (has_seq_id_) {
                 RpcRspDispatcher::instance().remove_rsp_handler(seq_id_);
@@ -170,7 +166,7 @@ namespace msgrpc {
 
         virtual void set_rpc_rsp(const RspMsgHeader& rsp_header, const char* msg, size_t len) override {
             if (rsp_header.rpc_result_ != RpcResult::succeeded) {
-                cout << "rsp_header->rpc_result_: " << (int)rsp_header.rpc_result_ << endl;
+                std::cout << "rsp_header->rpc_result_: " << (int)rsp_header.rpc_result_ << std::endl;
                 CellBase<T>::set_failed_reason(rsp_header.rpc_result_);
                 return;
             }
@@ -179,7 +175,7 @@ namespace msgrpc {
 
             T rsp;
             if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
-                cout << "decode rpc response failed. rpc seq_id: [TODO: unique_global_id]" << endl;
+                std::cout << "decode rpc response failed. rpc seq_id: [TODO: unique_global_id]" << std::endl;
                 CellBase<T>::set_failed_reason(RpcResult::failed);
                 return;
             }
@@ -482,7 +478,7 @@ namespace msgrpc {
             assert(msg_id == req_msg_type && "invalid msg id for rpc");
 
             if (len < sizeof(msgrpc::ReqMsgHeader)) {
-                cout << "invalid msg: without sufficient msg header info." << endl;
+                std::cout << "invalid msg: without sufficient msg header info." << std::endl;
                 return;
             }
 
@@ -536,7 +532,7 @@ namespace msgrpc {
         uint8_t* pout_buf = nullptr;
         uint32_t out_buf_len = 0;
         if (!ThriftEncoder::encode(rsp_cell.value(), &pout_buf, &out_buf_len)) {
-            cout << "encode failed on remtoe side." << endl;
+            std::cout << "encode failed on remtoe side." << std::endl;
             return RpcResult::failed;
         }
 
@@ -558,7 +554,7 @@ namespace msgrpc {
 
             REQ req;
             if (! ThriftDecoder::decode(req, (uint8_t *) msg, len)) {
-                cout << "decode failed on remote side." << endl;
+                std::cout << "decode failed on remote side." << std::endl;
                 return RpcResult::failed;
             }
 
@@ -596,12 +592,12 @@ namespace msgrpc {
 
         //TODO: split into .h and .cpp
         bool send_rpc_request_buf( msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index
-                                 , const uint8_t *pbuf, uint32_t len, RpcRspCellSink* rpc_rsp_cell_sink) const {
+                                 , const uint8_t *pbuf, uint32_t len, RspSink* rpc_rsp_cell_sink) const {
             size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
 
             char *mem = (char *) malloc(msg_len_with_header);
             if (!mem) {
-                cout << "alloc mem failed, during sending rpc request." << endl;
+                std::cout << "alloc mem failed, during sending rpc request." << std::endl;
                 return false;
             }
 
@@ -615,7 +611,7 @@ namespace msgrpc {
             header->sequence_id_ = seq_id;
             memcpy(header + 1, (const char *) pbuf, len);
 
-            //cout << "stub sending msg with length: " << msg_len_with_header << endl;
+            //std::cout << "stub sending msg with length: " << msg_len_with_header << std::endl;
             //TODO: find y_service_id by interface name "IBuzzMath"
             msgrpc::service_id_t service_id = iface_index == 1 ? x_service_id : y_service_id;
 
@@ -633,7 +629,7 @@ namespace msgrpc {
             /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
             if (!ThriftEncoder::encode(req, &pbuf, &len)) {
                 /*TODO: how to do with log, maybe should extract logging interface*/
-                cout << "encode failed." << endl;
+                std::cout << "encode failed." << std::endl;
                 return nullptr; //TODO: return false;
             }
 
@@ -763,7 +759,7 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, s
                     return demo::RpcTimeoutHandler::instance().on_timeout(msg, len);
                 }
             } else {
-                cout << "got unknow msg with id: " << msg_id << endl;
+                std::cout << "got unknow msg with id: " << msg_id << std::endl;
             }
         }
     );
@@ -832,7 +828,7 @@ void ______sync_x_impl(const RequestFoo& req, ResponseBar& rsp) {
 }
 
 msgrpc::Cell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
-    cout << "                     ______sync_x" << endl;
+    std::cout << "                     ______sync_x" << std::endl;
     return msgrpc::call_sync_impl(______sync_x_impl, req);
 }
 
@@ -911,7 +907,7 @@ void ______sync_y_impl(const RequestFoo& req, ResponseBar& rsp) {
 }
 
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
-    cout << "                     ______sync_y" << endl;
+    std::cout << "                     ______sync_y" << std::endl;
     return msgrpc::call_sync_impl(______sync_y_impl, req);
 }
 
@@ -922,13 +918,13 @@ struct SI_____async_y : msgrpc::MsgRpcSIBase<RequestFoo, ResponseBar> {
     }
 };
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
-    cout << "                     _____async_y" << endl;
+    std::cout << "                     _____async_y" << std::endl;
     return SI_____async_y().run(req);
 }
 
 
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo& req) {
-    cout << "                     ______sync_y_failed" << endl;
+    std::cout << "                     ______sync_y_failed" << std::endl;
     return nullptr;
 }
 
@@ -969,9 +965,9 @@ struct test_thread : std::thread {
 void create_delayed_exiting_thread() {
     std::thread thread_delayed_exiting(
             []{
-                this_thread::sleep_for(milliseconds(200));
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-                lock_guard<mutex> lk(can_safely_exit_mutex);
+                std::lock_guard<std::mutex> lk(can_safely_exit_mutex);
                 can_safely_exit = true;
                 can_safely_exit_cv.notify_one();
 
@@ -980,10 +976,9 @@ void create_delayed_exiting_thread() {
     thread_delayed_exiting.detach();
 }
 
-
 template<typename SI>
 void rpc_main(std::function<void(Cell<ResponseBar>&)> f) {
-    this_thread::sleep_for(milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     RequestFoo foo; foo.reqa = k_req_init_value;
 
     auto* rsp_cell = SI().run(foo);
@@ -995,7 +990,6 @@ void rpc_main(std::function<void(Cell<ResponseBar>&)> f) {
         }, rsp_cell);
     }
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 auto not_drop_msg = [](const char* msg, size_t len) {
@@ -1048,8 +1042,8 @@ TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case100) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void save_rsp_from_other_services_to_db(Cell<ResponseBar>& r) { cout << "1/2 ----------------->>>> write db." << endl; };
-void save_rsp_to_log(Cell<ResponseBar>& r)                    { cout << "2/2 ----------------->>>> save_log." << endl; };
+void save_rsp_from_other_services_to_db(Cell<ResponseBar>& r) { std::cout << "1/2 ----------------->>>> write db." << std::endl; };
+void save_rsp_to_log(Cell<ResponseBar>& r)                    { std::cout << "2/2 ----------------->>>> save_log." << std::endl; };
 
 struct SI_case200 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
@@ -1218,7 +1212,7 @@ void gen2(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp_cell_1)  {
     }
 };
 
-void action1(Cell<ResponseBar> &r) { cout << "1/1 ----------------->>>> action1." << endl; };
+void action1(Cell<ResponseBar> &r) { std::cout << "1/1 ----------------->>>> action1." << std::endl; };
 
 struct SI_case500 : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
@@ -1306,7 +1300,7 @@ void join_rollback_cells(Cell<ResponseBar> &result, Cell<ResponseBar> &___1, Cel
 };
 
 void run_customized_action(CellBase<bool> &r) {
-    cout << "run_customized_action" << endl;
+    std::cout << "run_customized_action" << std::endl;
 }
 
 struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {

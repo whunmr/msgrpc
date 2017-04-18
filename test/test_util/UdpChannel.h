@@ -60,7 +60,7 @@ struct UdpChannel {
     }
 
     void handle_send(const std::string& /*message*/, const boost::system::error_code& error, std::size_t bytes_transferred) {
-        if (error) { cout << "msg send failed." << endl; }
+        if (error) { std::cout << "msg send failed." << std::endl; }
     }
 
     static void close_all_channels() {

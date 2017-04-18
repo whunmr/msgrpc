@@ -36,7 +36,7 @@ set(SOURCE_FILES
         include/msgrpc/api/service_api_declare.h
         include/msgrpc/api/service_api_define.h
         include/msgrpc/core/rpc_sequence_id.h
-        include/msgrpc/frp/cell.h
+        include/msgrpc/core/cell/cell_base.h
         include/msgrpc/thrift_struct/thrift_codec.h
         include/msgrpc/thrift_struct/thrift_struct_common.h
         include/msgrpc/thrift_struct/thrift_struct_declare.h
@@ -48,7 +48,7 @@ set(SOURCE_FILES
         test/test_thrift_struct.cpp
         test/test_util/UdpChannel.h
         test/test_zookeeper.cpp
-        src/msgrpc/core/rpc_sequence_id.cpp include/msgrpc/core/adapter/timer_adapter.h include/msgrpc/core/typedefs.h test/core/adapter/simple_timer_adapter.h test/details/test_constants.h include/msgrpc/core/adapter/config.h include/msgrpc/core/adapter/msg_channel.h test/core/adapter/udp_msg_channel.h test/details/set_timer_handler.h)
+        src/msgrpc/core/rpc_sequence_id.cpp include/msgrpc/core/adapter/timer_adapter.h include/msgrpc/core/typedefs.h test/core/adapter/simple_timer_adapter.h test/details/test_constants.h include/msgrpc/core/adapter/config.h include/msgrpc/core/adapter/msg_channel.h test/core/adapter/udp_msg_channel.h test/details/set_timer_handler.h include/msgrpc/core/cell/rsp_sink.h include/msgrpc/core/types.h include/msgrpc/core/rsp/rsp_dispatcher.h include/msgrpc/core/rpc_result.h include/msgrpc/core/cell/rsp_cell_base.h include/msgrpc/core/cell/cell.h include/msgrpc/core/cell/derived_cell.h include/msgrpc/core/cell/derived_async_cell.h include/msgrpc/core/cell/derived_action.h include/msgrpc/core/cell/timeout_cell.h include/msgrpc/core/macros.h)
 
 add_executable(msgrpc ${SOURCE_FILES})
 

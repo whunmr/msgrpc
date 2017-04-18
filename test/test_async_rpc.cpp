@@ -3,7 +3,6 @@
 #include <thread>
 #include <chrono>
 #include <msgrpc/thrift_struct/thrift_codec.h>
-#include <msgrpc/frp/cell.h>
 #include <type_traits>
 #include <future>
 #include <atomic>
@@ -18,413 +17,13 @@
 #include <msgrpc/core/adapter/timer_adapter.h>
 #include <msgrpc/core/rpc_sequence_id.h>
 #include <msgrpc/core/adapter/config.h>
-#include <msgrpc/util/singleton.h>
 #include <test/core/adapter/simple_timer_adapter.h>
-#include <include/msgrpc/util/singleton.h>
 #include <test/test_util/UdpChannel.h>
-
-namespace msgrpc {
-    typedef uint8_t  method_index_t;
-    typedef uint16_t iface_index_t;
-
-    struct MsgHeader {
-        uint8_t           msgrpc_version_ = {0};
-        method_index_t    method_index_in_interface_ = {0};
-        iface_index_t     iface_index_in_service_ = {0};
-        rpc_sequence_id_t sequence_id_;
-        //TODO: unsigned char  feature_id_in_service_ = {0};
-        //TODO: TLV encoded varient length options
-        //TODO: if not encoded/decode, how to deal hton and ntoh
-    };
-
-    /*TODO: consider make msgHeader encoded through thrift*/
-    struct ReqMsgHeader : MsgHeader {
-    };
-
-    struct RspMsgHeader : MsgHeader {
-        RpcResult rpc_result_ = { RpcResult::succeeded };
-    };
-}
-
-////////////////////////////////////////////////////////////////////////////////
-namespace msgrpc {
-    struct RspSink {
-        virtual void set_rpc_rsp(const RspMsgHeader& rsp_header, const char* msg, size_t len) = 0;
-        virtual void set_timeout() = 0;
-
-        virtual void set_sequential_id(const rpc_sequence_id_t& seq_id) = 0;
-        virtual void reset_sequential_id() = 0;
-    };
-
-    struct RpcRspDispatcher : msgrpc::ThreadLocalSingleton<RpcRspDispatcher> {
-        void on_rsp_handler_timeout(rpc_sequence_id_t sequence_id) {
-            auto iter = id_func_map_.find(sequence_id);
-            if (iter == id_func_map_.end()) {
-                std::cout << "WARNING: not existing handler to remove caused by timeout. seq id: " << sequence_id << std::endl;
-                return;
-            }
-
-            RspSink* cell = (iter->second);
-
-            cell->reset_sequential_id();
-            id_func_map_.erase(iter);
-
-            assert(cell != nullptr && "cell should be notnull when find in dispatch map.");
-            cell->set_timeout();
-        }
-
-        void remove_rsp_handler(rpc_sequence_id_t sequence_id) {
-            auto iter = id_func_map_.find(sequence_id);
-            if (iter == id_func_map_.end()) {
-                std::cout << "WARNING: not existing handler to remove: id: " << sequence_id << std::endl;
-                return;
-            }
-
-            id_func_map_.erase(iter);
-        }
-
-        void register_rsp_Handler(rpc_sequence_id_t sequence_id, RspSink* sink) {
-            assert(sink != nullptr && "can not register null callback");
-            assert(id_func_map_.find(sequence_id) == id_func_map_.end() && "should register with unique id.");
-            id_func_map_[sequence_id] = sink;
-            sink->set_sequential_id(sequence_id);
-        }
-
-        void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            //std::cout << "DEBUG: local received msg----------->: " << string(msg, len) << std::endl;
-            if (msg == nullptr) {
-                std::cout << "invalid rpc rsp with msg == nullptr";
-                return;
-            }
-
-            if (len < sizeof(RspMsgHeader)) {
-                std::cout << "WARNING: invalid rsp msg" << std::endl;
-                return;
-            }
-
-            auto* rsp_header = (RspMsgHeader*)msg;
-
-            auto iter = id_func_map_.find(rsp_header->sequence_id_);
-            if (iter == id_func_map_.end()) {
-                std::cout << "WARNING: can not find rsp handler" << std::endl;
-                return;
-            }
-
-            (iter->second)->set_rpc_rsp(*rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
-
-            //if this rsp finishes a SI, the handler (iter->second) will be release in whole SI context teardown;
-            //otherwise, we should erase this very rsp handler only.
-            delete_rsp_handler_if_exist(rsp_header->sequence_id_);
-        }
-
-        void delete_rsp_handler_if_exist(const rpc_sequence_id_t& seq_id) {
-            auto iter = id_func_map_.find(seq_id);
-            if (iter != id_func_map_.end()) {
-                (iter->second)->reset_sequential_id();
-                id_func_map_.erase(iter);
-            }
-        }
-
-        std::map<rpc_sequence_id_t, RspSink*> id_func_map_;
-    };
-
-    struct RspCellBase : RspSink {
-        virtual ~RspCellBase() {
-            if (has_seq_id_) {
-                RpcRspDispatcher::instance().remove_rsp_handler(seq_id_);
-            }
-        }
-
-        virtual void reset_sequential_id() override {
-            has_seq_id_ = false;
-        }
-
-        virtual void set_sequential_id(const rpc_sequence_id_t& seq_id) override {
-            seq_id_ = seq_id;
-            has_seq_id_ = true;
-        }
-
-        bool has_seq_id_ = false;
-        rpc_sequence_id_t seq_id_ = {0};
-    };
-
-    template<typename T>
-    struct Cell : CellBase<T>, RspCellBase {
-        template<typename C, typename... Ts>
-        void register_as_listener(C &&c, Ts &&... args) {
-            c.register_listener(this);
-            register_as_listener(std::forward<Ts>(args)...);
-        }
-
-        template<typename C>
-        void register_as_listener(C &&c) {
-            c.register_listener(this);
-        }
-
-        void register_as_listener() {
-        }
-
-        virtual void set_rpc_rsp(const RspMsgHeader& rsp_header, const char* msg, size_t len) override {
-            if (rsp_header.rpc_result_ != RpcResult::succeeded) {
-                std::cout << "rsp_header->rpc_result_: " << (int)rsp_header.rpc_result_ << std::endl;
-                CellBase<T>::set_failed_reason(rsp_header.rpc_result_);
-                return;
-            }
-
-            assert((msg != nullptr && len > 0) && "should has payload when rpc succeeded.");
-
-            T rsp;
-            if (! ThriftDecoder::decode(rsp, (uint8_t *) msg, len)) {
-                std::cout << "decode rpc response failed. rpc seq_id: [TODO: unique_global_id]" << std::endl;
-                CellBase<T>::set_failed_reason(RpcResult::failed);
-                return;
-            }
-
-            CellBase<T>::set_value(rsp);
-        }
-
-        virtual void set_timeout() override {
-            CellBase<T>::set_failed_reason(RpcResult::timeout);
-        }
-    };
-
-    template<typename T, typename... Args>
-    struct DerivedAction : Updatable {
-        DerivedAction(bool is_final_action, std::function<T(Args...)> logic, Args &&... args)
-                : is_final_action_(is_final_action), bind_(logic, std::ref(args)...) {
-            register_as_listener(std::forward<Args>(args)...);
-        }
-
-        ~DerivedAction() {
-            cell_ = nullptr;
-        }
-
-        template<typename C, typename... Ts>
-        void register_as_listener(C &&c, Ts &&... args) {
-            c.register_listener(this);
-            register_as_listener(std::forward<Ts>(args)...);
-        }
-
-        template<typename C>
-        void register_as_listener(C &&c) {
-            c.register_listener(this);
-
-            if (is_final_action_) {
-                assert(c.context_ != nullptr && "final action should bind to cell with resouce management context.");
-                c.context_->track(this);
-                cell_ = &c;
-            }
-        }
-
-        void update() override {
-            if (! is_final_action_) {
-                return bind_();  //if not final action, may trigger self's destruction, can not continue running.
-            }
-
-            bind_();
-            if (is_final_action_) {
-                delete cell_;
-            }
-        }
-
-        bool is_final_action_ = {false};
-        CellStatus* cell_ = {nullptr};
-        using bind_type = decltype(std::bind(std::declval<std::function<T(Args...)>>(), std::ref(std::declval<Args>())...));
-        bind_type bind_;
-    };
-
-    template<typename F, typename... Args>
-    auto derive_action(RpcContext& ctxt, F &&f, Args &&... args) -> DerivedAction<decltype(f(*args...)), decltype(*args)...>* {
-        auto action = new DerivedAction<decltype(f(*args...)), decltype(*args)...>(/*is_final_action=*/false, std::forward<F>(f), std::ref(*args)...);
-        ctxt.track(action);
-        return action;
-    }
-
-    template<typename F, typename... Args>
-    auto derive_final_action(F &&f, Args &&... args) -> DerivedAction<decltype(f(*args...)), decltype(*args)...>* {
-        return new DerivedAction<decltype(f(*args...)), decltype(*args)...>(/*is_final_action=*/true, std::forward<F>(f), std::ref(*args)...);
-    }
-
-    template<typename T, typename... Args>
-    struct DerivedCell : Cell<T> {
-        DerivedCell(std::function<void(Cell<T>&, Args...)> logic, Args&&... args)
-                : bind_(logic, std::placeholders::_1, std::ref(args)...) {
-            Cell<T>::register_as_listener(std::forward<Args>(args)...);
-        }
-
-        void update() override {
-            if (!CellBase<T>::has_value_or_error()) {
-                bind_(*this);
-            }
-        }
-
-        using bind_type = decltype(std::bind(std::declval<std::function<void(Cell<T>&, Args...)>>(), std::placeholders::_1, std::ref(std::declval<Args>())...));
-        bind_type bind_;
-    };
-
-    template<typename F, typename... Args>
-    auto derive_cell(RpcContext& ctxt, F f, Args &&... args) -> DerivedCell<typename std::remove_reference<first_argument_type<F>>::type::value_type, decltype(*args)...>* {
-        auto cell = new DerivedCell<typename std::remove_reference<first_argument_type<F>>::type::value_type, decltype(*args)...>(f, std::ref(*args)...);
-        ctxt.track(cell);
-        return cell;
-    }
-
-
-    template<typename T, typename... Args>
-    struct DerivedAsyncCell : Cell<T> {
-        DerivedAsyncCell(RpcContext& ctxt, std::function<Cell<T>&(void)> f, Args&&... args)
-          : ctxt_(ctxt), f_(f) {
-            Cell<T>::register_as_listener(std::forward<Args>(args)...);
-        }
-
-        void update() override {
-            if (!CellBase<T>::has_value_) {  //TODO:refactor to got_rsp, which can be got_value or got_error
-
-                Cell<T>& cell = f_();
-                if (cell.has_error()) {
-                    this->Cell<T>::set_failed_reason(cell.failed_reason());
-                } else {
-                    derive_action( ctxt_
-                                 , [this](const Cell<T>& rsp) {
-                                        if (rsp.has_error()) {
-                                            this->Cell<T>::set_failed_reason(rsp.failed_reason());
-                                        } else {
-                                            this->Cell<T>::set_cell_value(rsp);
-                                        }
-                                   }
-                                 , &cell);
-                }
-            }
-        }
-
-        RpcContext& ctxt_;
-        std::function<Cell<T>&(void)> f_;
-    };
-
-    template<typename F, typename... Args>
-    auto derive_async_cell(RpcContext& ctxt, F f, Args &&... args) -> DerivedAsyncCell<typename std::remove_reference<typename std::result_of<F()>::type>::type::value_type, decltype(*args)...>* {
-        auto cell = new DerivedAsyncCell<typename std::remove_reference<typename std::result_of<F()>::type>::type::value_type, decltype(*args)...>(ctxt, f, std::ref(*args)...);
-        ctxt.track(cell);
-        return cell;
-    }
-
-
-    template<typename T, typename... Args>
-    struct TimeoutCell : Cell<T> {
-        TimeoutCell(RpcContext& ctxt, long long timeout_ms, size_t retry_times, std::function<Cell<T>* (Args...)> f, Args&&... args)
-          : ctxt_(ctxt), timeout_ms_(timeout_ms), retry_times_(retry_times), f_(f), bind_(f, args...) {
-            if (sizeof...(args) == 0) {
-                invoke_rpc_once(timeout_ms);
-            } else {
-                Cell<T>::register_as_listener(std::forward<Args>(args)...);
-            }
-        }
-
-        ~TimeoutCell() {
-            if (timeout_cell_ != nullptr) {
-                delete timeout_cell_;
-                timeout_cell_ = nullptr;
-            }
-        }
-
-        void invoke_rpc_once(long long int timeout_ms) {
-            Cell<T>* rpc_cell_ = bind_();
-            if (rpc_cell_ == nullptr) {
-                //init rpc is deferred, because trigger cells are not ready to continue;
-                return;
-            }
-
-            is_rpc_started_ = true;
-
-            if (rpc_cell_->has_error()) {
-                return this->set_failed_reason(rpc_cell_->failed_reason());
-            }
-
-            assert(rpc_cell_->has_seq_id_ && "only support add timer guard on cells with seq_id.");
-            msgrpc::Config::instance().timer_->set_timer(timeout_ms, Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rpc_cell_->seq_id_));
-            bind_timeout_cell(*rpc_cell_);
-        }
-
-        void bind_timeout_cell(Cell<T>& cell_to_bind) {
-            derive_action( ctxt_
-                         , [this](const Cell<T>& rsp) {
-                                if (rsp.is_timeout()) {
-                                    retry_rpc_if_need(rsp);
-                                } else {
-                                    if (rsp.has_value_or_error()) {
-                                        assert(rsp.has_seq_id_ && "only support add timer guard on cells with seq_id.");
-                                        msgrpc::Config::instance().timer_->cancel_timer(Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rsp.seq_id_));
-                                    }
-                                    this->set_cell_value(rsp);
-                                }
-                           }
-                         , &cell_to_bind);
-        }
-
-        void retry_rpc_if_need(const Cell<T> &rsp) {
-            if (retry_times_ > 0) {
-                --retry_times_;
-                invoke_rpc_once(timeout_ms_);
-            } else {
-                this->set_failed_reason(rsp.failed_reason());
-
-                if (timeout_cell_ != nullptr) {
-                    timeout_cell_->set_value(true);
-                }
-            }
-        }
-
-        void update() override {
-            assert(sizeof...(Args) != 0 && "should not call update if this cell do not dependent other cells.");
-
-            //TODO: check status of both trigger cells
-            //TODO: set rpc_has_started_ to true, after bind_() invoked
-            bool should_start_rpc = !CellBase<T>::has_value_or_error() && !is_rpc_started_;
-            if (should_start_rpc) {
-                invoke_rpc_once(timeout_ms_);
-            }
-        }
-
-        CellBase<bool>* timeout() {
-            if (timeout_cell_ == nullptr) {
-                timeout_cell_ = new CellBase<bool>;
-            }
-
-            return timeout_cell_;
-        }
-
-        CellBase<bool>* timeout_cell_ = {nullptr};
-
-        RpcContext& ctxt_;
-        long long timeout_ms_;
-        size_t retry_times_;
-        std::function<Cell<T>* (Args...)> f_;
-
-        bool is_rpc_started_ = {false};
-
-        using bind_type = decltype(std::bind(std::declval<std::function<Cell<T>* (Args...)>>(), std::ref(std::declval<Args>())...));
-        bind_type bind_;
-    };
-
-    template<typename F, typename... Args>
-    auto derive_rpc_cell(RpcContext &ctxt, long long timeout_ms, size_t retry_times, F f, Args &&... args)
-      -> TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>* {
-        auto cell = new TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>(ctxt, timeout_ms, retry_times, f, std::ref(*args)...);
-        ctxt.track(cell);
-        return cell;
-    }
-
-    template<typename F, typename... Args>
-    auto derive_rpc_cell(RpcContext &ctxt, long long timeout_ms, F f, Args &&... args)
-      -> TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>* {
-        auto cell = new TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>(ctxt, timeout_ms, /*retry_times=*/0, f, std::ref(*args)...);
-        ctxt.track(cell);
-        return cell;
-    }
-    
-#define ___rpc(...) derive_rpc_cell(ctxt, __VA_ARGS__)
-
-}
+#include <msgrpc/core/cell/rsp_sink.h>
+#include <msgrpc/core/rsp/rsp_dispatcher.h>
+#include <msgrpc/core/cell/cell.h>
+#include <msgrpc/core/cell/derived_cell.h>
+#include <msgrpc/core/cell/timeout_cell.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
@@ -516,12 +115,6 @@ namespace msgrpc {
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
-    ////////////////////////////////////////////////////////////////////////////////
-    enum class MsgRpcRet : unsigned char {
-        succeeded = 0,
-        failed = 1,
-        async_deferred = 2
-    };
 
     template<typename RSP>
     static RpcResult send_rsp_cell_value(const service_id_t& sender_id, const RspMsgHeader &rsp_header, const Cell<RSP>& rsp_cell) {
@@ -602,7 +195,7 @@ namespace msgrpc {
             }
 
             auto seq_id = msgrpc::RpcSequenceId::instance().get();
-            msgrpc::RpcRspDispatcher::instance().register_rsp_Handler(seq_id, rpc_rsp_cell_sink);
+            msgrpc::RspDispatcher::instance().register_rsp_Handler(seq_id, rpc_rsp_cell_sink);
 
             auto header = (msgrpc::ReqMsgHeader *) mem;
             header->msgrpc_version_ = 0;
@@ -691,20 +284,6 @@ namespace msgrpc {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//interface implementation related macros:
-#define ___action(action, ...) derive_action(ctxt, action, __VA_ARGS__);
-
-#define ___cell(logic, ...) derive_cell(ctxt, logic, __VA_ARGS__);
-
-#define ___async_cell(logic, ...) \
-        derive_async_cell(ctxt , [&ctxt, __VA_ARGS__]() -> Cell<ResponseBar>& { return logic(ctxt, __VA_ARGS__); } , __VA_ARGS__);
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -727,7 +306,7 @@ namespace demo {
 
             msgrpc::rpc_sequence_id_t seq_id =  (msgrpc::rpc_sequence_id_t)((uintptr_t)(ti.user_data_));
 
-            msgrpc::RpcRspDispatcher::instance().on_rsp_handler_timeout(seq_id);
+            msgrpc::RspDispatcher::instance().on_rsp_handler_timeout(seq_id);
         }
     };
 }
@@ -751,7 +330,7 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, s
                     return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
                 }
             } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                return msgrpc::RpcRspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
+                return msgrpc::RspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
             } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
                 return demo::SetTimerHandler::instance().set_timer(msg, len);
             } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
@@ -938,6 +517,8 @@ std::mutex can_safely_exit_mutex;
 std::condition_variable can_safely_exit_cv;
 
 #include <condition_variable>
+#include <include/msgrpc/core/cell/derived_action.h>
+
 struct MsgRpcTest : public ::testing::Test {
     virtual void SetUp() {
         can_safely_exit = false;
@@ -1013,10 +594,6 @@ auto drop_msg_with_seq_id(std::initializer_list<int> seq_ids_to_drop) -> std::fu
         return false;
     };
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define ___ms(...) __VA_ARGS__
-#define ___retry(...) __VA_ARGS__
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

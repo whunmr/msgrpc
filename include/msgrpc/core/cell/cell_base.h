@@ -1,22 +1,10 @@
-#ifndef MSGRPC_CELL_H
-#define MSGRPC_CELL_H
+#ifndef MSGRPC_CELL_BASE_H
+#define MSGRPC_CELL_BASE_H
 #include <list>
 #include <boost/optional.hpp>
-
-#include <iostream> //TODO:remove
-
-
-//TODO: using std::move during cell value assignment.  by adding trace log in constructor to find out times of copy construction.
+#include <msgrpc/core/rpc_result.h>
 
 namespace msgrpc {
-
-    enum class RpcResult : unsigned short {
-        succeeded = 0
-        , failed  = 1
-        , timeout = 2
-        , iface_not_found =  3
-        , method_not_found = 4
-    };
 
     struct Updatable {
         virtual ~Updatable() {}
@@ -156,4 +144,4 @@ namespace msgrpc {
     };
 }
 
-#endif //MSGRPC_CELL_H
+#endif //MSGRPC_CELL_BASE_H

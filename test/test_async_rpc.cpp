@@ -102,7 +102,7 @@ msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 msgrpc::Cell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
     std::cout << "                     ______sync_x" << std::endl;
 
-    return msgrpc::call_sync_iface_igmpl<ResponseBar>(
+    return msgrpc::call_sync_iface_impl<ResponseBar>(
         [&req](ResponseBar &rsp) {
             rsp.__set_rspa(req.reqa + k__sync_x__delta);
         }

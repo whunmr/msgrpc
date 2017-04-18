@@ -20,8 +20,8 @@ add_definitions(-DTHREADED)
 
 ################################################################################
 include_directories(/Users/hmwang/lab/thrift-0.9.3/lib/cpp/src)
-include_directories(/Users/hmwang/lab/cpp/msgrpc)
 include_directories(/Users/hmwang/lab/cpp/msgrpc/include)
+include_directories(/Users/hmwang/lab/cpp/msgrpc)
 
 ################################################################################
 set(SOURCE_FILES
@@ -48,7 +48,7 @@ set(SOURCE_FILES
         test/test_thrift_struct.cpp
         test/test_util/UdpChannel.h
         test/test_zookeeper.cpp
-        src/msgrpc/core/rpc_sequence_id.cpp include/msgrpc/core/adapter/timer_adapter.h include/msgrpc/core/typedefs.h test/core/adapter/simple_timer_adapter.h test/details/test_constants.h include/msgrpc/core/adapter/config.h include/msgrpc/core/adapter/msg_channel.h test/core/adapter/udp_msg_channel.h test/details/set_timer_handler.h include/msgrpc/core/cell/rsp_sink.h include/msgrpc/core/types.h include/msgrpc/core/rsp/rsp_dispatcher.h include/msgrpc/core/rpc_result.h include/msgrpc/core/cell/rsp_cell_base.h include/msgrpc/core/cell/cell.h include/msgrpc/core/cell/derived_cell.h include/msgrpc/core/cell/derived_async_cell.h include/msgrpc/core/cell/derived_action.h include/msgrpc/core/cell/timeout_cell.h include/msgrpc/core/macros.h)
+        src/msgrpc/core/rpc_sequence_id.cpp include/msgrpc/core/adapter/timer_adapter.h include/msgrpc/core/typedefs.h test/core/adapter/simple_timer_adapter.h test/details/test_constants.h include/msgrpc/core/adapter/config.h include/msgrpc/core/adapter/msg_channel.h test/core/adapter/udp_msg_channel.h test/details/set_timer_handler.h include/msgrpc/core/cell/rsp_sink.h include/msgrpc/core/types.h include/msgrpc/core/components/rsp_dispatcher.h include/msgrpc/core/rpc_result.h include/msgrpc/core/cell/rsp_cell_base.h include/msgrpc/core/cell/cell.h include/msgrpc/core/cell/derived_cell.h include/msgrpc/core/cell/derived_async_cell.h include/msgrpc/core/cell/derived_action.h include/msgrpc/core/cell/timeout_cell.h include/msgrpc/core/macros.h include/msgrpc/core/interface/iface_impl_base.h include/msgrpc/core/interface/iface_repository.h include/msgrpc/core/msg/msg_sender.h include/msgrpc/core/components/req_msg_handler.h include/msgrpc/core/interface/iface_impl_base_t.h include/msgrpc/core/components/rpc_timeout_handler.h)
 
 add_executable(msgrpc ${SOURCE_FILES})
 

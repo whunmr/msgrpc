@@ -62,7 +62,7 @@ namespace demo {
         _(3, ResponseBar, ______sync_y_failed, RequestFoo, (方法注释), __VA_ARGS__)
     ___as_interface(InterfaceY, __with_interface_id(2))
 
-    /*TODO: interface uniqueness checking*/
+    /*TODO: interface_impl uniqueness checking*/
 #endif
 
 #if 0

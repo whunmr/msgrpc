@@ -203,7 +203,7 @@ define_SI{
 } ___as(si_foo, timeout___ms(250), retry(3), rollback_transaction);
 
 
-//TODO multiple rpc, send rpc request to multiple interface provider.
+//TODO multiple rpc, send rpc request to multiple interface_impl provider.
 //TODO add filter and map keywords, such as map, filter, all, any, success, failure
 
 //TODO will not implement loop construct in SI, but we can call SI in loop in outside of SI.

@@ -12,17 +12,15 @@
 #include <msgrpc/core/rpc_sequence_id.h>
 #include <test/details/test_constants.h>
 #include <msgrpc/core/adapter/config.h>
+#include <msgrpc/core/adapter/timer_adapter.h>
 
 namespace demo {
+
     struct test_service : msgrpc::ThreadLocalSingleton<test_service> {
         msgrpc::service_id_t current_service_id_;
     };
 
-    struct timer_info {
-        long long millionseconds_;
-        msgrpc::service_id_t service_id_;
-        void *user_data_;
-    };
+    using msgrpc::timer_info;
 
     struct TimerMgr : msgrpc::ThreadLocalSingleton<TimerMgr> {
         void cancel_timer(msgrpc::rpc_sequence_id_t id) {

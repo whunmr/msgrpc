@@ -5,6 +5,12 @@
 
 namespace msgrpc {
 
+    struct timer_info {
+        long long millionseconds_;
+        msgrpc::service_id_t service_id_;
+        void *user_data_;
+    };
+
     struct TimerAdapter {
         virtual void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void *user_data) const = 0;
         virtual void cancel_timer(msgrpc::msg_id_t timeout_msg_id, void *user_data) const = 0;

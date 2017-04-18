@@ -2,7 +2,7 @@
 #define MSGRPC_RSP_CELL_BASE_H
 
 #include <msgrpc/core/cell/rsp_sink.h>
-#include <msgrpc/core/rsp/rsp_dispatcher.h>
+#include <msgrpc/core/components/rsp_dispatcher.h>
 
 //TODO: to .h and .cpp
 

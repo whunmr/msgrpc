@@ -43,12 +43,12 @@ namespace msgrpc {
 
         void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
             if (msg == nullptr) {
-                std::cout << "invalid rpc rsp with msg == nullptr";
+                std::cout << "invalid rpc components with msg == nullptr";
                 return;
             }
 
             if (len < sizeof(RspMsgHeader)) {
-                std::cout << "WARNING: invalid rsp msg" << std::endl;
+                std::cout << "WARNING: invalid components msg" << std::endl;
                 return;
             }
 
@@ -56,14 +56,14 @@ namespace msgrpc {
 
             auto iter = id_func_map_.find(rsp_header->sequence_id_);
             if (iter == id_func_map_.end()) {
-                std::cout << "WARNING: can not find rsp handler" << std::endl;
+                std::cout << "WARNING: can not find components handler" << std::endl;
                 return;
             }
 
             (iter->second)->set_rpc_rsp(*rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
 
-            //if this rsp finishes a SI, the handler (iter->second) will be release in whole SI context teardown;
-            //otherwise, we should erase this very rsp handler only.
+            //if this components finishes a SI, the handler (iter->second) will be release in whole SI context teardown;
+            //otherwise, we should erase this very components handler only.
             delete_rsp_handler_if_exist(rsp_header->sequence_id_);
         }
 

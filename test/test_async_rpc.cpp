@@ -20,161 +20,12 @@
 #include <test/core/adapter/simple_timer_adapter.h>
 #include <test/test_util/UdpChannel.h>
 #include <msgrpc/core/cell/rsp_sink.h>
-#include <msgrpc/core/rsp/rsp_dispatcher.h>
+#include <msgrpc/core/components/rsp_dispatcher.h>
 #include <msgrpc/core/cell/cell.h>
 #include <msgrpc/core/cell/derived_cell.h>
 #include <msgrpc/core/cell/timeout_cell.h>
 
 ////////////////////////////////////////////////////////////////////////////////
-namespace msgrpc {
-    struct IfaceImplBase {
-        virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
-                , const char* msg, size_t len
-                , msgrpc::RspMsgHeader& rsp_header
-                , msgrpc::service_id_t& sender_id) = 0;
-    };
-
-    struct IfaceRepository : msgrpc::Singleton<IfaceRepository> {
-        void add_iface_impl(iface_index_t ii, IfaceImplBase* iface) {
-            assert(iface != nullptr && "interface implementation can not be null");
-            assert(___m.find(ii) == ___m.end() && "interface can only register once");
-            ___m[ii] = iface;
-        }
-
-        IfaceImplBase* get_iface_impl_by(iface_index_t ii) {
-            auto iter = ___m.find(ii);
-            return iter == ___m.end() ? nullptr : iter->second;
-        }
-
-    private:
-        std::map<iface_index_t, IfaceImplBase*> ___m;
-    };
-
-    struct MsgSender {
-        static void send_msg_with_header(const msgrpc::service_id_t& service_id, const RspMsgHeader &rsp_header, const uint8_t *pout_buf, uint32_t out_buf_len) {
-            msg_id_t rsp_msg_type = Config::instance().response_msg_id_;
-
-            if (pout_buf == nullptr || out_buf_len == 0) {
-                Config::instance().msg_channel_->send_msg(service_id, rsp_msg_type, (const char*)&rsp_header, sizeof(rsp_header));
-                return;
-            }
-
-            size_t rsp_len_with_header = sizeof(rsp_header) + out_buf_len;
-            char *mem = (char *) malloc(rsp_len_with_header);
-            if (mem != nullptr) {
-                memcpy(mem, &rsp_header, sizeof(rsp_header));
-                memcpy(mem + sizeof(rsp_header), pout_buf, out_buf_len);
-                Config::instance().msg_channel_->send_msg(service_id, rsp_msg_type, mem, rsp_len_with_header);
-                free(mem);
-            }
-        }
-    };
-
-    struct RpcReqMsgHandler {
-        static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            msg_id_t req_msg_type = Config::instance().request_msg_id_;
-
-            assert(msg_id == req_msg_type && "invalid msg id for rpc");
-
-            if (len < sizeof(msgrpc::ReqMsgHeader)) {
-                std::cout << "invalid msg: without sufficient msg header info." << std::endl;
-                return;
-            }
-
-            auto *req_header = (msgrpc::ReqMsgHeader *) msg;
-            msg += sizeof(msgrpc::ReqMsgHeader);
-
-            msgrpc::RspMsgHeader rsp_header;
-            rsp_header.msgrpc_version_ = req_header->msgrpc_version_;
-            rsp_header.iface_index_in_service_ = req_header->iface_index_in_service_;
-            rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
-            rsp_header.sequence_id_ = req_header->sequence_id_;
-
-            //TODO: add sender info query method
-            msgrpc::service_id_t sender_id = req_header->iface_index_in_service_ == 2 ? x_service_id : y_service_id;
-
-            IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
-            if (iface == nullptr) {
-                rsp_header.rpc_result_ = RpcResult::iface_not_found;
-
-                msg_id_t rsp_msg_type = Config::instance().response_msg_id_;
-                msgrpc::Config::instance().msg_channel_->send_msg(sender_id, rsp_msg_type, (const char *) &rsp_header, sizeof(rsp_header));
-                return;
-            }
-
-            RpcResult ret = iface->onRpcInvoke(*req_header, msg, len - sizeof(msgrpc::ReqMsgHeader), rsp_header, sender_id);
-
-            if (ret == RpcResult::failed || ret == RpcResult::method_not_found) {
-                return MsgSender::send_msg_with_header(sender_id, rsp_header, nullptr, 0);
-            }
-
-            //TODO: using pipelined processor to handling input/output msgheader and rpc statistics.
-        }
-    };
-}
-
-////////////////////////////////////////////////////////////////////////////////
-namespace msgrpc {
-
-    template<typename RSP>
-    static RpcResult send_rsp_cell_value(const service_id_t& sender_id, const RspMsgHeader &rsp_header, const Cell<RSP>& rsp_cell) {
-        if (!rsp_cell.has_value_) {
-            return RpcResult::failed;
-        }
-
-        uint8_t* pout_buf = nullptr;
-        uint32_t out_buf_len = 0;
-        if (!ThriftEncoder::encode(rsp_cell.value(), &pout_buf, &out_buf_len)) {
-            std::cout << "encode failed on remtoe side." << std::endl;
-            return RpcResult::failed;
-        }
-
-        MsgSender::send_msg_with_header(sender_id, rsp_header, pout_buf, out_buf_len);
-        return RpcResult::succeeded;
-    }
-
-    template<typename T, iface_index_t iface_index>
-    struct InterfaceImplBaseT : IfaceImplBase {
-        InterfaceImplBaseT() {
-            IfaceRepository::instance().add_iface_impl(iface_index, this);
-        }
-
-        template<typename REQ, typename RSP>
-        RpcResult invoke_templated_method(msgrpc::Cell<RSP>* (T::*method_impl)(const REQ&)
-                , const char *msg, size_t len
-                , msgrpc::service_id_t& sender_id
-                , msgrpc::RspMsgHeader& rsp_header) {
-
-            REQ req;
-            if (! ThriftDecoder::decode(req, (uint8_t *) msg, len)) {
-                std::cout << "decode failed on remote side." << std::endl;
-                return RpcResult::failed;
-            }
-
-            msgrpc::Cell<RSP>* rsp_cell = ((T*)this->*method_impl)(req);
-            if ( rsp_cell == nullptr ) {
-                //TODO: log call failed
-                return RpcResult::failed;
-            }
-
-            if (rsp_cell->has_value_) {
-                RpcResult ret = send_rsp_cell_value(sender_id, rsp_header, *rsp_cell);
-                delete rsp_cell;
-                return ret;
-            }
-
-            auto final_action = derive_final_action([sender_id, rsp_header](msgrpc::Cell<RSP>& r) {
-                if (r.has_value_) {
-                    send_rsp_cell_value(sender_id, rsp_header, r);
-                } else {
-                    //TODO: handle error case where result do not contains value. maybe timeout?
-                }
-            }, rsp_cell);
-
-            return RpcResult::succeeded;
-        }
-    };
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
@@ -290,6 +141,10 @@ namespace msgrpc {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <test/core/adapter/udp_msg_channel.h>
 #include <test/details/set_timer_handler.h>
+#include <msgrpc/core/components/req_msg_handler.h>
+#include <msgrpc/core/components/rpc_timeout_handler.h>
+#include <msgrpc/util/singleton.h>
+#include <msgrpc/core/interface/iface_impl_base_t.h>
 
 using namespace demo;
 
@@ -298,18 +153,6 @@ const int k_req_init_value = 1;
 const int k__sync_y__delta = 3;
 const int k__sync_x__delta = 17;
 
-namespace demo {
-    struct RpcTimeoutHandler : msgrpc::ThreadLocalSingleton<RpcTimeoutHandler> {
-        void on_timeout(const char* msg, size_t len) {
-            assert(msg != nullptr && len == sizeof(timer_info));
-            timer_info& ti = *(timer_info*)msg;
-
-            msgrpc::rpc_sequence_id_t seq_id =  (msgrpc::rpc_sequence_id_t)((uintptr_t)(ti.user_data_));
-
-            msgrpc::RspDispatcher::instance().on_rsp_handler_timeout(seq_id);
-        }
-    };
-}
 
 void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char* msg, size_t len)> should_drop) {
     msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
@@ -327,7 +170,7 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, s
                 return init_func();
             } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
                 if (! should_drop(msg, len)) {
-                    return msgrpc::RpcReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+                    return msgrpc::ReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
                 }
             } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
                 return msgrpc::RspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
@@ -335,7 +178,7 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, s
                 return demo::SetTimerHandler::instance().set_timer(msg, len);
             } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
                 if (! TimerMgr::instance().should_ignore(msg, len)) {
-                    return demo::RpcTimeoutHandler::instance().on_timeout(msg, len);
+                    return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
                 }
             } else {
                 std::cout << "got unknow msg with id: " << msg_id << std::endl;
@@ -633,7 +476,7 @@ struct SI_case200 : MsgRpcSIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support___SI_with_single_rpc____which_bind_with_actions______________case200) {
     // x ----(req)---->y (sync_y)
-    // x <---(rsp)-----y
+    // x <---(components)-----y
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value_);
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
@@ -867,28 +710,29 @@ TEST_F(MsgRpcTest, should_able_to_support__rpc_with_timer_and_retry___case700) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void join_rollback_cells(Cell<ResponseBar> &result, Cell<ResponseBar> &___1, Cell<ResponseBar> &___2, Cell<ResponseBar> &___3)  {
-    if (___1.has_value()) {
-        return result.set_cell_value(___1);
-    }
+    bool ___1_got_value = ___1.has_value();
+    bool ___2_and___3__both_finished = ___2.has_value_or_error() && ___3.has_value_or_error();
 
-    if (___2.has_value_or_error() && ___3.has_value_or_error()) {
+    if (___1_got_value || ___2_and___3__both_finished) {
         result.set_cell_value(___1);
     }
 };
 
 void run_customized_action(CellBase<bool> &r) {
+    //TODO: access execution context, e.g.: access user id, link id, etc.
+    //TODO: store some intermedia data in context
     std::cout << "run_customized_action" << std::endl;
 }
 
 struct SI_case701_timeout_action : MsgRpcSIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
-        auto do_rpc_sync_y   = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto do_rpc_sync_y   = [&ctxt, req]()                     { return InterfaceYStub(ctxt).______sync_y(req); };
         auto do_rpc_rollback = [&ctxt, req](CellBase<bool>& ___1) { return InterfaceYStub(ctxt).______sync_y(req); };
 
-        auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);  //seq_id: 1, 2
+        auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);                                      //seq_id: 1, 2
                     ___action(run_customized_action, ___1->timeout());
-
-                    auto ___2 = ___rpc(___ms(10), ___retry(1), do_rpc_rollback, ___1->timeout()); //seq_id: 3, ...
+        
+                    auto ___2 = ___rpc(___ms(10), ___retry(1), do_rpc_rollback, ___1->timeout());       //seq_id: 3, ...
                     auto ___3 = ___rpc(___ms(10), ___retry(1), do_rpc_rollback, ___1->timeout());
 
         return ___cell(join_rollback_cells, ___1, ___2, ___3);

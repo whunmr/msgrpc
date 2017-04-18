@@ -28,9 +28,17 @@ namespace msgrpc {
         virtual bool send_msg(const service_id_t& remote_service_id, msg_id_t msg_id, const char* buf, size_t len) const = 0;
     };
 
+    struct TimerAdapter {
+        virtual void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data) const = 0;
+        virtual void cancel_timer(msgrpc::msg_id_t timeout_msg_id, void* user_data) const = 0;
+    };
+
     struct Config {
-        void init_with(MsgChannel *msg_channel, msgrpc::msg_id_t request_msg_id, msgrpc::msg_id_t response_msg_id, msgrpc::msg_id_t set_timer_msg_id, msgrpc::msg_id_t timeout_msg_id) {
+        void init_with(MsgChannel* msg_channel, TimerAdapter* timer, msgrpc::msg_id_t request_msg_id, msgrpc::msg_id_t response_msg_id, msgrpc::msg_id_t set_timer_msg_id, msgrpc::msg_id_t timeout_msg_id) {
+            assert(msg_channel != nullptr && timer != nullptr);
+
             msg_channel_ = msg_channel;
+            timer_ = timer;
             request_msg_id_  = request_msg_id;
             response_msg_id_ = response_msg_id;
             set_timer_msg_id_ = set_timer_msg_id;
@@ -43,6 +51,7 @@ namespace msgrpc {
         }
 
         MsgChannel* msg_channel_ = {nullptr};
+        TimerAdapter* timer_ = {nullptr};
         msg_id_t request_msg_id_ = 0;
         msg_id_t response_msg_id_ = 0;
         msg_id_t set_timer_msg_id_ = 0;
@@ -77,6 +86,20 @@ namespace msgrpc {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+const msgrpc::service_id_t x_service_id = 2222;
+const msgrpc::service_id_t y_service_id = 3333;
+const msgrpc::service_id_t timer_service_id = 5555;
+
+const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
+const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
+const msgrpc::msg_id_t k_msgrpc_set_timer_msg = 103;
+const msgrpc::msg_id_t k_msgrpc_timeout_msg = 104;
+
+
+struct test_service : msgrpc::ThreadLocalSingleton<test_service> {
+    msgrpc::service_id_t current_service_id_;
+};
+
 namespace demo {
     struct timer_info {
         long long millionseconds_;
@@ -103,30 +126,28 @@ namespace demo {
 
         std::vector<msgrpc::rpc_sequence_id_t> canceled_timer_ids_;
     };
+
+    struct DemoTimerAdapter : msgrpc::TimerAdapter, msgrpc::Singleton<DemoTimerAdapter> {
+        virtual void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data) const override {
+            msgrpc::service_id_t service_id = test_service::instance().current_service_id_;
+
+            timer_info ti;
+            ti.millionseconds_ = millionseconds;
+            ti.service_id_ = test_service::instance().current_service_id_;
+            ti.user_data_ = user_data;
+
+            msgrpc::Config::instance().msg_channel_->send_msg(timer_service_id, timeout_msg_id, (const char*)&ti, sizeof(ti));
+        }
+
+        virtual void cancel_timer(msgrpc::msg_id_t timeout_msg_id, void* user_data) const override {
+            cout << "[timer] cancel timer id: " << (msgrpc::rpc_sequence_id_t)((uintptr_t)(user_data)) << endl;
+            demo::TimerMgr::instance().cancel_timer(msgrpc::rpc_sequence_id_t((uintptr_t)user_data));
+        }
+    };
 }
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//TODO: extract to set timer interface
-void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data);
-void cancel_timer(msgrpc::msg_id_t timeout_msg_id, void* user_data) {
-    cout << "cancel timer for timer id: " << (msgrpc::rpc_sequence_id_t)((uintptr_t)(user_data)) << endl;
-    demo::TimerMgr::instance().cancel_timer(msgrpc::rpc_sequence_id_t((uintptr_t)user_data));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-const msgrpc::service_id_t x_service_id = 2222;
-const msgrpc::service_id_t y_service_id = 3333;
-const msgrpc::service_id_t timer_service_id = 5555;
-
-const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
-const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
-const msgrpc::msg_id_t k_msgrpc_set_timer_msg = 103;
-const msgrpc::msg_id_t k_msgrpc_timeout_msg = 104;
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
-
     struct RpcRspCellSink {
         virtual void set_rpc_rsp(const RspMsgHeader& rsp_header, const char* msg, size_t len) = 0;
         virtual void set_timeout() = 0;
@@ -420,7 +441,7 @@ namespace msgrpc {
             }
 
             assert(rpc_cell_->has_seq_id_ && "only support add timer guard on cells with seq_id.");
-            set_timer(timeout_ms, Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rpc_cell_->seq_id_));
+            msgrpc::Config::instance().timer_->set_timer(timeout_ms, Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rpc_cell_->seq_id_));
             bind_timeout_cell(*rpc_cell_);
         }
 
@@ -432,7 +453,7 @@ namespace msgrpc {
                                 } else {
                                     if (rsp.has_value_or_error()) {
                                         assert(rsp.has_seq_id_ && "only support add timer guard on cells with seq_id.");
-                                        cancel_timer(Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rsp.seq_id_));
+                                        msgrpc::Config::instance().timer_->cancel_timer(Config::instance().set_timer_msg_id_, reinterpret_cast<void*>(rsp.seq_id_));
                                     }
                                     this->set_cell_value(rsp);
                                 }
@@ -815,10 +836,6 @@ const int k_req_init_value = 1;
 const int k__sync_y__delta = 3;
 const int k__sync_x__delta = 17;
 
-struct test_service : msgrpc::ThreadLocalSingleton<test_service> {
-    msgrpc::service_id_t current_service_id_;
-};
-
 namespace demo {
     struct SetTimerHandler : msgrpc::ThreadLocalSingleton<SetTimerHandler> {
         void set_timer(const char* msg, size_t len) {
@@ -831,11 +848,12 @@ namespace demo {
             unsigned short temp_udp_port = timer_service_id + entry_times;
 
             std::thread timer_thread([ti, temp_udp_port]{
-                msgrpc::Config::instance().init_with(&UdpMsgChannel::instance()
-                        , k_msgrpc_request_msg_id
-                        , k_msgrpc_response_msg_id
-                        , k_msgrpc_set_timer_msg
-                        , k_msgrpc_timeout_msg);
+                msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
+                                                    , &DemoTimerAdapter::instance()
+                                                    , k_msgrpc_request_msg_id
+                                                    , k_msgrpc_response_msg_id
+                                                    , k_msgrpc_set_timer_msg
+                                                    , k_msgrpc_timeout_msg);
 
                 UdpChannel channel(temp_udp_port,
                    [ti](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
@@ -865,7 +883,8 @@ namespace msgrpc {
 }
 
 void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char* msg, size_t len)> should_drop) {
-    msgrpc::Config::instance().init_with(&UdpMsgChannel::instance()
+    msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
+                                        , &DemoTimerAdapter::instance()
                                         , k_msgrpc_request_msg_id
                                         , k_msgrpc_response_msg_id
                                         , k_msgrpc_set_timer_msg
@@ -1150,17 +1169,6 @@ auto drop_msg_with_seq_id(std::initializer_list<int> seq_ids_to_drop) -> std::fu
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define ___ms(...) __VA_ARGS__
 #define ___retry(...) __VA_ARGS__
-
-void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data) {
-    msgrpc::service_id_t service_id = test_service::instance().current_service_id_;
-
-    timer_info ti;
-    ti.millionseconds_ = millionseconds;
-    ti.service_id_ = test_service::instance().current_service_id_;
-    ti.user_data_ = user_data;
-
-    Config::instance().msg_channel_->send_msg(timer_service_id, timeout_msg_id, (const char*)&ti, sizeof(ti));
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,8 +1,6 @@
 #ifndef MSGRPC_RPCSEQUENCEID_H
 #define MSGRPC_RPCSEQUENCEID_H
-
 #include <cstdint>
-
 #include <msgrpc/util/singleton.h>
 
 namespace msgrpc {

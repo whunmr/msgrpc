@@ -11,24 +11,25 @@
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_constants.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_constants.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/types.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/interface/iface_impl_base_t.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/interface/iface_repository.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/interface/iface_impl_base.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/rpc_result.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/rsp_sink.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/rsp_cell_base.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_async_cell.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_action.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_cell.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/cell.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/timeout_cell.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/cell_base.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/msg/msg_sender.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/components/rpc_timeout_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/components/req_msg_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/components/rsp_dispatcher.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/rpc_sequence_id.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/iface_impl/iface_impl_base_t.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/iface_impl/iface_repository.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/iface_impl/iface_impl_base.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/rsp_sink.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/rsp_cell_base.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_async_cell.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/cell_base.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_cell.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/cell.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/timeout_cell.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_action.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/msg/msg_sender.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/macros.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/rpc_sequence_id.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/rpc_result.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/iface_stub/iface_stub_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/adapter/config.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/adapter/timer_adapter.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/adapter/msg_channel.h" isTestSource="false" />

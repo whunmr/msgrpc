@@ -1,7 +1,7 @@
 #ifndef MSGRPC_IFACE_IMPL_BASE_T_H
 #define MSGRPC_IFACE_IMPL_BASE_T_H
 
-#include <msgrpc/core/interface/iface_repository.h>
+#include <msgrpc/core/iface_impl/iface_repository.h>
 #include <msgrpc/thrift_struct/thrift_codec.h>
 #include <msgrpc/core/cell/cell.h>
 #include <msgrpc/core/msg/msg_sender.h>

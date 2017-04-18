@@ -3,10 +3,10 @@
 
 #include <cassert>
 #include <iostream>
-#include <msgrpc/core/interface/iface_impl_base.h>
+#include <msgrpc/core/iface_impl/iface_impl_base.h>
 #include <msgrpc/core/adapter/config.h>
 #include <msgrpc/core/msg/msg_sender.h>
-#include <msgrpc/core/interface/iface_repository.h>
+#include <msgrpc/core/iface_impl/iface_repository.h>
 
 //TODO: remove
 #include <test/details/test_constants.h>

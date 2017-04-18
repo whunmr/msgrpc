@@ -11,8 +11,6 @@
 #include "demo/demo_api_declare.h"
 
 //TODO: refactor long long as unsigned long long, and typedef to timeout_len_t for timer funcs
-////////////////////////////////////////////////////////////////////////////////
-
 #include <msgrpc/core/typedefs.h>
 #include <msgrpc/core/adapter/timer_adapter.h>
 #include <msgrpc/core/rpc_sequence_id.h>
@@ -24,70 +22,6 @@
 #include <msgrpc/core/cell/cell.h>
 #include <msgrpc/core/cell/derived_cell.h>
 #include <msgrpc/core/cell/timeout_cell.h>
-
-////////////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////////////
-namespace msgrpc {
-
-    struct RpcStubBase {
-        RpcStubBase(RpcContext& ctxt) : ctxt_(ctxt) { }
-        RpcContext& ctxt_;
-
-        //TODO: split into .h and .cpp
-        bool send_rpc_request_buf( msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index
-                                 , const uint8_t *pbuf, uint32_t len, RspSink* rpc_rsp_cell_sink) const {
-            size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
-
-            char *mem = (char *) malloc(msg_len_with_header);
-            if (!mem) {
-                std::cout << "alloc mem failed, during sending rpc request." << std::endl;
-                return false;
-            }
-
-            auto seq_id = msgrpc::RpcSequenceId::instance().get();
-            msgrpc::RspDispatcher::instance().register_rsp_Handler(seq_id, rpc_rsp_cell_sink);
-
-            auto header = (msgrpc::ReqMsgHeader *) mem;
-            header->msgrpc_version_ = 0;
-            header->iface_index_in_service_ = iface_index;
-            header->method_index_in_interface_ = method_index;
-            header->sequence_id_ = seq_id;
-            memcpy(header + 1, (const char *) pbuf, len);
-
-            //std::cout << "stub sending msg with length: " << msg_len_with_header << std::endl;
-            //TODO: find y_service_id by interface name "IBuzzMath"
-            msgrpc::service_id_t service_id = iface_index == 1 ? x_service_id : y_service_id;
-
-            msg_id_t req_msg_type = msgrpc::Config::instance().request_msg_id_;
-            bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(service_id, req_msg_type, mem, msg_len_with_header);
-            free(mem);
-
-            return send_ret;
-        }
-
-        template<typename T, typename U>
-        Cell<U>* encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const T &req) const {
-            uint8_t* pbuf;
-            uint32_t len;
-            /*TODO: extract interface for encode/decode for other protocol adoption such as protobuf*/
-            if (!ThriftEncoder::encode(req, &pbuf, &len)) {
-                /*TODO: how to do with log, maybe should extract logging interface*/
-                std::cout << "encode failed." << std::endl;
-                return nullptr; //TODO: return false;
-            }
-
-            Cell<U>* rpc_result_cell = new Cell<U>();
-
-            if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rpc_result_cell)) {
-                delete rpc_result_cell;
-                return nullptr;
-            }
-
-            return ctxt_.track(rpc_result_cell);
-        };
-    };
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
@@ -113,7 +47,7 @@ namespace msgrpc {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//interface implementation related elements:
+//iface_impl implementation related elements:
 namespace msgrpc {
     template<typename REQ, typename RSP>
     msgrpc::Cell<RSP>* call_sync_impl(void(*f)(const REQ &, RSP &), const REQ &req) {
@@ -144,7 +78,8 @@ namespace msgrpc {
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
 #include <msgrpc/util/singleton.h>
-#include <msgrpc/core/interface/iface_impl_base_t.h>
+#include <msgrpc/core/iface_impl/iface_impl_base_t.h>
+#include <msgrpc/core/iface_stub/iface_stub_base.h>
 
 using namespace demo;
 
@@ -152,7 +87,6 @@ using namespace demo;
 const int k_req_init_value = 1;
 const int k__sync_y__delta = 3;
 const int k__sync_x__delta = 17;
-
 
 void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char* msg, size_t len)> should_drop) {
     msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
@@ -198,8 +132,8 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, s
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
-struct InterfaceXStub : msgrpc::RpcStubBase {
-    using msgrpc::RpcStubBase::RpcStubBase;
+struct InterfaceXStub : msgrpc::IfaceStubBase {
+    using msgrpc::IfaceStubBase::IfaceStubBase;
     msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo&);
 };
 
@@ -244,7 +178,7 @@ msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//---------------- implement interface in here:
+//---------------- implement iface_impl in here:
 void ______sync_x_impl(const RequestFoo& req, ResponseBar& rsp) {
     rsp.__set_rspa(req.reqa + k__sync_x__delta);
 }
@@ -258,8 +192,8 @@ msgrpc::Cell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
-struct InterfaceYStub : msgrpc::RpcStubBase {
-    using msgrpc::RpcStubBase::RpcStubBase;
+struct InterfaceYStub : msgrpc::IfaceStubBase {
+    using msgrpc::IfaceStubBase::IfaceStubBase;
 
     msgrpc::Cell<ResponseBar>* ______sync_y(const RequestFoo&);
     msgrpc::Cell<ResponseBar>* _____async_y(const RequestFoo&);

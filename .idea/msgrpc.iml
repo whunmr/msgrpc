@@ -6,29 +6,35 @@
       <sourceFolder url="file://$MODULE_DIR$/demo/demo_service.interface" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/demo_api_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_constants.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_types.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_constants.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api.thrift" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo/gen1/api_types.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/adapter/config.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/adapter/timer_adapter.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/adapter/msg_channel.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/rpc_sequence_id.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/typedefs.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/api/service_api_define.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/api/service_api_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/util/type_traits.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/util/singleton.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/thrift_struct/thrift_types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/thrift_struct/thrift_struct_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/thrift_struct/thrift_codec.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/thrift_struct/thrift_struct_define.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/thrift_struct/thrift_struct_common.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/util/type_traits.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/util/singleton.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/frp/cell.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/api/service_api_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/api/service_api_define.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/msgrpc/core/rpc_sequence_id.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/test/test_thrift_struct.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/test/test_zookeeper.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/test/test_util/UdpChannel.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test/test_async_rpc.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/core/adapter/udp_msg_channel.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/core/adapter/simple_timer_adapter.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/details/test_constants.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/details/set_timer_handler.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/test_zookeeper.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/test_thrift_struct.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test/test_util/UdpChannel.h" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">

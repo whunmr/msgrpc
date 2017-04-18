@@ -20,49 +20,14 @@ using namespace std::chrono;
 
 #include <msgrpc/core/typedefs.h>
 #include <msgrpc/core/adapter/timer_adapter.h>
-
-
-namespace msgrpc {
-    template <typename T> struct Ret {};
-
-    typedef unsigned short service_id_t; //TODO: how to deal with different service id types
-
-    struct MsgChannel {
-        //TODO: extract common channel interface
-        //TODO: check common return value type
-        virtual bool send_msg(const service_id_t& remote_service_id, msg_id_t msg_id, const char* buf, size_t len) const = 0;
-    };
-
-    struct Config {
-        void init_with(MsgChannel* msg_channel, TimerAdapter* timer, msgrpc::msg_id_t request_msg_id, msgrpc::msg_id_t response_msg_id, msgrpc::msg_id_t set_timer_msg_id, msgrpc::msg_id_t timeout_msg_id) {
-            assert(msg_channel != nullptr && timer != nullptr);
-
-            msg_channel_ = msg_channel;
-            timer_ = timer;
-            request_msg_id_  = request_msg_id;
-            response_msg_id_ = response_msg_id;
-            set_timer_msg_id_ = set_timer_msg_id;
-            timeout_msg_id_ = timeout_msg_id;
-        }
-
-        static inline Config& instance() {
-            static thread_local Config instance;
-            return instance;
-        }
-
-        MsgChannel* msg_channel_ = {nullptr};
-        TimerAdapter* timer_ = {nullptr};
-        msg_id_t request_msg_id_ = 0;
-        msg_id_t response_msg_id_ = 0;
-        msg_id_t set_timer_msg_id_ = 0;
-        msg_id_t timeout_msg_id_ = 0;
-    };
-}
-
 #include <msgrpc/core/rpc_sequence_id.h>
+#include <msgrpc/core/adapter/config.h>
+#include <msgrpc/util/singleton.h>
+#include <test/core/adapter/simple_timer_adapter.h>
+#include <include/msgrpc/util/singleton.h>
+#include <test/test_util/UdpChannel.h>
 
 namespace msgrpc {
-
     typedef uint8_t  method_index_t;
     typedef uint16_t iface_index_t;
 
@@ -82,67 +47,6 @@ namespace msgrpc {
 
     struct RspMsgHeader : MsgHeader {
         RpcResult rpc_result_ = { RpcResult::succeeded };
-    };
-}
-
-////////////////////////////////////////////////////////////////////////////////
-const msgrpc::service_id_t x_service_id = 2222;
-const msgrpc::service_id_t y_service_id = 3333;
-const msgrpc::service_id_t timer_service_id = 5555;
-
-const msgrpc::msg_id_t k_msgrpc_request_msg_id = 101;
-const msgrpc::msg_id_t k_msgrpc_response_msg_id = 102;
-const msgrpc::msg_id_t k_msgrpc_set_timer_msg = 103;
-const msgrpc::msg_id_t k_msgrpc_timeout_msg = 104;
-
-
-struct test_service : msgrpc::ThreadLocalSingleton<test_service> {
-    msgrpc::service_id_t current_service_id_;
-};
-
-namespace demo {
-    struct timer_info {
-        long long millionseconds_;
-        msgrpc::service_id_t service_id_;
-        void *user_data_;
-    };
-
-    struct TimerMgr : msgrpc::ThreadLocalSingleton<TimerMgr> {
-        void cancel_timer(msgrpc::rpc_sequence_id_t id) {
-            canceled_timer_ids_.push_back(id);
-        }
-
-        bool should_ignore(const char* msg, size_t len) {
-            assert(msg != nullptr && len == sizeof(timer_info));
-            timer_info& ti = *(timer_info*)msg;
-
-            msgrpc::rpc_sequence_id_t seq_id =  (msgrpc::rpc_sequence_id_t)((uintptr_t)(ti.user_data_));
-            return std::find(canceled_timer_ids_.begin(), canceled_timer_ids_.end(), seq_id) != canceled_timer_ids_.end();
-        }
-
-        void reset() {
-            canceled_timer_ids_.clear();
-        }
-
-        std::vector<msgrpc::rpc_sequence_id_t> canceled_timer_ids_;
-    };
-
-    struct DemoTimerAdapter : msgrpc::TimerAdapter, msgrpc::Singleton<DemoTimerAdapter> {
-        virtual void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data) const override {
-            msgrpc::service_id_t service_id = test_service::instance().current_service_id_;
-
-            timer_info ti;
-            ti.millionseconds_ = millionseconds;
-            ti.service_id_ = test_service::instance().current_service_id_;
-            ti.user_data_ = user_data;
-
-            msgrpc::Config::instance().msg_channel_->send_msg(timer_service_id, timeout_msg_id, (const char*)&ti, sizeof(ti));
-        }
-
-        virtual void cancel_timer(msgrpc::msg_id_t timeout_msg_id, void* user_data) const override {
-            cout << "[timer] cancel timer id: " << (msgrpc::rpc_sequence_id_t)((uintptr_t)(user_data)) << endl;
-            demo::TimerMgr::instance().cancel_timer(msgrpc::rpc_sequence_id_t((uintptr_t)user_data));
-        }
     };
 }
 
@@ -553,8 +457,10 @@ namespace msgrpc {
 
     struct MsgSender {
         static void send_msg_with_header(const msgrpc::service_id_t& service_id, const RspMsgHeader &rsp_header, const uint8_t *pout_buf, uint32_t out_buf_len) {
+            msg_id_t rsp_msg_type = Config::instance().response_msg_id_;
+
             if (pout_buf == nullptr || out_buf_len == 0) {
-                Config::instance().msg_channel_->send_msg(service_id, k_msgrpc_response_msg_id, (const char*)&rsp_header, sizeof(rsp_header));
+                Config::instance().msg_channel_->send_msg(service_id, rsp_msg_type, (const char*)&rsp_header, sizeof(rsp_header));
                 return;
             }
 
@@ -563,7 +469,7 @@ namespace msgrpc {
             if (mem != nullptr) {
                 memcpy(mem, &rsp_header, sizeof(rsp_header));
                 memcpy(mem + sizeof(rsp_header), pout_buf, out_buf_len);
-                Config::instance().msg_channel_->send_msg(service_id, k_msgrpc_response_msg_id, mem, rsp_len_with_header);
+                Config::instance().msg_channel_->send_msg(service_id, rsp_msg_type, mem, rsp_len_with_header);
                 free(mem);
             }
         }
@@ -571,7 +477,9 @@ namespace msgrpc {
 
     struct RpcReqMsgHandler {
         static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
-            assert(msg_id == k_msgrpc_request_msg_id && "invalid msg id for rpc");
+            msg_id_t req_msg_type = Config::instance().request_msg_id_;
+
+            assert(msg_id == req_msg_type && "invalid msg id for rpc");
 
             if (len < sizeof(msgrpc::ReqMsgHeader)) {
                 cout << "invalid msg: without sufficient msg header info." << endl;
@@ -587,12 +495,15 @@ namespace msgrpc {
             rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
             rsp_header.sequence_id_ = req_header->sequence_id_;
 
+            //TODO: add sender info query method
             msgrpc::service_id_t sender_id = req_header->iface_index_in_service_ == 2 ? x_service_id : y_service_id;
 
             IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
             if (iface == nullptr) {
                 rsp_header.rpc_result_ = RpcResult::iface_not_found;
-                msgrpc::Config::instance().msg_channel_->send_msg(sender_id, k_msgrpc_response_msg_id, (const char *) &rsp_header, sizeof(rsp_header));
+
+                msg_id_t rsp_msg_type = Config::instance().response_msg_id_;
+                msgrpc::Config::instance().msg_channel_->send_msg(sender_id, rsp_msg_type, (const char *) &rsp_header, sizeof(rsp_header));
                 return;
             }
 
@@ -708,7 +619,8 @@ namespace msgrpc {
             //TODO: find y_service_id by interface name "IBuzzMath"
             msgrpc::service_id_t service_id = iface_index == 1 ? x_service_id : y_service_id;
 
-            bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(service_id, k_msgrpc_request_msg_id, mem, msg_len_with_header);
+            msg_id_t req_msg_type = msgrpc::Config::instance().request_msg_id_;
+            bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(service_id, req_msg_type, mem, msg_len_with_header);
             free(mem);
 
             return send_ret;
@@ -792,43 +704,18 @@ namespace msgrpc {
 #define ___async_cell(logic, ...) \
         derive_async_cell(ctxt , [&ctxt, __VA_ARGS__]() -> Cell<ResponseBar>& { return logic(ctxt, __VA_ARGS__); } , __VA_ARGS__);
 
-////////////////////////////////////////////////////////////////////////////////
-#include "test_util/UdpChannel.h"
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <test/core/adapter/udp_msg_channel.h>
+#include <test/details/set_timer_handler.h>
 
-namespace demo {
-
-    struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::ThreadLocalSingleton<UdpMsgChannel> {
-        virtual bool send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
-            if (msg_id != k_msgrpc_set_timer_msg && msg_id != k_msgrpc_timeout_msg) {
-                cout << ((remote_service_id == x_service_id) ? "X <------ " : "   ------> Y") << endl;
-            }
-
-            size_t msg_len_with_msgid = sizeof(msgrpc::msg_id_t) + len;
-            char* mem = (char*)malloc(msg_len_with_msgid);
-            if (mem) {
-                *(msgrpc::msg_id_t*)(mem) = msg_id;
-                memcpy(mem + sizeof(msgrpc::msg_id_t), buf, len);
-                g_msg_channel->send_msg_to_remote(string(mem, msg_len_with_msgid), udp::endpoint(udp::v4(), remote_service_id));
-                free(mem);
-            } else {
-                cout << "send msg failed: allocation failure." << endl;
-            }
-            return true;
-        }
-    };
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using namespace demo;
 
 //constants for testing.
@@ -837,54 +724,21 @@ const int k__sync_y__delta = 3;
 const int k__sync_x__delta = 17;
 
 namespace demo {
-    struct SetTimerHandler : msgrpc::ThreadLocalSingleton<SetTimerHandler> {
-        void set_timer(const char* msg, size_t len) {
-            static unsigned short entry_times = 0;
-            ++entry_times;
-
-            assert(msg != nullptr && len == sizeof(timer_info));
-            timer_info& ti = *(timer_info*)msg;
-
-            unsigned short temp_udp_port = timer_service_id + entry_times;
-
-            std::thread timer_thread([ti, temp_udp_port]{
-                msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
-                                                    , &DemoTimerAdapter::instance()
-                                                    , k_msgrpc_request_msg_id
-                                                    , k_msgrpc_response_msg_id
-                                                    , k_msgrpc_set_timer_msg
-                                                    , k_msgrpc_timeout_msg);
-
-                UdpChannel channel(temp_udp_port,
-                   [ti](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-                       if (0 == strcmp(msg, "init")) {
-                           this_thread::sleep_for(milliseconds(ti.millionseconds_));
-                           msgrpc::Config::instance().msg_channel_->send_msg(ti.service_id_, k_msgrpc_timeout_msg, (const char*)&ti, sizeof(ti));
-                       }
-                   }
-                );
-            });
-            timer_thread.detach();
-        }
-    };
-}
-
-namespace msgrpc {
     struct RpcTimeoutHandler : msgrpc::ThreadLocalSingleton<RpcTimeoutHandler> {
         void on_timeout(const char* msg, size_t len) {
             assert(msg != nullptr && len == sizeof(timer_info));
             timer_info& ti = *(timer_info*)msg;
 
-            rpc_sequence_id_t seq_id =  (rpc_sequence_id_t)((uintptr_t)(ti.user_data_));
+            msgrpc::rpc_sequence_id_t seq_id =  (msgrpc::rpc_sequence_id_t)((uintptr_t)(ti.user_data_));
 
-            RpcRspDispatcher::instance().on_rsp_handler_timeout(seq_id);
+            msgrpc::RpcRspDispatcher::instance().on_rsp_handler_timeout(seq_id);
         }
     };
 }
 
 void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char* msg, size_t len)> should_drop) {
     msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
-                                        , &DemoTimerAdapter::instance()
+                                        , &SimpleTimerAdapter::instance()
                                         , k_msgrpc_request_msg_id
                                         , k_msgrpc_response_msg_id
                                         , k_msgrpc_set_timer_msg
@@ -906,7 +760,7 @@ void msgrpc_loop(unsigned short udp_port, std::function<void(void)> init_func, s
                 return demo::SetTimerHandler::instance().set_timer(msg, len);
             } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
                 if (! TimerMgr::instance().should_ignore(msg, len)) {
-                    return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
+                    return demo::RpcTimeoutHandler::instance().on_timeout(msg, len);
                 }
             } else {
                 cout << "got unknow msg with id: " << msg_id << endl;

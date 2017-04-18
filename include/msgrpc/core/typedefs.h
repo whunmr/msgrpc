@@ -3,6 +3,8 @@
 
 namespace msgrpc {
     typedef unsigned short msg_id_t;
+
+    typedef unsigned short service_id_t; //TODO: how to deal with different service id types
 }
 
 #endif //MSGRPC_TYPEDEFS_H

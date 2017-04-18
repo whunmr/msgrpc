@@ -1,6 +1,5 @@
 #ifndef MSGRPC_UDPCHANNEL_H
 #define MSGRPC_UDPCHANNEL_H
-
 #include <ctime>
 #include <iostream>
 #include <string>
@@ -9,6 +8,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
 #include <mutex>
+
+#include <msgrpc/core/typedefs.h>
+
 using boost::asio::ip::udp;
 
 typedef std::function<void(msgrpc::msg_id_t msg_id, const char* msg, size_t len)> OnMsgFunc;

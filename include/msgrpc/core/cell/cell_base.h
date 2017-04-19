@@ -14,15 +14,8 @@ namespace msgrpc {
     struct CellStatus {
         virtual ~CellStatus() = default;
 
-        bool has_value_{false};
-
-        //cell's status:
-        //  empty:   succeeded, not has_value_;
-        //  value:   succeeded, has_value_;
-        //  error:   failed or timeout
-        RpcResult status_ = {RpcResult::succeeded};
-
         void set_failed_reason(RpcResult ret) {
+
             status_ = ret;
             evaluate_all_derived_cells();
         }
@@ -67,6 +60,16 @@ namespace msgrpc {
 
       protected:
         std::vector<Updatable *> updatables_;
+
+        bool has_value_{false};
+
+        //cell's status:
+        //  empty:   succeeded, not has_value_;
+        //  value:   succeeded, has_value_;
+        //  error:   failed or timeout
+        RpcResult status_ = {RpcResult::succeeded};
+
+        template<typename T> friend struct DefaultCell;
     };
 
     struct RpcContext {

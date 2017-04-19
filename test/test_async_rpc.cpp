@@ -146,8 +146,10 @@ struct InterfaceYImpl : msgrpc::InterfaceImplBaseT<InterfaceYImpl, 2> {
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set: interface_implement_define.h
 InterfaceYImpl interfaceYImpl_auto_register_instance;
-msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
-                                             , size_t len, msgrpc::RspMsgHeader& rsp_header
+msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header
+                                             , const char* msg
+                                             , size_t len
+                                             , msgrpc::RspMsgHeader& rsp_header
                                              , msgrpc::service_id_t& sender_id) {
     msgrpc::RpcResult ret;
 
@@ -223,7 +225,7 @@ TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case100) {
     //        x (sync_x) ==========(rsp2)====>y  (async_y)
     // x <---(rsp1)---------------------------y  (async_y)
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.has_value_);
+        EXPECT_TRUE(___r.has_value());
         EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value().rspa);
     };
 
@@ -248,7 +250,7 @@ TEST_F(MsgRpcTest, should_able_to_support___SI_with_single_rpc____which_bind_wit
     // x ----(req)---->y (sync_y)
     // x <---(components)-----y
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.has_value_);
+        EXPECT_TRUE(___r.has_value());
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
     };
 
@@ -260,7 +262,7 @@ TEST_F(MsgRpcTest, should_able_to_support___SI_with_single_rpc____which_bind_wit
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1, Cell<ResponseBar>& cell_2)  {
-    if (cell_1.has_value_ && cell_2.has_value_) {
+    if (cell_1.has_value() && cell_2.has_value()) {
         ResponseBar bar;
         bar.rspa = cell_1.value().rspa + cell_2.value().rspa;
         result.set_value(bar);
@@ -285,7 +287,7 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_concurrent_rpc__and__merge_mu
     //        x (sync_x) ==========(rsp2)====>y  (async_y)
     // x <---(rsp1)---------------------------y  (async_y)
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.has_value_);
+        EXPECT_TRUE(___r.has_value());
         int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
         EXPECT_EQ(expect_value, ___r.value().rspa);
     };
@@ -333,7 +335,7 @@ struct SI_case4001 : SIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support__SI_with_sequential_rpc______case4001) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.has_value_);
+        EXPECT_TRUE(___r.has_value());
         EXPECT_EQ(k_req_init_value + k__sync_y__delta * 3, ___r.value().rspa);
     };
 
@@ -359,7 +361,7 @@ struct SI_case4011_failed : SIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_of_sequential_rpc______case4011) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_EQ(false, ___r.has_value_);
+        EXPECT_EQ(false, ___r.has_value());
         EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
     };
 
@@ -386,7 +388,7 @@ struct SI_case4021_failed : SIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_of_sequential_rpc______case4021) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_EQ(false, ___r.has_value_);
+        EXPECT_EQ(false, ___r.has_value());
         EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
     };
 
@@ -397,7 +399,7 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void gen2(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp_cell_1)  {
-    if (rsp_cell_1.has_value_) {
+    if (rsp_cell_1.has_value()) {
         result.set_value(rsp_cell_1);
     }
 };
@@ -417,7 +419,7 @@ struct SI_case500 : SIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support___parallel_rpcs_merge_after___1_transform_into__cell___2________case500) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_TRUE(___r.has_value_);
+        EXPECT_TRUE(___r.has_value());
         int expect_value = (k_req_init_value + k__sync_x__delta) * 2;
         EXPECT_EQ(expect_value, ___r.value().rspa);
     };
@@ -441,7 +443,7 @@ struct SI_case600 : SIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support_failure_propagation__during__bind_cell_____case600) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_FALSE(___r.has_value_);
+        EXPECT_FALSE(___r.has_value());
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case600>(then_check);}, not_drop_msg);
@@ -465,7 +467,7 @@ struct SI_case700_timeout : SIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support__rpc_with_timer_and_retry___case700) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_EQ(false, ___r.has_value_);
+        EXPECT_EQ(false, ___r.has_value());
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
@@ -507,7 +509,7 @@ struct SI_case701_timeout_action : SIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc__after__rpc_failed_______case701) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_EQ(false, ___r.has_value_);
+        EXPECT_EQ(false, ___r.has_value());
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
@@ -518,7 +520,7 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc__after__rpc_fail
 
 TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc___do_not_rollback__if_rpc_succeeded_______case7011) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_EQ(true, ___r.has_value_);
+        EXPECT_EQ(true, ___r.has_value());
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case701_timeout_action>(then_check);}, not_drop_msg);
@@ -558,7 +560,7 @@ struct SI_case8 : SIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_result_from_retry_______case8) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_EQ(true, ___r.has_value_);
+        EXPECT_EQ(true, ___r.has_value());
         EXPECT_EQ(RpcResult::succeeded, ___r.failed_reason());
     };
 
@@ -598,7 +600,7 @@ struct SI_case900 : SIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation__through_sequential_rpcs_______case900) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_EQ(false, ___r.has_value_);
+        EXPECT_EQ(false, ___r.has_value());
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
@@ -635,7 +637,7 @@ struct SI_case1000 : SIBase<RequestFoo, ResponseBar> {
 
 TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1000) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
-        EXPECT_EQ(false, ___r.has_value_);
+        EXPECT_EQ(false, ___r.has_value());
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1000>(then_check);}, not_drop_msg);

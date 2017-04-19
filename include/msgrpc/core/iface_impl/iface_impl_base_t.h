@@ -10,7 +10,7 @@ namespace msgrpc {
 
     template<typename RSP>
     static RpcResult send_rsp_cell_value(const service_id_t& sender_id, const RspMsgHeader &rsp_header, const Cell<RSP>& rsp_cell) {
-        if (!rsp_cell.has_value_) {
+        if (!rsp_cell.has_value()) {
             return RpcResult::failed;
         }
 
@@ -49,14 +49,14 @@ namespace msgrpc {
                 return RpcResult::failed;
             }
 
-            if (rsp_cell->has_value_) {
+            if (rsp_cell->has_value()) {
                 RpcResult ret = send_rsp_cell_value(sender_id, rsp_header, *rsp_cell);
                 delete rsp_cell;
                 return ret;
             }
 
             auto final_action = derive_final_action([sender_id, rsp_header](msgrpc::Cell<RSP>& r) {
-                if (r.has_value_) {
+                if (r.has_value()) {
                     send_rsp_cell_value(sender_id, rsp_header, r);
                 } else {
                     //TODO: handle error case where result do not contains value. maybe timeout?

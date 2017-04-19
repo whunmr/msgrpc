@@ -34,6 +34,8 @@
 #include <msgrpc/core/iface_impl/iface_impl_base_t.h>
 #include <msgrpc/core/iface_stub/iface_stub_base.h>
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "TemplateArgumentsIssues"
 using namespace demo;
 
 //constants for testing.
@@ -43,10 +45,10 @@ const int k__sync_x__delta = 17;
 
 ////////////////////////////////////////////////////////////////////////////////
 //TODO: define following macros:
-#define declare_interface_on_consumer
-#define  define_interface_on_consumer
-#define declare_interface_on_provider
-#define  define_interface_on_provider
+#define declare_interface_stub
+#define  define_interface_stub
+#define declare_interface_impl
+#define  define_interface_impl
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,7 +122,7 @@ struct InterfaceYStub : msgrpc::IfaceStubBase {
 };
 
 msgrpc::Cell<ResponseBar>* InterfaceYStub::______sync_y(const RequestFoo& req) {
-    return encode_request_and_send<RequestFoo, ResponseBar>(2, 1, req);       //TODO: what if encode_request_and_send failed and return failed cell immediately
+    return encode_request_and_send<RequestFoo, ResponseBar>(2, 1, req);       
 }
 
 msgrpc::Cell<ResponseBar>* InterfaceYStub::_____async_y(const RequestFoo& req) {
@@ -141,6 +143,7 @@ struct InterfaceYImpl : msgrpc::InterfaceImplBaseT<InterfaceYImpl, 2> {
     msgrpc::Cell<ResponseBar>* ______sync_y(const RequestFoo& req);
     msgrpc::Cell<ResponseBar>* _____async_y(const RequestFoo& req);
     msgrpc::Cell<ResponseBar>* ______sync_y_failed(const RequestFoo& req);
+    msgrpc::Cell<ResponseBar>* ______sync_y_failed_immediately(const RequestFoo&);
 
     virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
             , const char* msg, size_t len
@@ -168,6 +171,10 @@ msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 
     if (req_header.method_index_in_interface_ == 3) {
         ret = this->invoke_templated_method(&InterfaceYImpl::______sync_y_failed, msg, len, sender_id, rsp_header);
+    } else
+
+    if (req_header.method_index_in_interface_ == 4) {
+        ret = this->invoke_templated_method(&InterfaceYImpl::______sync_y_failed_immediately, msg, len, sender_id, rsp_header);
     } else
 
     {
@@ -206,16 +213,37 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
 
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo& req) {
     std::cout << "                     ______sync_y_failed" << std::endl;
-    return nullptr;
+    return Cell<ResponseBar>::new_failed_instance();
 }
 
+msgrpc::Cell<ResponseBar>* ______sync_y_failed_immediately(const RequestFoo&) {
+    return Cell<ResponseBar>::new_failed_instance();
+}
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <include/msgrpc/core/cell/derived_action.h>
 #include <msgrpc/test/details/msgrpc_test_loop.h>
 #include <msgrpc/test/details/msgrpc_test.h>
 using namespace msgrpc;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SI_case000 : SIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
+        return InterfaceYStub(ctxt).______sync_y(req);
+    }
+};
+
+TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case000) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_TRUE(___r.has_value());
+        EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case000>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}, not_drop_msg);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case100 : SIBase<RequestFoo, ResponseBar> {
@@ -225,10 +253,6 @@ struct SI_case100 : SIBase<RequestFoo, ResponseBar> {
 };
 
 TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case100) {
-    // x ----(req1)-------------------------->y  (async_y)
-    //        x (sync_x) <=========(req2)=====y  (async_y)
-    //        x (sync_x) ==========(rsp2)====>y  (async_y)
-    // x <---(rsp1)---------------------------y  (async_y)
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value());
         EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value().rspa);
@@ -682,3 +706,5 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1100) {
     test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 
+
+#pragma clang diagnostic pop

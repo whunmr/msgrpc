@@ -51,19 +51,19 @@ namespace demo {
     ___as_struct(ResponseBar);
 
 #if 0
-    #define ___methods_of_interface___InterfaceX(_, ...)        \
+    #define ___methods_of_interface___InterfaceX(_, ...)\
         _(1, ResponseBar, ______sync_x, RequestFoo, (方法注释), __VA_ARGS__)
     ___as_interface(InterfaceX, __with_interface_id(1))
 
 
-    #define ___methods_of_interface___InterfaceY(_, ...)                          \
-        _(1, ResponseBar, ______sync_y       , RequestFoo, (方法注释), __VA_ARGS__)\
-        _(2, ResponseBar, _____async_y       , RequestFoo, (方法注释), __VA_ARGS__)\
-        _(3, ResponseBar, ______sync_y_failed, RequestFoo, (方法注释), __VA_ARGS__)
+    #define ___methods_of_interface___InterfaceY(_, ...)                                      \
+        _(1, ResponseBar, ______sync_y                   , RequestFoo, (方法注释), __VA_ARGS__)\
+        _(2, ResponseBar, _____async_y                   , RequestFoo, (方法注释), __VA_ARGS__)\
+        _(3, ResponseBar, ______sync_y_failed            , RequestFoo, (方法注释), __VA_ARGS__)\
+        _(4, ResponseBar, ______sync_y_failed_immediately, RequestFoo, (方法注释), __VA_ARGS__)
     ___as_interface(InterfaceY, __with_interface_id(2))
-
-    /*TODO: interface_impl uniqueness checking*/
 #endif
+
 
 #if 0
     #define ___fields_of_event___UserAttachedEvent(_, ...)   \

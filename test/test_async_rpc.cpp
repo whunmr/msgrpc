@@ -116,10 +116,11 @@ struct InterfaceYStub : msgrpc::IfaceStubBase {
     msgrpc::Cell<ResponseBar>* ______sync_y(const RequestFoo&);
     msgrpc::Cell<ResponseBar>* _____async_y(const RequestFoo&);
     msgrpc::Cell<ResponseBar>* ______sync_y_failed(const RequestFoo&);
+    msgrpc::Cell<ResponseBar>* ______sync_y_failed_immediately(const RequestFoo&);
 };
 
 msgrpc::Cell<ResponseBar>* InterfaceYStub::______sync_y(const RequestFoo& req) {
-    return encode_request_and_send<RequestFoo, ResponseBar>(2, 1, req);
+    return encode_request_and_send<RequestFoo, ResponseBar>(2, 1, req);       //TODO: what if encode_request_and_send failed and return failed cell immediately
 }
 
 msgrpc::Cell<ResponseBar>* InterfaceYStub::_____async_y(const RequestFoo& req) {
@@ -128,6 +129,10 @@ msgrpc::Cell<ResponseBar>* InterfaceYStub::_____async_y(const RequestFoo& req) {
 
 msgrpc::Cell<ResponseBar>* InterfaceYStub::______sync_y_failed(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(2, 3, req);
+}
+
+msgrpc::Cell<ResponseBar>* InterfaceYStub::______sync_y_failed_immediately(const RequestFoo& req) {
+    return msgrpc::Cell<ResponseBar>::new_failed_instance();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

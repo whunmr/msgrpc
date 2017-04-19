@@ -17,10 +17,8 @@ namespace msgrpc {
 
     template<typename T>
     Cell<T>* failed_cell_with_reason(RpcContext &ctxt, const RpcResult& failed_reason) {
-        Cell<T>* cell = new Cell<T>();
-        cell->set_failed_reason(failed_reason);
-        ctxt.track(cell);
-        return cell;
+        Cell<T>* cell = Cell<T>::new_instance(failed_reason);
+        return ctxt.track(cell);
     }
 }
 

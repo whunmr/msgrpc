@@ -28,6 +28,7 @@ namespace msgrpc {
         void register_as_listener() {
         }
 
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual void set_rpc_rsp(const RspMsgHeader& rsp_header, const char* msg, size_t len) override {
             if (rsp_header.rpc_result_ != RpcResult::succeeded) {
                 std::cout << "rsp_header->rpc_result_: " << (int)rsp_header.rpc_result_ << std::endl;
@@ -47,8 +48,21 @@ namespace msgrpc {
             CellBase<T>::set_value(rsp);
         }
 
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual void set_timeout() override {
             CellBase<T>::set_failed_reason(RpcResult::timeout);
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        static Cell<T>* new_instance(const RpcResult& failed_reason) {
+            Cell<T>* cell = new Cell<T>();
+            cell->status_ = failed_reason;
+            return cell;
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        static Cell<T>* new_failed_instance() {
+            return new_instance(RpcResult::failed);
         }
     };
 

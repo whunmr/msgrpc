@@ -7,11 +7,6 @@ namespace msgrpc {
 
     template<typename T, typename U>
     struct SIBase { /*SI is short for service interaction*/
-
-        msgrpc::Cell<U> *run_nested_si(const T &req, RpcContext& ctxt) {
-            return do_run(req, ctxt);
-        }
-
         msgrpc::Cell<U> *run(const T &req) {
             msgrpc::RpcContext *ctxt = new msgrpc::RpcContext();
 

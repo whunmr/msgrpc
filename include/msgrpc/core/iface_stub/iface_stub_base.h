@@ -7,7 +7,6 @@
 #include <msgrpc/core/typedefs.h>
 #include <msgrpc/core/cell/cell_base.h>
 #include <msgrpc/core/cell/cell.h>
-#include <msgrpc/core/cell/default_cell.h>
 
 namespace msgrpc {
 
@@ -56,14 +55,14 @@ namespace msgrpc {
             if (!ThriftEncoder::encode(req, &pbuf, &len)) {
                 /*TODO: how to do with log, maybe should extract logging iface_impl*/
                 std::cout << "encode failed." << std::endl;
-                return DefaultCell<RSP>::failed_instance();
+                return failed_cell_with_reason<RSP>(ctxt_, RpcResult::failed);
             }
 
             Cell<RSP>* rpc_result_cell = new Cell<RSP>();
 
             if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rpc_result_cell)) {
                 delete rpc_result_cell;
-                return DefaultCell<RSP>::failed_instance();
+                return failed_cell_with_reason<RSP>(ctxt_, RpcResult::failed);
             }
 
             return ctxt_.track(rpc_result_cell);

@@ -55,18 +55,18 @@ const int k__sync_x__delta = 17;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
 
-struct InterfaceXStub : msgrpc::IfaceStubBase {
+struct InterfaceX : msgrpc::IfaceStubBase {
     using msgrpc::IfaceStubBase::IfaceStubBase;
     msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo&);
 };
 
-msgrpc::Cell<ResponseBar>* InterfaceXStub::______sync_x(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceX::______sync_x(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set:
-struct InterfaceXImpl : msgrpc::InterfaceImplBaseT<InterfaceXImpl, 1> {
+struct InterfaceX_impl : msgrpc::InterfaceImplBaseT<InterfaceX_impl, 1> {
     msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo& req);
 
     virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
@@ -78,15 +78,15 @@ struct InterfaceXImpl : msgrpc::InterfaceImplBaseT<InterfaceXImpl, 1> {
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set: interface_implement_define.h
-InterfaceXImpl interfaceXImpl_auto_register_instance;
-msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
+InterfaceX_impl interfaceXImpl_auto_register_instance;
+msgrpc::RpcResult InterfaceX_impl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
         , size_t len, msgrpc::RspMsgHeader& rsp_header
         , msgrpc::service_id_t& sender_id) {
 
     msgrpc::RpcResult ret;
 
     if (req_header.method_index_in_interface_ == 1) {
-        ret = this->invoke_templated_method(&InterfaceXImpl::______sync_x, msg, len, sender_id, rsp_header);
+        ret = this->invoke_templated_method(&InterfaceX_impl::______sync_x, msg, len, sender_id, rsp_header);
     } else
 
     {
@@ -102,7 +102,7 @@ msgrpc::RpcResult InterfaceXImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-msgrpc::Cell<ResponseBar>* InterfaceXImpl::______sync_x(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceX_impl::______sync_x(const RequestFoo& req) {
     std::cout << "                     ______sync_x" << std::endl;
 
     return msgrpc::call_sync_iface_impl<ResponseBar>(
@@ -204,7 +204,7 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
 
 struct SI_____async_y : msgrpc::SIBase<RequestFoo, ResponseBar> {
     virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext& ctxt) override {
-        return InterfaceXStub(ctxt).______sync_x(req);
+        return InterfaceX(ctxt).______sync_x(req);
     }
 };
 

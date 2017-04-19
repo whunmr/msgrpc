@@ -11,7 +11,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //during struct_declaration, do_nothing for interface related macros.
-#define ___as_interface(...)
+#ifdef ___as_interface
+#undef ___as_interface
+#endif
 
+#define ___as_interface(...)
+////////////////////////////////////////////////////////////////////////////////
 
 #endif //MSGRPC_SERVICE_API_DEFINE_H_H

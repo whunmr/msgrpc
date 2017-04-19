@@ -7,6 +7,8 @@
 #include <msgrpc/core/typedefs.h>
 #include <msgrpc/core/cell/cell_base.h>
 #include <msgrpc/core/cell/cell.h>
+#include <msgrpc/core/adapter/config.h>
+#include <msgrpc/core/iface_impl/iface_impl_utility.h>
 
 namespace msgrpc {
 
@@ -38,7 +40,7 @@ namespace msgrpc {
 
             //std::cout << "stub sending msg with length: " << msg_len_with_header << std::endl;
             //TODO: find y_service_id by iface_impl name "IBuzzMath"
-            msgrpc::service_id_t service_id = iface_index == 1 ? x_service_id : y_service_id;
+            msgrpc::service_id_t service_id = iface_index == 1 ? 2222 /*x_service_id*/ : 3333 /*y_service_id*/;
 
             msgrpc::msg_id_t req_msg_type = msgrpc::Config::instance().request_msg_id_;
             bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(service_id, req_msg_type, mem, msg_len_with_header);

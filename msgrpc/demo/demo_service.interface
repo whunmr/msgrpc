@@ -53,7 +53,7 @@ namespace demo {
 
     #define ___methods_of_interface___InterfaceX(_, ...)\
         _(1, ResponseBar, ______sync_x, RequestFoo, (方法注释), __VA_ARGS__)
-    ___as_interface(InterfaceX, __with_interface_id(1))
+    ___as_interface(InterfaceX, 1);
 
 
     #define ___methods_of_interface___InterfaceY(_, ...)                                      \
@@ -61,7 +61,7 @@ namespace demo {
         _(2, ResponseBar, _____async_y                   , RequestFoo, (方法注释), __VA_ARGS__)\
         _(3, ResponseBar, ______sync_y_failed            , RequestFoo, (方法注释), __VA_ARGS__)\
         _(4, ResponseBar, ______sync_y_failed_immediately, RequestFoo, (方法注释), __VA_ARGS__)
-    ___as_interface(InterfaceY, __with_interface_id(2))
+    ___as_interface(InterfaceY, 2);
 
 
 #if 0

@@ -48,13 +48,15 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_thrift_struct.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_util/UdpChannel.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/CMakeLists.txt" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_service.interface" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_service.interface" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_y/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/CMakeLists.txt" isTestSource="false" />

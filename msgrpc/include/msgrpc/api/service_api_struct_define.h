@@ -8,6 +8,10 @@
 #undef ___api_version
 #endif
 #define ___api_version(version)  const char* api_version = #version;
+
 ////////////////////////////////////////////////////////////////////////////////
+//during struct_declaration, do_nothing for interface related macros.
+#define ___as_interface(...)
+
 
 #endif //MSGRPC_SERVICE_API_DEFINE_H_H

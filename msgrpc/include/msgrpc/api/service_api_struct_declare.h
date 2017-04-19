@@ -9,6 +9,10 @@
 #endif
 
 #define ___api_version(version)  extern const char* api_version;
+
 ////////////////////////////////////////////////////////////////////////////////
+//during struct_declaration, do_nothing for interface related macros.
+#define ___as_interface(...)
+
 
 #endif //MSGRPC_SERVICE_API_DECLARE_H_H

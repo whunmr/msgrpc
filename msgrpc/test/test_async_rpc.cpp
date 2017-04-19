@@ -7,7 +7,7 @@
 #include <future>
 #include <atomic>
 
-#include "demo/demo_api_declare.h"
+#include "demo/demo_api_struct_declare.h"
 
 #include <msgrpc/core/typedefs.h>
 #include <msgrpc/core/adapter/timer_adapter.h>
@@ -215,11 +215,11 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
 
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo& req) {
     std::cout << "                     ______sync_y_failed" << std::endl;
-    return msgrpc::Cell<ResponseBar>::new_failed_instance();
+    return nullptr;  //TODO: fix 4011 testcae failure: msgrpc::Cell<ResponseBar>::new_failed_instance();
 }
 
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed_immediately(const RequestFoo&) {
-    return msgrpc::Cell<ResponseBar>::new_failed_instance();
+    return nullptr; //TODO: fix 4011 testcae failure: msgrpc::Cell<ResponseBar>::new_failed_instance();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

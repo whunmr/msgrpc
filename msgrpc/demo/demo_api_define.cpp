@@ -1,4 +1,4 @@
-#include "demo_api_declare.h"
+#include "demo_api_struct_declare.h"
 
 #include <msgrpc/api/service_api_struct_define.h>
 #include "demo_service.interface"

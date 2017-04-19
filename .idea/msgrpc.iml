@@ -50,7 +50,7 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_service.interface" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.cpp" isTestSource="false" />

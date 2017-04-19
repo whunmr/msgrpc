@@ -10,7 +10,7 @@
 
 #include <msgrpc/util/singleton.h>
 #include <msgrpc/core/rpc_sequence_id.h>
-#include <test/details/test_constants.h>
+#include <msgrpc/test/details/test_constants.h>
 #include <msgrpc/core/adapter/config.h>
 #include <msgrpc/core/adapter/timer_adapter.h>
 

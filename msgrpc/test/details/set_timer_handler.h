@@ -1,14 +1,14 @@
 #ifndef MSGRPC_SET_TIMER_HANDLER_H
 #define MSGRPC_SET_TIMER_HANDLER_H
 
-#include <test/core/adapter/simple_timer_adapter.h>
+#include <msgrpc/test/core/adapter/simple_timer_adapter.h>
 
 #include <cassert>
 #include <thread>
 
 #include <msgrpc/util/singleton.h>
-#include <test/test_util/UdpChannel.h>
-#include <test/core/adapter/udp_msg_channel.h>
+#include <msgrpc/test/test_util/UdpChannel.h>
+#include <msgrpc/test/core/adapter/udp_msg_channel.h>
 
 namespace demo {
     struct SetTimerHandler : msgrpc::ThreadLocalSingleton<SetTimerHandler> {

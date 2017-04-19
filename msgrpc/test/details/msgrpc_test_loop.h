@@ -3,10 +3,10 @@
 
 #include <iostream>
 #include <msgrpc/core/adapter/config.h>
-#include <test/details/test_constants.h>
-#include <test/core/adapter/simple_timer_adapter.h>
-#include <test/core/adapter/udp_msg_channel.h>
-#include <test/test_util/UdpChannel.h>
+#include <msgrpc/test/details/test_constants.h>
+#include <msgrpc/test/core/adapter/simple_timer_adapter.h>
+#include <msgrpc/test/core/adapter/udp_msg_channel.h>
+#include <msgrpc/test/test_util/UdpChannel.h>
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
 #include <msgrpc/core/components/rsp_dispatcher.h>

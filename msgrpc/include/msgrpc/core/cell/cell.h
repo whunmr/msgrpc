@@ -3,8 +3,8 @@
 
 #include <utility>
 #include <iostream>
-#include <include/msgrpc/core/rpc_result.h>
-#include <include/msgrpc/thrift_struct/thrift_codec.h>
+#include <msgrpc/core/rpc_result.h>
+#include <msgrpc/thrift_struct/thrift_codec.h>
 #include <msgrpc/core/cell/cell_base.h>
 #include <msgrpc/core/cell/rsp_cell_base.h>
 

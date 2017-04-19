@@ -4,7 +4,7 @@
 #include <condition_variable>
 #include <gtest/gtest.h>
 #include <thread>
-#include <test/details/msgrpc_test_loop.h>
+#include <msgrpc/test/details/msgrpc_test_loop.h>
 
 bool can_safely_exit = false;
 std::mutex can_safely_exit_mutex;
@@ -31,6 +31,7 @@ struct test_thread : std::thread {
 
     ~test_thread() {
         join();
+        //valgrind bug: https://bugs.kde.org/show_bug.cgi?id=349128
     }
 };
 

@@ -7,9 +7,9 @@
 #include <string>
 
 #include <msgrpc/util/singleton.h>
-#include <test/details/test_constants.h>
+#include <msgrpc/test/details/test_constants.h>
 
-#include "test/test_util/UdpChannel.h"
+#include "msgrpc/test/test_util/UdpChannel.h"
 
 namespace demo {
 

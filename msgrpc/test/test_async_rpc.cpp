@@ -13,8 +13,8 @@
 #include <msgrpc/core/adapter/timer_adapter.h>
 #include <msgrpc/core/rpc_sequence_id.h>
 #include <msgrpc/core/adapter/config.h>
-#include <test/core/adapter/simple_timer_adapter.h>
-#include <test/test_util/UdpChannel.h>
+#include <msgrpc/test/core/adapter/simple_timer_adapter.h>
+#include <msgrpc/test/test_util/UdpChannel.h>
 #include <msgrpc/core/cell/rsp_sink.h>
 #include <msgrpc/core/components/rsp_dispatcher.h>
 #include <msgrpc/core/cell/cell.h>
@@ -26,8 +26,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <test/core/adapter/udp_msg_channel.h>
-#include <test/details/set_timer_handler.h>
+#include <msgrpc/test/core/adapter/udp_msg_channel.h>
+#include <msgrpc/test/details/set_timer_handler.h>
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
 #include <msgrpc/util/singleton.h>
@@ -213,8 +213,8 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo&
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <include/msgrpc/core/cell/derived_action.h>
-#include <test/details/msgrpc_test_loop.h>
-#include <test/details/msgrpc_test.h>
+#include <msgrpc/test/details/msgrpc_test_loop.h>
+#include <msgrpc/test/details/msgrpc_test.h>
 using namespace msgrpc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

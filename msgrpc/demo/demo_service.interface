@@ -3,7 +3,6 @@
 namespace demo {
     ___api_version(1.0.3)
 
-
     #define ___fields_of_struct___SingleOptionalFieldStruct(_, ...)            \
         _(1, optional, int16_t, value,                  (字段注释), __VA_ARGS__)\
         _(2, required, int64_t, value64,                (字段注释), __VA_ARGS__)
@@ -49,6 +48,7 @@ namespace demo {
         _(1, required, int32_t,  rspa,            (字段注释), __VA_ARGS__)\
         _(2, optional, int32_t,  rspb,            (字段注释), __VA_ARGS__)
     ___as_struct(ResponseBar);
+
 
 #if 0
     #define ___methods_of_interface___InterfaceX(_, ...)\

@@ -54,6 +54,7 @@ const int k__sync_x__delta = 17;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //-----------generate by:  declare and define stub macros
+
 struct InterfaceXStub : msgrpc::IfaceStubBase {
     using msgrpc::IfaceStubBase::IfaceStubBase;
     msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo&);
@@ -68,10 +69,11 @@ msgrpc::Cell<ResponseBar>* InterfaceXStub::______sync_x(const RequestFoo& req) {
 struct InterfaceXImpl : msgrpc::InterfaceImplBaseT<InterfaceXImpl, 1> {
     msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo& req);
 
-    virtual msgrpc::RpcResult onRpcInvoke(const msgrpc::ReqMsgHeader& msg_header
-            , const char* msg, size_t len
-            , msgrpc::RspMsgHeader& rsp_header
-            , msgrpc::service_id_t& sender_id) override;
+    virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
+                                         , const char* msg
+                                         , size_t len
+                                         , msgrpc::RspMsgHeader& rsp_header
+                                         , msgrpc::service_id_t& sender_id) override;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -122,7 +124,7 @@ struct InterfaceYStub : msgrpc::IfaceStubBase {
 };
 
 msgrpc::Cell<ResponseBar>* InterfaceYStub::______sync_y(const RequestFoo& req) {
-    return encode_request_and_send<RequestFoo, ResponseBar>(2, 1, req);       
+    return encode_request_and_send<RequestFoo, ResponseBar>(2, 1, req);
 }
 
 msgrpc::Cell<ResponseBar>* InterfaceYStub::_____async_y(const RequestFoo& req) {
@@ -213,17 +215,16 @@ msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
 
 msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo& req) {
     std::cout << "                     ______sync_y_failed" << std::endl;
-    return Cell<ResponseBar>::new_failed_instance();
+    return msgrpc::Cell<ResponseBar>::new_failed_instance();
 }
 
-msgrpc::Cell<ResponseBar>* ______sync_y_failed_immediately(const RequestFoo&) {
-    return Cell<ResponseBar>::new_failed_instance();
+msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed_immediately(const RequestFoo&) {
+    return msgrpc::Cell<ResponseBar>::new_failed_instance();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#include <include/msgrpc/core/cell/derived_action.h>
 #include <msgrpc/test/details/msgrpc_test_loop.h>
 #include <msgrpc/test/details/msgrpc_test.h>
 using namespace msgrpc;

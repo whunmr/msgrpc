@@ -1,6 +1,6 @@
 #include "demo_api_declare.h"
 
-#include <msgrpc/api/service_api_define.h>
+#include <msgrpc/api/service_api_struct_define.h>
 #include "demo_service.interface"
 
 namespace demo {

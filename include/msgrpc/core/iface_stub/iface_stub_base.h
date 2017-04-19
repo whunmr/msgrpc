@@ -7,6 +7,7 @@
 #include <msgrpc/core/typedefs.h>
 #include <msgrpc/core/cell/cell_base.h>
 #include <msgrpc/core/cell/cell.h>
+#include <msgrpc/core/cell/default_cell.h>
 
 namespace msgrpc {
 
@@ -47,22 +48,22 @@ namespace msgrpc {
             return send_ret;
         }
 
-        template<typename T, typename U>
-        Cell<U>* encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const T &req) const {
+        template<typename REQ, typename RSP>
+        Cell<RSP>* encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const REQ &req) const {
             uint8_t* pbuf;
             uint32_t len;
             /*TODO: extract iface_impl for encode/decode for other protocol adoption such as protobuf*/
             if (!ThriftEncoder::encode(req, &pbuf, &len)) {
                 /*TODO: how to do with log, maybe should extract logging iface_impl*/
                 std::cout << "encode failed." << std::endl;
-                return nullptr; //TODO: return a global constant failed cell.
+                return DefaultCell<RSP>::failed_instance();
             }
 
-            Cell<U>* rpc_result_cell = new Cell<U>();
+            Cell<RSP>* rpc_result_cell = new Cell<RSP>();
 
             if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rpc_result_cell)) {
                 delete rpc_result_cell;
-                return nullptr; //TODO: return a global constant failed cell.
+                return DefaultCell<RSP>::failed_instance();
             }
 
             return ctxt_.track(rpc_result_cell);

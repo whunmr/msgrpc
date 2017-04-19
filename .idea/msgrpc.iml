@@ -22,11 +22,12 @@
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/rsp_sink.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/rsp_cell_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_async_cell.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/cell_base.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/default_cell.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_action.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/timeout_cell.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_action.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/cell_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/msg/msg_sender.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/rpc_sequence_id.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/rpc_result.h" isTestSource="false" />

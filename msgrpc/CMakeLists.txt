@@ -6,23 +6,23 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 ################################################################################
 #separate libraries depended by msgrpc and testcases
-LINK_DIRECTORIES(/Users/hmwang/lab/repo/googletest/googlemock/gtest)
-INCLUDE_DIRECTORIES(/Users/hmwang/lab/repo/googletest/googletest/include)
+LINK_DIRECTORIES(~/lab/repo/googletest/googlemock/gtest)
+INCLUDE_DIRECTORIES(~/lab/repo/googletest/googletest/include)
 
 #using boost to make udp sockets for testcases to simulate IPC
 LINK_DIRECTORIES(/usr/local/Cellar/boost/1.60.0_1/lib)
 INCLUDE_DIRECTORIES(/usr/local/Cellar/boost/1.60.0_1/include)
 
 
-LINK_DIRECTORIES(/Users/hmwang/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/lib/)
-INCLUDE_DIRECTORIES(/Users/hmwang/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/)
+LINK_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/lib/)
+INCLUDE_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/)
 add_definitions(-DTHREADED)
 
 ################################################################################
-include_directories(/Users/hmwang/lab/thrift-0.9.3/lib/cpp/src)
-include_directories(/Users/hmwang/lab/cpp/msgrpc/msgrpc/include)
-include_directories(/Users/hmwang/lab/cpp/msgrpc/msgrpc)
-include_directories(/Users/hmwang/lab/cpp/msgrpc/)
+include_directories(~/lab/thrift-0.9.3/lib/cpp/src)
+include_directories(~/lab/cpp/msgrpc/msgrpc/include)
+include_directories(~/lab/cpp/msgrpc/msgrpc)
+include_directories(~/lab/cpp/msgrpc/)
 
 ################################################################################
 set(SOURCE_FILES
@@ -53,7 +53,7 @@ set(SOURCE_FILES
 
 add_executable(msgrpc_lite_demo ${SOURCE_FILES})
 
-target_link_libraries(msgrpc_lite_demo /Users/hmwang/lab/thrift-0.9.3/lib/cpp/.libs/libthrift.a gtest gtest_main zookeeper_mt boost_system)
+target_link_libraries(msgrpc_lite_demo ${PROJECT_SOURCE_DIR}/../../../../lab/thrift-0.9.3/lib/cpp/.libs/libthrift.a gtest gtest_main zookeeper_mt boost_system)
 ################################################################################
 find_program(VALGRIND "valgrind")
 if(VALGRIND)

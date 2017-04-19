@@ -38,18 +38,6 @@
             ___apply_expand(iface_name_, ___expand_declare_interface_method)\
         };
 
-//    struct name_##Stub : msgrpc::IfaceStubBase {\
-//        using msgrpc::IfaceStubBase::IfaceStubBase;
-//        msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo&);
-//    };
-//
-//    struct _##struct_name_##__isset : DummyParent<_##struct_name_##__isset> { \
-//        _##struct_name_##__isset() : DummyParent<_##struct_name_##__isset>()\
-//             ___apply_expand(struct_name_, ___expand_isset_init_list, struct_name_) {} \
-//        ___apply_expand(struct_name_, ___expand_isset_field, struct_name_) \
-//    } _##struct_name_##__isset;
-
-
 #define ___declare_interface(...)                       \
             ___declare_interface_stub_class(__VA_ARGS__)\
             ___declare_interface_impl_class(__VA_ARGS__)

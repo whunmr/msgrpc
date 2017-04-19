@@ -53,12 +53,7 @@ const int k__sync_x__delta = 17;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//-----------generate by:  declare and define stub macros
-
-struct InterfaceX : msgrpc::IfaceStubBase {
-    using msgrpc::IfaceStubBase::IfaceStubBase;
-    msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo&);
-};
+#include <demo/demo_api_interface_declare.h>
 
 msgrpc::Cell<ResponseBar>* InterfaceX::______sync_x(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
@@ -113,29 +108,19 @@ msgrpc::Cell<ResponseBar>* InterfaceX_impl::______sync_x(const RequestFoo& req) 
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//-----------generate by:  declare and define stub macros
-struct InterfaceYStub : msgrpc::IfaceStubBase {
-    using msgrpc::IfaceStubBase::IfaceStubBase;
-
-    msgrpc::Cell<ResponseBar>* ______sync_y(const RequestFoo&);
-    msgrpc::Cell<ResponseBar>* _____async_y(const RequestFoo&);
-    msgrpc::Cell<ResponseBar>* ______sync_y_failed(const RequestFoo&);
-    msgrpc::Cell<ResponseBar>* ______sync_y_failed_immediately(const RequestFoo&);
-};
-
-msgrpc::Cell<ResponseBar>* InterfaceYStub::______sync_y(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceY::______sync_y(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(2, 1, req);
 }
 
-msgrpc::Cell<ResponseBar>* InterfaceYStub::_____async_y(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceY::_____async_y(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(2, 2, req);
 }
 
-msgrpc::Cell<ResponseBar>* InterfaceYStub::______sync_y_failed(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceY::______sync_y_failed(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(2, 3, req);
 }
 
-msgrpc::Cell<ResponseBar>* InterfaceYStub::______sync_y_failed_immediately(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceY::______sync_y_failed_immediately(const RequestFoo& req) {
     return msgrpc::Cell<ResponseBar>::new_failed_instance();
 }
 
@@ -232,7 +217,7 @@ using namespace msgrpc;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case000 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        return InterfaceYStub(ctxt).______sync_y(req);
+        return InterfaceY(ctxt).______sync_y(req);
     }
 };
 
@@ -249,7 +234,7 @@ TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case000) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case100 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        return InterfaceYStub(ctxt)._____async_y(req);
+        return InterfaceY(ctxt)._____async_y(req);
     }
 };
 
@@ -269,7 +254,7 @@ void save_rsp_to_log(Cell<ResponseBar>& r)                    { std::cout << "2/
 
 struct SI_case200 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___1 = InterfaceYStub(ctxt).______sync_y(req);
+        auto ___1 = InterfaceY(ctxt).______sync_y(req);
                     ___action(save_rsp_from_other_services_to_db, ___1);
                     ___action(save_rsp_to_log, ___1);
         return ___1;
@@ -301,8 +286,8 @@ void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1, Cell<Resp
 
 struct SI_case300 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
-        auto ___2 = InterfaceYStub(ctxt)._____async_y(req);
+        auto ___1 = InterfaceY(ctxt)._____async_y(req);
+        auto ___2 = InterfaceY(ctxt)._____async_y(req);
         return ___cell(merge_logic, ___1, ___2);
     }
 };
@@ -334,7 +319,7 @@ Cell<ResponseBar>* call__sync_y(RpcContext &ctxt, Cell<ResponseBar> &___r) {
 
     RequestFoo req;
     req.reqa = ___r.value().rspa;
-    return InterfaceYStub(ctxt).______sync_y(req); //TODO: let rpc request return reference to cell
+    return InterfaceY(ctxt).______sync_y(req); //TODO: let rpc request return reference to cell
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -345,13 +330,13 @@ Cell<ResponseBar>* call__sync_y_failed(RpcContext &ctxt, Cell<ResponseBar> &___r
 
     RequestFoo req;
     req.reqa = ___r.value().rspa;
-    return InterfaceYStub(ctxt).______sync_y_failed(req);
+    return InterfaceY(ctxt).______sync_y_failed(req);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case4001 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
-        auto init_first_rpc        = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto init_first_rpc        = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
         auto call_sync_y_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
         auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
 
@@ -377,7 +362,7 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_sequential_rpc______case4001)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case4011_failed : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
-        auto init_first_rpc        = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y_failed(req); };
+        auto init_first_rpc        = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y_failed(req); };
         auto call_sync_y_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
         auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
 
@@ -404,7 +389,7 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
 struct SI_case4021_failed : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
 
-        auto init_first_rpc               = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto init_first_rpc               = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
         auto call_sync_y_failed_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y_failed(ctxt, ___r); };
         auto call_sync_y_again            = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
 
@@ -438,8 +423,8 @@ void action1(Cell<ResponseBar> &r) { std::cout << "1/1 ----------------->>>> act
 
 struct SI_case500 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___3 = InterfaceYStub(ctxt)._____async_y(req);
-        auto ___1 = InterfaceYStub(ctxt)._____async_y(req);
+        auto ___3 = InterfaceY(ctxt)._____async_y(req);
+        auto ___1 = InterfaceY(ctxt)._____async_y(req);
                     ___action(action1, ___1);
 
                     auto ___2 = ___cell(gen2, ___1);
@@ -466,7 +451,7 @@ void gen6(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp)  {
 
 struct SI_case600 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo &req, RpcContext& ctxt) override {
-        auto ___1 = InterfaceYStub(ctxt).______sync_y_failed(req);
+        auto ___1 = InterfaceY(ctxt).______sync_y_failed(req);
         return ___cell(gen6, ___1);
     }
 };
@@ -488,7 +473,7 @@ TEST_F(MsgRpcTest, should_able_to_support_failure_propagation__during__bind_cell
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case700_timeout : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
-        auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);
         return ___1;
@@ -524,8 +509,8 @@ void run_customized_action(CellBase<bool> &r) {
 
 struct SI_case701_timeout_action : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
-        auto do_rpc_sync_y   = [&ctxt, req]()                     { return InterfaceYStub(ctxt).______sync_y(req); };
-        auto do_rpc_rollback = [&ctxt, req](CellBase<bool>& ___1) { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto do_rpc_sync_y   = [&ctxt, req]()                     { return InterfaceY(ctxt).______sync_y(req); };
+        auto do_rpc_rollback = [&ctxt, req](CellBase<bool>& ___1) { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);                                      //seq_id: 1, 2
                     ___action(run_customized_action, ___1->timeout());
@@ -561,7 +546,7 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc___do_not_rollbac
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case702_cancel_timer_after_success : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
-        auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);  //seq_id: 1, 2
         return ___1;
@@ -581,7 +566,7 @@ TEST_F(MsgRpcTest, should_able_to_support__cancel_timer_after__retry_rpc_succeed
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct SI_case8 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
-        auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceYStub(ctxt).______sync_y(req); };
+        auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(2), do_rpc_sync_y);  //seq_id: 1, 2, 3
         return ___1;
@@ -603,21 +588,21 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_
 struct SI_case900 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() {
-            return InterfaceYStub(ctxt).______sync_y(req);
+            return InterfaceY(ctxt).______sync_y(req);
         };
 
         auto do_rpc_sync_y_after_1 = [&ctxt, req](Cell<ResponseBar>& rsp) {
             if (rsp.has_error()) {
                 return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, rsp.failed_reason());
             }
-            return InterfaceYStub(ctxt).______sync_y(req);
+            return InterfaceY(ctxt).______sync_y(req);
         };
 
         auto do_rpc_sync_y_after_2 = [&ctxt, req](Cell<ResponseBar>& rsp) {
             if (rsp.has_error()) {
                 return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, rsp.failed_reason());
             }
-            return InterfaceYStub(ctxt).______sync_y(req);
+            return InterfaceY(ctxt).______sync_y(req);
         };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);
@@ -643,7 +628,7 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation__through_sequenti
 struct SI_case1000 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() {
-            return InterfaceYStub(ctxt).______sync_y(req);
+            return InterfaceY(ctxt).______sync_y(req);
         };
 
         auto do_rpc_sync_y_after_1_2 = [&ctxt, req](Cell<ResponseBar>& ___1, Cell<ResponseBar>& ___2) -> Cell<demo::ResponseBar>* {
@@ -655,7 +640,7 @@ struct SI_case1000 : SIBase<RequestFoo, ResponseBar> {
                 return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___1.failed_reason());
             }
 
-            return InterfaceYStub(ctxt).______sync_y(req);
+            return InterfaceY(ctxt).______sync_y(req);
         };
         
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);                                       //seq_id: 1, 3
@@ -679,7 +664,7 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1000) {
 struct SI_case1100 : SIBase<RequestFoo, ResponseBar> {
     virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
         auto do_rpc_sync_y = [&ctxt, req]() {
-            return InterfaceYStub(ctxt).______sync_y_failed_immediately(req);
+            return InterfaceY(ctxt).______sync_y_failed_immediately(req);
         };
 
         auto do_rpc_sync_y__after__1 = [&ctxt, req](Cell<ResponseBar>& ___1) -> Cell<demo::ResponseBar>* {
@@ -687,7 +672,7 @@ struct SI_case1100 : SIBase<RequestFoo, ResponseBar> {
                 return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___1.failed_reason());
             }
 
-            return InterfaceYStub(ctxt).______sync_y_failed_immediately(req);
+            return InterfaceY(ctxt).______sync_y_failed_immediately(req);
         };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);

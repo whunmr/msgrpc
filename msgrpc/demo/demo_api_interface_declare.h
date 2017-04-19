@@ -3,7 +3,6 @@
 
 #include "demo_api_struct_declare.h"
 
-
 #include <msgrpc/core/iface_stub/iface_stub_base.h>
 #include <msgrpc/api/service_api_interface_declare.h>
 #include "demo_service.interface"

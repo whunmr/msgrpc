@@ -72,10 +72,4 @@ namespace demo {
     ___as_event(UserAttachedEvent)
 #endif
 
-#if 0
-    ___define_feature(example_feature1, 1)
-    ___define_feature(example_feature2, 2)
-    ___define_feature(example_feature3, 3)
-#endif
-
 }

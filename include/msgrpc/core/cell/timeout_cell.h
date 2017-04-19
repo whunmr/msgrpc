@@ -73,8 +73,6 @@ namespace msgrpc {
         void update() override {
             assert(sizeof...(Args) != 0 && "should not call update if this cell do not dependent other cells.");
 
-            //TODO: check status of both trigger cells
-            //TODO: set rpc_has_started_ to true, after bind_() invoked
             bool should_start_rpc = !CellBase<T>::has_value_or_error() && !is_rpc_started_;
             if (should_start_rpc) {
                 invoke_rpc_once(timeout_ms_);

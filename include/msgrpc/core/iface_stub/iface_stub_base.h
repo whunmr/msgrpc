@@ -55,14 +55,14 @@ namespace msgrpc {
             if (!ThriftEncoder::encode(req, &pbuf, &len)) {
                 /*TODO: how to do with log, maybe should extract logging iface_impl*/
                 std::cout << "encode failed." << std::endl;
-                return nullptr; //TODO: return false;
+                return nullptr; //TODO: return a global constant failed cell.
             }
 
             Cell<U>* rpc_result_cell = new Cell<U>();
 
             if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rpc_result_cell)) {
                 delete rpc_result_cell;
-                return nullptr;
+                return nullptr; //TODO: return a global constant failed cell.
             }
 
             return ctxt_.track(rpc_result_cell);

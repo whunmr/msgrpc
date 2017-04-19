@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 using namespace std;
 using namespace org::example::msgrpc;
+using namespace msgrpc;
 
 template<typename T, typename M>
 void expect_thrift_encoded_buffer__can_decoded_by_msgrpc_____and_vise_versa(T &___t, M &___m) {

@@ -649,3 +649,36 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1000) {
     test_thread thread_y(y_service_id, []{}                                   , drop_msg_with_seq_id({1, 2, 3, 4}));
     test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct SI_case1100 : SIBase<RequestFoo, ResponseBar> {
+    virtual Cell<ResponseBar>* do_run(const RequestFoo& req, RpcContext& ctxt) override {
+        auto do_rpc_sync_y = [&ctxt, req]() {
+            return InterfaceYStub(ctxt).______sync_y_failed_immediately(req);
+        };
+
+        auto do_rpc_sync_y__after__1 = [&ctxt, req](Cell<ResponseBar>& ___1) -> Cell<demo::ResponseBar>* {
+            if (___1.has_error()) {
+                return msgrpc::failed_cell_with_reason<ResponseBar>(ctxt, ___1.failed_reason());
+            }
+
+            return InterfaceYStub(ctxt).______sync_y_failed_immediately(req);
+        };
+
+        auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);
+        auto ___2 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y__after__1, ___1);
+        return ___2;
+    }
+};
+
+TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1100) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_EQ(false, ___r.has_value());
+        EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1100>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
+    test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
+}
+

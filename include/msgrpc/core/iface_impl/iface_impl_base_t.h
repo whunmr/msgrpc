@@ -5,6 +5,7 @@
 #include <msgrpc/thrift_struct/thrift_codec.h>
 #include <msgrpc/core/cell/cell.h>
 #include <msgrpc/core/msg/msg_sender.h>
+#include <msgrpc/core/cell/derived_action.h>
 
 namespace msgrpc {
 

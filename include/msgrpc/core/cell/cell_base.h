@@ -55,7 +55,13 @@ namespace msgrpc {
         }
 
         void register_listener(Updatable *updatable) {
-            updatables_.push_back(updatable);
+            assert(updatable != nullptr && "should not register null updateable object.");
+
+            if (this->has_value_or_error()) {
+                updatable->update();
+            } else {
+                updatables_.push_back(updatable);
+            }
         }
 
       protected:

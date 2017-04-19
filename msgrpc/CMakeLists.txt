@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.3)
-project(msgrpc)
+project(msgrpc_demo)
 
 ################################################################################
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
@@ -29,12 +29,18 @@ FILE(GLOB_RECURSE DEMO_SOURCE_FILES         demo/*.cpp demo/*.h demo/*.interface
 FILE(GLOB_RECURSE MSGRPC_SOURCE_FILES       include/*.h src/*.cpp)
 FILE(GLOB_RECURSE DEMO_TEST_SOURCE_FILES    test/*.cpp test/*.h)
 
-add_executable(msgrpc ${DEMO_SOURCE_FILES} ${DEMO_TEST_SOURCE_FILES} ${MSGRPC_SOURCE_FILES})
+################################################################################
+add_library(msgrpc SHARED ${MSGRPC_SOURCE_FILES})
+set_target_properties(msgrpc PROPERTIES output_name "msgrpc")
 
-target_link_libraries(msgrpc ${___THRIFT_LIB} gtest gtest_main zookeeper_mt boost_system)
+################################################################################
+add_executable(msgrpc_demo ${DEMO_SOURCE_FILES} ${DEMO_TEST_SOURCE_FILES})
+
+target_link_libraries(msgrpc_demo ${___THRIFT_LIB} gtest gtest_main zookeeper_mt boost_system msgrpc)
+
 ################################################################################
 find_program(VALGRIND "valgrind")
 if(VALGRIND)
     add_custom_target(valgrind
-            COMMAND "${VALGRIND}" --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes --track-origins=yes $<TARGET_FILE:msgrpc>)
+            COMMAND "${VALGRIND}" --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes --track-origins=yes $<TARGET_FILE:msgrpc_demo>)
 endif()

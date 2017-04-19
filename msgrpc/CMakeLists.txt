@@ -85,11 +85,11 @@ set(DEMO_TEST_SOURCE_FILES
         test/test_thrift_struct.cpp
         test/test_util/UdpChannel.h
         test/test_zookeeper.cpp
-)
+        )
 
 add_executable(msgrpc ${DEMO_SOURCE_FILES} ${DEMO_TEST_SOURCE_FILES} ${MSGRPC_SOURCE_FILES})
 
-target_link_libraries(msgrpc ${PROJECT_SOURCE_DIR}/../../../../lab/thrift-0.9.3/lib/cpp/.libs/libthrift.a gtest gtest_main zookeeper_mt boost_system)
+target_link_libraries(msgrpc ${___THRIFT_LIB} gtest gtest_main zookeeper_mt boost_system)
 ################################################################################
 find_program(VALGRIND "valgrind")
 if(VALGRIND)

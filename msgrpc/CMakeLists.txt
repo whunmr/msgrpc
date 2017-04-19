@@ -25,67 +25,9 @@ include_directories(~/lab/cpp/msgrpc/msgrpc)
 include_directories(~/lab/cpp/msgrpc/)
 
 ################################################################################
-set(DEMO_SOURCE_FILES
-        demo/demo_api_declare.h
-        demo/demo_api_define.cpp
-        demo/demo_service.interface
-        demo/gen1/api.thrift
-        demo/gen1/api_constants.cpp
-        demo/gen1/api_constants.h
-        demo/gen1/api_types.cpp
-        demo/gen1/api_types.h
-)
-
-set(MSGRPC_SOURCE_FILES
-        include/msgrpc/api/service_api_declare.h
-        include/msgrpc/api/service_api_define.h
-        include/msgrpc/core/adapter/config.h
-        include/msgrpc/core/adapter/msg_channel.h
-        include/msgrpc/core/adapter/timer_adapter.h
-        include/msgrpc/core/cell/cell.h
-        include/msgrpc/core/cell/cell_base.h
-        include/msgrpc/core/cell/derived_action.h
-        include/msgrpc/core/cell/derived_async_cell.h
-        include/msgrpc/core/cell/derived_cell.h
-        include/msgrpc/core/cell/rsp_cell_base.h
-        include/msgrpc/core/cell/rsp_sink.h
-        include/msgrpc/core/cell/timeout_cell.h
-        include/msgrpc/core/components/req_msg_handler.h
-        include/msgrpc/core/components/rpc_timeout_handler.h
-        include/msgrpc/core/components/rsp_dispatcher.h
-        include/msgrpc/core/iface_impl/iface_impl_base.h
-        include/msgrpc/core/iface_impl/iface_impl_base_t.h
-        include/msgrpc/core/iface_impl/iface_impl_utility.h
-        include/msgrpc/core/iface_impl/iface_repository.h
-        include/msgrpc/core/iface_stub/iface_stub_base.h
-        include/msgrpc/core/msg/msg_sender.h
-        include/msgrpc/core/rpc_result.h
-        include/msgrpc/core/rpc_sequence_id.h
-        include/msgrpc/core/service_interaction/si_base.h
-        include/msgrpc/core/typedefs.h
-        include/msgrpc/core/types.h
-        include/msgrpc/thrift_struct/thrift_codec.h
-        include/msgrpc/thrift_struct/thrift_struct_common.h
-        include/msgrpc/thrift_struct/thrift_struct_declare.h
-        include/msgrpc/thrift_struct/thrift_struct_define.h
-        include/msgrpc/thrift_struct/thrift_types.h
-        include/msgrpc/util/singleton.h
-        include/msgrpc/util/type_traits.h
-        src/msgrpc/core/rpc_sequence_id.cpp
-)
-
-set(DEMO_TEST_SOURCE_FILES
-        test/core/adapter/simple_timer_adapter.h
-        test/core/adapter/udp_msg_channel.h
-        test/details/msgrpc_test.h
-        test/details/msgrpc_test_loop.h
-        test/details/set_timer_handler.h
-        test/details/test_constants.h
-        test/test_async_rpc.cpp
-        test/test_thrift_struct.cpp
-        test/test_util/UdpChannel.h
-        test/test_zookeeper.cpp
-        )
+FILE(GLOB_RECURSE DEMO_SOURCE_FILES         demo/*.cpp demo/*.h demo/*.interface)
+FILE(GLOB_RECURSE MSGRPC_SOURCE_FILES       include/*.h src/*.cpp)
+FILE(GLOB_RECURSE DEMO_TEST_SOURCE_FILES    test/*.cpp test/*.h)
 
 add_executable(msgrpc ${DEMO_SOURCE_FILES} ${DEMO_TEST_SOURCE_FILES} ${MSGRPC_SOURCE_FILES})
 

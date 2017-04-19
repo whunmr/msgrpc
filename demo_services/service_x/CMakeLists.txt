@@ -23,9 +23,7 @@ include_directories(~/lab/thrift-0.9.3/lib/cpp/src)
 include_directories(~/lab/cpp/msgrpc/msgrpc/include)
 
 ################################################################################
-set(SERVICE_X_SOURCE_FILES
-        service_x_main.cpp
-)
+FILE(GLOB_RECURSE SERVICE_X_SOURCE_FILES ./*.cpp ./*.h)
 
 add_executable(service_x ${SERVICE_X_SOURCE_FILES})
 

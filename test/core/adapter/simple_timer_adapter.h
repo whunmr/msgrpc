@@ -43,7 +43,7 @@ namespace demo {
     };
 
     struct SimpleTimerAdapter : msgrpc::TimerAdapter, msgrpc::Singleton<SimpleTimerAdapter> {
-        virtual void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data) const override {
+        virtual void set_timer(msgrpc::timeout_len_t millionseconds, msgrpc::msg_id_t timeout_msg_id, void* user_data) const override {
             msgrpc::service_id_t service_id = test_service::instance().current_service_id_;
 
             timer_info ti;

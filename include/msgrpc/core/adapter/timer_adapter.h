@@ -6,17 +6,15 @@
 namespace msgrpc {
 
     struct timer_info {
-        //TODO: refactor long long as unsigned long long, and typedef to timeout_len_t for timer funcs
-        long long millionseconds_;
+        timeout_len_t millionseconds_;
         msgrpc::service_id_t service_id_;
         void *user_data_;
     };
 
     struct TimerAdapter {
-        virtual void set_timer(long long millionseconds, msgrpc::msg_id_t timeout_msg_id, void *user_data) const = 0;
-        virtual void cancel_timer(msgrpc::msg_id_t timeout_msg_id, void *user_data) const = 0;
+        virtual void set_timer(timeout_len_t millionseconds, msg_id_t timeout_msg_id, void *user_data) const = 0;
+        virtual void cancel_timer(msg_id_t timeout_msg_id, void *user_data) const = 0;
     };
-
 }
 
 #endif //MSGRPC_TIMER_ADAPTER_H

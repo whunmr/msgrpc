@@ -1,6 +1,0 @@
-#ifndef MSGRPC_MACROS_H
-#define MSGRPC_MACROS_H
-
-
-
-#endif //MSGRPC_MACROS_H

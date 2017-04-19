@@ -7,7 +7,7 @@ namespace msgrpc {
 
     template<typename T, typename... Args>
     struct TimeoutCell : Cell<T> {
-        TimeoutCell(RpcContext& ctxt, long long timeout_ms, size_t retry_times, std::function<Cell<T>* (Args...)> f, Args&&... args)
+        TimeoutCell(RpcContext& ctxt, timeout_len_t timeout_ms, size_t retry_times, std::function<Cell<T>* (Args...)> f, Args&&... args)
                 : ctxt_(ctxt), timeout_ms_(timeout_ms), retry_times_(retry_times), f_(f), bind_(f, args...) {
             if (sizeof...(args) == 0) {
                 invoke_rpc_once(timeout_ms);
@@ -23,7 +23,7 @@ namespace msgrpc {
             }
         }
 
-        void invoke_rpc_once(long long int timeout_ms) {
+        void invoke_rpc_once(timeout_len_t timeout_ms) {
             Cell<T>* rpc_cell_ = bind_();
             if (rpc_cell_ == nullptr) {
                 //init rpc is deferred, because trigger cells are not ready to continue;
@@ -92,7 +92,7 @@ namespace msgrpc {
         CellBase<bool>* timeout_cell_ = {nullptr};
 
         RpcContext& ctxt_;
-        long long timeout_ms_;
+        timeout_len_t timeout_ms_;
         size_t retry_times_;
         std::function<Cell<T>* (Args...)> f_;
 
@@ -103,7 +103,7 @@ namespace msgrpc {
     };
 
     template<typename F, typename... Args>
-    auto derive_rpc_cell(RpcContext &ctxt, long long timeout_ms, size_t retry_times, F f, Args &&... args)
+    auto derive_rpc_cell(RpcContext &ctxt, timeout_len_t timeout_ms, size_t retry_times, F f, Args &&... args)
     -> TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>* {
         auto cell = new TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>(ctxt, timeout_ms, retry_times, f, std::ref(*args)...);
         ctxt.track(cell);
@@ -111,7 +111,7 @@ namespace msgrpc {
     }
 
     template<typename F, typename... Args>
-    auto derive_rpc_cell(RpcContext &ctxt, long long timeout_ms, F f, Args &&... args)
+    auto derive_rpc_cell(RpcContext &ctxt, timeout_len_t timeout_ms, F f, Args &&... args)
     -> TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>* {
         auto cell = new TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>(ctxt, timeout_ms, /*retry_times=*/0, f, std::ref(*args)...);
         ctxt.track(cell);

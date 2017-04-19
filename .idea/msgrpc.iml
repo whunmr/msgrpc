@@ -28,7 +28,6 @@
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/timeout_cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/cell/derived_action.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/msg/msg_sender.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/macros.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/rpc_sequence_id.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/rpc_result.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/include/msgrpc/core/iface_stub/iface_stub_base.h" isTestSource="false" />

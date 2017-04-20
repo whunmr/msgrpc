@@ -23,17 +23,12 @@
 #include <msgrpc/core/service_interaction/si_base.h>
 #include <msgrpc/core/iface_impl/iface_impl_utility.h>
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 #include <msgrpc/test/core/adapter/udp_msg_channel.h>
 #include <msgrpc/test/details/set_timer_handler.h>
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
 #include <msgrpc/util/singleton.h>
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "TemplateArgumentsIssues"
 using namespace demo;
 
 //constants for testing.
@@ -54,31 +49,6 @@ const int k__sync_x__delta = 17;
 #include <demo/demo_api_interface_declare.h>
 
 ////////////////////////////////////////////////////////////////////////////////
-//---------------- generate this part by macros set: interface_implement_define.h
-InterfaceX_impl interfaceXImpl_auto_register_instance;
-msgrpc::RpcResult InterfaceX_impl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header, const char* msg
-        , size_t len, msgrpc::RspMsgHeader& rsp_header
-        , msgrpc::service_id_t& sender_id) {
-
-    msgrpc::RpcResult ret;
-
-    if (req_header.method_index_in_interface_ == 1) {
-        ret = this->invoke_templated_method(&InterfaceX_impl::______sync_x, msg, len, sender_id, rsp_header);
-    } else
-
-    {
-        rsp_header.rpc_result_ = msgrpc::RpcResult::method_not_found;
-        return msgrpc::RpcResult::failed;
-    }
-
-    if (ret == msgrpc::RpcResult::failed) {
-        rsp_header.rpc_result_ = msgrpc::RpcResult::failed;
-    }
-
-    return ret;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 msgrpc::Cell<ResponseBar>* InterfaceX_impl::______sync_x(const RequestFoo& req) {
     std::cout << "                     ______sync_x" << std::endl;
 
@@ -87,45 +57,6 @@ msgrpc::Cell<ResponseBar>* InterfaceX_impl::______sync_x(const RequestFoo& req) 
             rsp.__set_rspa(req.reqa + k__sync_x__delta);
         }
     );
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//---------------- generate this part by macros set: interface_implement_define.h
-InterfaceY_impl interfaceYImpl_auto_register_instance;
-msgrpc::RpcResult InterfaceY_impl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header
-                                             , const char* msg
-                                             , size_t len
-                                             , msgrpc::RspMsgHeader& rsp_header
-                                             , msgrpc::service_id_t& sender_id) {
-    msgrpc::RpcResult ret;
-
-    if (req_header.method_index_in_interface_ == 1) {
-        ret = this->invoke_templated_method(&InterfaceY_impl::______sync_y, msg, len, sender_id, rsp_header);
-    } else
-
-    if (req_header.method_index_in_interface_ == 2) {
-        ret = this->invoke_templated_method(&InterfaceY_impl::_____async_y, msg, len, sender_id, rsp_header);
-    } else
-
-    if (req_header.method_index_in_interface_ == 3) {
-        ret = this->invoke_templated_method(&InterfaceY_impl::______sync_y_failed, msg, len, sender_id, rsp_header);
-    } else
-
-    if (req_header.method_index_in_interface_ == 4) {
-        ret = this->invoke_templated_method(&InterfaceY_impl::______sync_y_failed_immediately, msg, len, sender_id, rsp_header);
-    } else
-
-    {
-        rsp_header.rpc_result_ = msgrpc::RpcResult::method_not_found;
-        return msgrpc::RpcResult::method_not_found;
-    }
-
-    if (ret == msgrpc::RpcResult::failed) {
-        rsp_header.rpc_result_ = msgrpc::RpcResult::failed;
-    }
-
-    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -643,6 +574,3 @@ TEST_F(MsgRpcTest, DISABLED_should_able_to_support__timeout_propagation______cas
     test_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
     test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
-
-
-#pragma clang diagnostic pop

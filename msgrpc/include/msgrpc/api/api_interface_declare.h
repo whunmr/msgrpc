@@ -27,7 +27,7 @@
 #define ___expand_declare_interface_impl_method(method_index_, rsp_, method_name_, req_, comments_, iface_name_, iface_id_) \
     msgrpc::Cell<rsp_>* method_name_(const req_& req);
 
-//TODO: add header of InterfaceImplBaseT as common declaration include
+
 #define ___declare_interface_impl_class(iface_name_, iface_id_)                                      \
     struct iface_name_##_impl : msgrpc::InterfaceImplBaseT<iface_name_##_impl, iface_id_> {          \
         ___apply_expand(iface_name_, ___expand_declare_interface_impl_method, iface_name_, iface_id_)\
@@ -38,21 +38,24 @@
                                              , msgrpc::service_id_t& sender_id) override;            \
     };
 
+
 ////////////////////////////////////////////////////////////////////////////////
 #define ___expand_declare_interface_stub_method(method_index_, rsp_, method_name_, req_, comments_, ...) \
     msgrpc::Cell<rsp_>* method_name_(const req_&);
 
+
 ////////////////////////////////////////////////////////////////////////////////
-//TODO: add header of IfaceStubBase as common declaration include
 #define ___declare_interface_stub_class(iface_name_, iface_id_) \
         struct iface_name_ :  msgrpc::IfaceStubBase { \
             using msgrpc::IfaceStubBase::IfaceStubBase;\
             ___apply_expand(iface_name_, ___expand_declare_interface_stub_method)\
         };
 
+
 #define ___declare_interface(...)                       \
             ___declare_interface_stub_class(__VA_ARGS__)\
             ___declare_interface_impl_class(__VA_ARGS__)
+
 
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ___as_interface

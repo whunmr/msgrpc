@@ -8,6 +8,7 @@
 
 namespace msgrpc {
     struct IfaceImplBase {
+        virtual ~IfaceImplBase() {}
         virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
                 , const char* msg, size_t len
                 , msgrpc::RspMsgHeader& rsp_header

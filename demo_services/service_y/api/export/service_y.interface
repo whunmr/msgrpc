@@ -1,0 +1,20 @@
+namespace service_y {
+    ___api_version(1.0.0)
+
+    #define ___fields_of_struct___YReq(_, ...)                                                                         \
+        _(1, required, int32_t,  yreqa,                                                         (字段注释), __VA_ARGS__)\
+        _(2, optional, int32_t,  yreqb,                                                         (字段注释), __VA_ARGS__)
+    ___as_struct(YReq);                                             
+
+
+    #define ___fields_of_struct___YRsp(_, ...)                                                                         \
+        _(1, required, int32_t,  yrspa,                                                         (字段注释), __VA_ARGS__)\
+        _(2, optional, int32_t,  yrspb,                                                         (字段注释), __VA_ARGS__)
+    ___as_struct(YRsp);                                             
+
+
+    #define ___methods_of_interface___IY(_, ...)                                                                       \
+        _(1, YRsp, ___f1m1, YReq,                                                               (方法注释), __VA_ARGS__)
+    ___as_interface(IY, 1);
+
+}

@@ -14,10 +14,7 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/req_msg_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/rpc_timeout_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/rsp_dispatcher.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_base_t.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_utility.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_repository.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_base.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/rpc_result.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_interaction/si_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/rsp_sink.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/cell_base.h" isTestSource="false" />
@@ -29,7 +26,10 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/msg/msg_sender.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/rpc_sequence_id.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/rpc_result.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_base_t.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_utility.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_repository.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_stub/iface_stub_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/adapter/config.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/adapter/timer_adapter.h" isTestSource="false" />
@@ -63,6 +63,7 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_service.interface" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/service_z_main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_y/include/api/export/y_api_struct_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_y/service_y_main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_y/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/CMakeLists.txt" isTestSource="false" />

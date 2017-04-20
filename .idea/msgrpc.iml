@@ -5,11 +5,11 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/rpc_sequence_id.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/util/type_traits.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/util/singleton.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift_struct/thrift_types.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift_struct/thrift_struct_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift_struct/thrift_codec.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift_struct/thrift_struct_common.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift_struct/thrift_struct_define.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_struct_define.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_interface_stub_define.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_struct_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_interface_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_interface_impl_define.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/req_msg_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/rpc_timeout_handler.h" isTestSource="false" />
@@ -35,11 +35,11 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/adapter/timer_adapter.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/adapter/msg_channel.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/typedefs.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_struct_define.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_interface_stub_define.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_struct_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_interface_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_interface_impl_define.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift_struct/thrift_types.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift_struct/thrift_struct_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift_struct/thrift_codec.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift_struct/thrift_struct_common.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift_struct/thrift_struct_define.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_async_rpc.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/core/adapter/udp_msg_channel.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/core/adapter/simple_timer_adapter.h" isTestSource="false" />
@@ -52,6 +52,7 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_util/UdpChannel.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_impl_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_stub_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_declare.h" isTestSource="false" />
@@ -60,8 +61,9 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_service.interface" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_impl_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/service_z_main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_y/service_y_main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_y/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/service_x_main.cpp" isTestSource="false" />
@@ -169,7 +171,6 @@
           <root url="file:///System/Library/Frameworks/OSAKit.framework/Headers" />
           <root url="file:///System/Library/Frameworks/ExceptionHandling.framework/Headers" />
           <root url="file:///System/Library/Frameworks/IOBluetoothUI.framework/Headers" />
-          <root url="file:///System/Library/Frameworks/Ruby.framework/Headers" />
           <root url="file:///System/Library/Frameworks/CoreMIDI.framework/Headers" />
           <root url="file:///System/Library/Frameworks/LocalAuthentication.framework/Headers" />
           <root url="file:///System/Library/Frameworks/Foundation.framework/Headers" />
@@ -184,6 +185,7 @@
           <root url="file:///System/Library/Frameworks/CoreText.framework/Headers" />
           <root url="file:///System/Library/Frameworks/NetworkExtension.framework/Headers" />
           <root url="file:///System/Library/Frameworks/SceneKit.framework/Headers" />
+          <root url="file:///System/Library/Frameworks/SecurityFoundation.framework/Headers" />
           <root url="file:///System/Library/Frameworks/PhotosUI.framework/Headers" />
           <root url="file:///System/Library/Frameworks/QuickLook.framework/Headers" />
           <root url="file:///System/Library/Frameworks/Tk.framework/PrivateHeaders" />
@@ -207,7 +209,7 @@
           <root url="file:///System/Library/Frameworks/AppleScriptObjC.framework/Headers" />
           <root url="file:///System/Library/Frameworks/CFNetwork.framework/Headers" />
           <root url="file:///System/Library/Frameworks/CryptoTokenKit.framework/Headers" />
-          <root url="file:///System/Library/Frameworks/SecurityFoundation.framework/Headers" />
+          <root url="file:///System/Library/Frameworks/Ruby.framework/Headers" />
           <root url="file:///System/Library/Frameworks/DiscRecordingUI.framework/Headers" />
           <root url="file:///System/Library/Frameworks/Collaboration.framework/Headers" />
           <root url="file:///System/Library/Frameworks/MediaToolbox.framework/Headers" />
@@ -350,7 +352,6 @@
           <root url="file:///System/Library/Frameworks/OSAKit.framework/Headers" />
           <root url="file:///System/Library/Frameworks/ExceptionHandling.framework/Headers" />
           <root url="file:///System/Library/Frameworks/IOBluetoothUI.framework/Headers" />
-          <root url="file:///System/Library/Frameworks/Ruby.framework/Headers" />
           <root url="file:///System/Library/Frameworks/CoreMIDI.framework/Headers" />
           <root url="file:///System/Library/Frameworks/LocalAuthentication.framework/Headers" />
           <root url="file:///System/Library/Frameworks/Foundation.framework/Headers" />
@@ -365,6 +366,7 @@
           <root url="file:///System/Library/Frameworks/CoreText.framework/Headers" />
           <root url="file:///System/Library/Frameworks/NetworkExtension.framework/Headers" />
           <root url="file:///System/Library/Frameworks/SceneKit.framework/Headers" />
+          <root url="file:///System/Library/Frameworks/SecurityFoundation.framework/Headers" />
           <root url="file:///System/Library/Frameworks/PhotosUI.framework/Headers" />
           <root url="file:///System/Library/Frameworks/QuickLook.framework/Headers" />
           <root url="file:///System/Library/Frameworks/Tk.framework/PrivateHeaders" />
@@ -388,7 +390,7 @@
           <root url="file:///System/Library/Frameworks/AppleScriptObjC.framework/Headers" />
           <root url="file:///System/Library/Frameworks/CFNetwork.framework/Headers" />
           <root url="file:///System/Library/Frameworks/CryptoTokenKit.framework/Headers" />
-          <root url="file:///System/Library/Frameworks/SecurityFoundation.framework/Headers" />
+          <root url="file:///System/Library/Frameworks/Ruby.framework/Headers" />
           <root url="file:///System/Library/Frameworks/DiscRecordingUI.framework/Headers" />
           <root url="file:///System/Library/Frameworks/Collaboration.framework/Headers" />
           <root url="file:///System/Library/Frameworks/MediaToolbox.framework/Headers" />

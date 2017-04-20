@@ -6,10 +6,9 @@
 
 #include <msgrpc/util/singleton.h>
 #include <msgrpc/core/types.h>
+#include <msgrpc/core/iface_impl/iface_impl_base.h>
 
 namespace msgrpc {
-
-    struct IfaceImplBase;
 
     struct IfaceRepository : msgrpc::Singleton<IfaceRepository> {
         void add_iface_impl(iface_index_t ii, IfaceImplBase* iface) {

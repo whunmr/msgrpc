@@ -24,10 +24,22 @@
     ___methods_of_interface___##iface_name_(field_expand_macro_, __VA_ARGS__)
 
 ////////////////////////////////////////////////////////////////////////////////
-#define ___declare_interface_impl_class(name_, iface_id_)
+#define ___expand_declare_interface_impl_method(method_index_, rsp_, method_name_, req_, comments_, iface_name_, iface_id_) \
+    msgrpc::Cell<rsp_>* method_name_(const req_& req);
+
+//TODO: add header of InterfaceImplBaseT as common declaration include
+#define ___declare_interface_impl_class(iface_name_, iface_id_)                                      \
+    struct iface_name_##_impl : msgrpc::InterfaceImplBaseT<iface_name_##_impl, iface_id_> {          \
+        ___apply_expand(iface_name_, ___expand_declare_interface_impl_method, iface_name_, iface_id_)\
+                                                                                                     \
+        virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header                \
+                                             , const char* msg, size_t len                           \
+                                             , msgrpc::RspMsgHeader& rsp_header                      \
+                                             , msgrpc::service_id_t& sender_id) override;            \
+    };
 
 ////////////////////////////////////////////////////////////////////////////////
-#define ___expand_declare_interface_method(method_index_, rsp_, method_name_, req_, comments_, ...) \
+#define ___expand_declare_interface_stub_method(method_index_, rsp_, method_name_, req_, comments_, ...) \
     msgrpc::Cell<rsp_>* method_name_(const req_&);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,7 +47,7 @@
 #define ___declare_interface_stub_class(iface_name_, iface_id_) \
         struct iface_name_ :  msgrpc::IfaceStubBase { \
             using msgrpc::IfaceStubBase::IfaceStubBase;\
-            ___apply_expand(iface_name_, ___expand_declare_interface_method)\
+            ___apply_expand(iface_name_, ___expand_declare_interface_stub_method)\
         };
 
 #define ___declare_interface(...)                       \

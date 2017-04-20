@@ -31,8 +31,6 @@
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
 #include <msgrpc/util/singleton.h>
-#include <msgrpc/core/iface_impl/iface_impl_base_t.h>
-#include <msgrpc/core/iface_stub/iface_stub_base.h>
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "TemplateArgumentsIssues"
@@ -58,18 +56,6 @@ const int k__sync_x__delta = 17;
 msgrpc::Cell<ResponseBar>* InterfaceX::______sync_x(const RequestFoo& req) {
     return encode_request_and_send<RequestFoo, ResponseBar>(1, 1, req);
 }
-
-////////////////////////////////////////////////////////////////////////////////
-//---------------- generate this part by macros set:
-struct InterfaceX_impl : msgrpc::InterfaceImplBaseT<InterfaceX_impl, 1> {
-    msgrpc::Cell<ResponseBar>* ______sync_x(const RequestFoo& req);
-
-    virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
-                                         , const char* msg
-                                         , size_t len
-                                         , msgrpc::RspMsgHeader& rsp_header
-                                         , msgrpc::service_id_t& sender_id) override;
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set: interface_implement_define.h
@@ -125,23 +111,10 @@ msgrpc::Cell<ResponseBar>* InterfaceY::______sync_y_failed_immediately(const Req
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//---------------- generate this part by macros set:
-struct InterfaceYImpl : msgrpc::InterfaceImplBaseT<InterfaceYImpl, 2> {
-    msgrpc::Cell<ResponseBar>* ______sync_y(const RequestFoo& req);
-    msgrpc::Cell<ResponseBar>* _____async_y(const RequestFoo& req);
-    msgrpc::Cell<ResponseBar>* ______sync_y_failed(const RequestFoo& req);
-    msgrpc::Cell<ResponseBar>* ______sync_y_failed_immediately(const RequestFoo&);
-
-    virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header
-            , const char* msg, size_t len
-            , msgrpc::RspMsgHeader& rsp_header
-            , msgrpc::service_id_t& sender_id) override;
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 //---------------- generate this part by macros set: interface_implement_define.h
-InterfaceYImpl interfaceYImpl_auto_register_instance;
-msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header
+InterfaceY_impl interfaceYImpl_auto_register_instance;
+msgrpc::RpcResult InterfaceY_impl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_header
                                              , const char* msg
                                              , size_t len
                                              , msgrpc::RspMsgHeader& rsp_header
@@ -149,19 +122,19 @@ msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
     msgrpc::RpcResult ret;
 
     if (req_header.method_index_in_interface_ == 1) {
-        ret = this->invoke_templated_method(&InterfaceYImpl::______sync_y, msg, len, sender_id, rsp_header);
+        ret = this->invoke_templated_method(&InterfaceY_impl::______sync_y, msg, len, sender_id, rsp_header);
     } else
 
     if (req_header.method_index_in_interface_ == 2) {
-        ret = this->invoke_templated_method(&InterfaceYImpl::_____async_y, msg, len, sender_id, rsp_header);
+        ret = this->invoke_templated_method(&InterfaceY_impl::_____async_y, msg, len, sender_id, rsp_header);
     } else
 
     if (req_header.method_index_in_interface_ == 3) {
-        ret = this->invoke_templated_method(&InterfaceYImpl::______sync_y_failed, msg, len, sender_id, rsp_header);
+        ret = this->invoke_templated_method(&InterfaceY_impl::______sync_y_failed, msg, len, sender_id, rsp_header);
     } else
 
     if (req_header.method_index_in_interface_ == 4) {
-        ret = this->invoke_templated_method(&InterfaceYImpl::______sync_y_failed_immediately, msg, len, sender_id, rsp_header);
+        ret = this->invoke_templated_method(&InterfaceY_impl::______sync_y_failed_immediately, msg, len, sender_id, rsp_header);
     } else
 
     {
@@ -177,7 +150,7 @@ msgrpc::RpcResult InterfaceYImpl::onRpcInvoke( const msgrpc::ReqMsgHeader& req_h
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceY_impl::______sync_y(const RequestFoo& req) {
     std::cout << "                     ______sync_y" << std::endl;
 
     return msgrpc::call_sync_iface_impl<ResponseBar>(
@@ -193,17 +166,17 @@ struct SI_____async_y : msgrpc::SIBase<RequestFoo, ResponseBar> {
     }
 };
 
-msgrpc::Cell<ResponseBar>* InterfaceYImpl::_____async_y(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceY_impl::_____async_y(const RequestFoo& req) {
     std::cout << "                     _____async_y" << std::endl;
     return SI_____async_y().run(req);
 }
 
-msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed(const RequestFoo& req) {
+msgrpc::Cell<ResponseBar>* InterfaceY_impl::______sync_y_failed(const RequestFoo& req) {
     std::cout << "                     ______sync_y_failed" << std::endl;
     return nullptr;  //TODO: fix 4011 testcae failure: msgrpc::Cell<ResponseBar>::new_failed_instance();
 }
 
-msgrpc::Cell<ResponseBar>* InterfaceYImpl::______sync_y_failed_immediately(const RequestFoo&) {
+msgrpc::Cell<ResponseBar>* InterfaceY_impl::______sync_y_failed_immediately(const RequestFoo&) {
     return nullptr; //TODO: fix 4011 testcae failure: msgrpc::Cell<ResponseBar>::new_failed_instance();
 }
 

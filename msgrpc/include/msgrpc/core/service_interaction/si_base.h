@@ -21,4 +21,11 @@ namespace msgrpc {
     };
 }
 
+#define DEFINE_SI(SI_NAME_, REQ_, RSP_)                                                         \
+    struct SI_NAME_ : msgrpc::SIBase<REQ_, RSP_> {                                              \
+        virtual msgrpc::Cell<RSP_>* do_run(const REQ_ &req, msgrpc::RpcContext& ctxt) override; \
+    };                                                                                          \
+    msgrpc::Cell<RSP_>* SI_NAME_::do_run(const REQ_ &req, msgrpc::RpcContext& ctxt)
+
+
 #endif //MSGRPC_SI_BASE_H

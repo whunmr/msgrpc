@@ -3,6 +3,7 @@
 #include <ctime>
 #include <iostream>
 #include <string>
+#include <list>
 #include <boost/array.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>

@@ -1,52 +1,21 @@
 #include <iostream>
 #include <gtest/gtest.h>
-#include <thread>
-#include <chrono>
-#include <msgrpc/thrift_struct/thrift_codec.h>
-#include <type_traits>
-#include <future>
-#include <atomic>
 
-#include "demo/demo_api_struct_declare.h"
-
-#include <msgrpc/core/typedefs.h>
-#include <msgrpc/core/adapter/timer_adapter.h>
-#include <msgrpc/core/rpc_sequence_id.h>
-#include <msgrpc/core/adapter/config.h>
-#include <msgrpc/test/core/adapter/simple_timer_adapter.h>
-#include <msgrpc/test/test_util/UdpChannel.h>
-#include <msgrpc/core/cell/rsp_sink.h>
-#include <msgrpc/core/components/rsp_dispatcher.h>
 #include <msgrpc/core/cell/cell.h>
 #include <msgrpc/core/cell/derived_cell.h>
 #include <msgrpc/core/cell/timeout_cell.h>
 #include <msgrpc/core/service_interaction/si_base.h>
+
+#include <demo/demo_api_interface_declare.h>
 #include <msgrpc/core/iface_impl/iface_impl_utility.h>
-
-#include <msgrpc/test/core/adapter/udp_msg_channel.h>
-#include <msgrpc/test/details/set_timer_handler.h>
-#include <msgrpc/core/components/req_msg_handler.h>
-#include <msgrpc/core/components/rpc_timeout_handler.h>
-#include <msgrpc/util/singleton.h>
-
-using namespace demo;
 
 //constants for testing.
 const int k_req_init_value = 1;
 const int k__sync_y__delta = 3;
 const int k__sync_x__delta = 17;
-
-////////////////////////////////////////////////////////////////////////////////
-//TODO: define following macros:
-#define declare_interface_stub
-#define  define_interface_stub
-#define declare_interface_impl
-#define  define_interface_impl
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#include <demo/demo_api_interface_declare.h>
+using namespace demo;
 
 ////////////////////////////////////////////////////////////////////////////////
 msgrpc::Cell<ResponseBar>* InterfaceX_impl::______sync_x(const RequestFoo& req) {
@@ -70,13 +39,14 @@ msgrpc::Cell<ResponseBar>* InterfaceY_impl::______sync_y(const RequestFoo& req) 
     );
 }
 
-struct SI_____async_y : msgrpc::SIBase<RequestFoo, ResponseBar> {
-    virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext& ctxt) override {
-        return InterfaceX(ctxt).______sync_x(req);
-    }
-};
-
 msgrpc::Cell<ResponseBar>* InterfaceY_impl::_____async_y(const RequestFoo& req) {
+
+    struct SI_____async_y : msgrpc::SIBase<RequestFoo, ResponseBar> {
+        virtual msgrpc::Cell<ResponseBar>* do_run(const RequestFoo &req, msgrpc::RpcContext& ctxt) override {
+            return InterfaceX(ctxt).______sync_x(req);
+        }
+    };
+
     std::cout << "                     _____async_y" << std::endl;
     return SI_____async_y().run(req);
 }
@@ -90,7 +60,6 @@ msgrpc::Cell<ResponseBar>* InterfaceY_impl::______sync_y_failed_immediately(cons
     return nullptr; //TODO: fix 4011 testcae failure: msgrpc::Cell<ResponseBar>::new_failed_instance();
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <msgrpc/test/details/msgrpc_test_loop.h>

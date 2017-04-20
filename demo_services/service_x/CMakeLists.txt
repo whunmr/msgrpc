@@ -27,7 +27,7 @@ FILE(GLOB_RECURSE SERVICE_X_SOURCE_FILES ./*.cpp ./*.h)
 
 add_executable(service_x ${SERVICE_X_SOURCE_FILES})
 
-target_link_libraries(service_x ${___THRIFT_LIB} gtest zookeeper_mt boost_system)
+target_link_libraries(service_x ${___THRIFT_LIB} gtest zookeeper_mt boost_system msgrpc)
 
 ################################################################################
 find_program(VALGRIND "valgrind")

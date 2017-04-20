@@ -11,6 +11,7 @@
 #include <msgrpc/core/components/rpc_timeout_handler.h>
 #include <msgrpc/core/components/rsp_dispatcher.h>
 #include <msgrpc/util/singleton.h>
+#include <msgrpc/test/details/set_timer_handler.h>
 
 void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char *msg, size_t len)> should_drop) {
     msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()

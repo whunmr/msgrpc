@@ -2,6 +2,7 @@
 #define MSGRPC_TIMEOUT_CELL_H
 
 #include <msgrpc/core/cell/cell.h>
+#include <msgrpc/core/adapter/config.h>
 
 namespace msgrpc {
 

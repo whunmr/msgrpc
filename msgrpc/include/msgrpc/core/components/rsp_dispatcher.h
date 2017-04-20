@@ -2,6 +2,7 @@
 #define MSGRPC_RSP_DISPATCHER_H
 
 #include <msgrpc/util/singleton.h>
+#include <msgrpc/core/typedefs.h>
 #include <msgrpc/core/types.h>
 
 namespace msgrpc {

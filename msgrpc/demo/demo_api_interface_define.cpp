@@ -5,3 +5,9 @@
 
 //#include <msgrpc/api/service_api_struct_define.h>
 //#include "demo_service.interface"
+
+//#include <msgrpc/api/service_api_interface_stub_define.h>
+//#include "demo_service.interface"
+
+//#include <msgrpc/api/service_api_interface_impl_define.h>
+//#include "demo_service.interface"

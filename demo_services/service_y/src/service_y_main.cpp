@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <api/export/y_api_struct_declare.h>
+#include <api/y_api_struct_declare.h>
 #include <adapter_example/details/msgrpc_test.h>
 
 int main() {

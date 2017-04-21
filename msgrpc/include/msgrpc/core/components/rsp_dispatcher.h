@@ -58,7 +58,7 @@ namespace msgrpc {
 
             auto iter = id_func_map_.find(rsp_header->sequence_id_);
             if (iter == id_func_map_.end()) {
-                std::cout << "WARNING: can not find components handler" << std::endl;
+                std::cout << "WARNING: can not find rpc rsp handler for seq_id:" << rsp_header->sequence_id_ << std::endl;
                 return;
             }
 

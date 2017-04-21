@@ -15,6 +15,6 @@ namespace service_y {
 
     #define ___methods_of_interface___IY(_, ...)                                                                       \
         _(1, YRsp, ___f1m1, YReq,                                                               (方法注释), __VA_ARGS__)
-    ___as_interface(IY, 1);
+    ___as_interface(IY, 2);
 
 }

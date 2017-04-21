@@ -3,15 +3,15 @@
 
 #include <iostream>
 #include <msgrpc/core/adapter/config.h>
-#include <msgrpc/test/details/test_constants.h>
-#include <msgrpc/test/core/adapter/simple_timer_adapter.h>
-#include <msgrpc/test/core/adapter/udp_msg_channel.h>
-#include <msgrpc/test/test_util/UdpChannel.h>
+#include <adapter_example/details/test_constants.h>
+#include <msgrpc/adapter_example/core/adapter/simple_timer_adapter.h>
+#include <msgrpc/adapter_example/core/adapter/udp_msg_channel.h>
+#include <adapter_example/details/UdpChannel.h>
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
 #include <msgrpc/core/components/rsp_dispatcher.h>
 #include <msgrpc/util/singleton.h>
-#include <msgrpc/test/details/set_timer_handler.h>
+#include <adapter_example/details/set_timer_handler.h>
 
 void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char *msg, size_t len)> should_drop) {
     msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()

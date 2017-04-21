@@ -9,7 +9,7 @@
 #include <msgrpc/core/iface_impl/iface_repository.h>
 
 //TODO: remove
-#include <test/details/test_constants.h>
+#include <adapter_example/details/test_constants.h>
 
 namespace msgrpc {
 

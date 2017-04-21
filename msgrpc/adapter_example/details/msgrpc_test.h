@@ -4,7 +4,7 @@
 #include <condition_variable>
 #include <gtest/gtest.h>
 #include <thread>
-#include <msgrpc/test/details/msgrpc_test_loop.h>
+#include <adapter_example/details/msgrpc_test_loop.h>
 
 bool can_safely_exit = false;
 std::mutex can_safely_exit_mutex;

@@ -6,6 +6,7 @@
 #include <msgrpc/util/singleton.h>
 #include <msgrpc/core/adapter/timer_adapter.h>
 #include <msgrpc/core/rpc_sequence_id.h>
+#include <msgrpc/core/components/rsp_dispatcher.h>
 
 namespace msgrpc {
 

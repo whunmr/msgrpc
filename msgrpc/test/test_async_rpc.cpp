@@ -61,9 +61,24 @@ msgrpc::Cell<ResponseBar>* InterfaceY_impl::______sync_y_failed_immediately(cons
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#include <msgrpc/adapter_example/details/msgrpc_test_loop.h>
-#include <msgrpc/adapter_example/details/msgrpc_test.h>
+#include <adapter_example/details/msgrpc_test_loop.h>
+#include <adapter_example/details/msgrpc_test.h>
 using namespace msgrpc;
+
+template<typename SI>
+void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    RequestFoo foo; foo.reqa = k_req_init_value;
+
+    auto* rsp_cell = SI().run(foo);
+
+    if (rsp_cell != nullptr) {
+        msgrpc::derive_final_action([f](msgrpc::Cell<ResponseBar>& r) {
+            f(r);
+            create_delayed_exiting_thread();
+        }, rsp_cell);
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     DEFINE_SI(SI_case000, RequestFoo, ResponseBar) {

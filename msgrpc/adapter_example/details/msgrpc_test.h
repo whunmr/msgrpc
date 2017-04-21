@@ -16,7 +16,7 @@ struct MsgRpcTest : public ::testing::Test {
         can_safely_exit = false;
 
         msgrpc::RpcSequenceId::instance().reset();
-        TimerMgr::instance().reset();
+        demo::TimerMgr::instance().reset();
     }
 
     virtual void TearDown() {
@@ -49,19 +49,5 @@ void create_delayed_exiting_thread() {
     thread_delayed_exiting.detach();
 }
 
-template<typename SI>
-void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    RequestFoo foo; foo.reqa = k_req_init_value;
-
-    auto* rsp_cell = SI().run(foo);
-
-    if (rsp_cell != nullptr) {
-        msgrpc::derive_final_action([f](msgrpc::Cell<ResponseBar>& r) {
-            f(r);
-            create_delayed_exiting_thread();
-        }, rsp_cell);
-    }
-}
 
 #endif //MSGRPC_MSGRPC_TEST_H

@@ -4,8 +4,8 @@
 #include <iostream>
 #include <msgrpc/core/adapter/config.h>
 #include <adapter_example/details/test_constants.h>
-#include <msgrpc/adapter_example/core/adapter/simple_timer_adapter.h>
-#include <msgrpc/adapter_example/core/adapter/udp_msg_channel.h>
+#include <adapter_example/core/adapter/simple_timer_adapter.h>
+#include <adapter_example/core/adapter/udp_msg_channel.h>
 #include <adapter_example/details/UdpChannel.h>
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
@@ -14,14 +14,14 @@
 #include <adapter_example/details/set_timer_handler.h>
 
 void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char *msg, size_t len)> should_drop) {
-    msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
-            , &SimpleTimerAdapter::instance()
+    msgrpc::Config::instance().init_with(&demo::UdpMsgChannel::instance()
+            , &demo::SimpleTimerAdapter::instance()
             , k_msgrpc_request_msg_id
             , k_msgrpc_response_msg_id
             , k_msgrpc_set_timer_msg
             , k_msgrpc_timeout_msg);
 
-    test_service::instance().current_service_id_ = udp_port;
+    demo::test_service::instance().current_service_id_ = udp_port;
 
     UdpChannel channel(udp_port,
                        [&init_func, udp_port, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
@@ -36,7 +36,7 @@ void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_fu
                            } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
                                return demo::SetTimerHandler::instance().set_timer(msg, len);
                            } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
-                               if (! TimerMgr::instance().should_ignore(msg, len)) {
+                               if (! demo::TimerMgr::instance().should_ignore(msg, len)) {
                                    return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
                                }
                            } else {

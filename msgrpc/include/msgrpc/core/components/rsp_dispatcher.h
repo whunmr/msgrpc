@@ -4,6 +4,7 @@
 #include <msgrpc/util/singleton.h>
 #include <msgrpc/core/typedefs.h>
 #include <msgrpc/core/types.h>
+#include <msgrpc/core/cell/rsp_sink.h>
 
 namespace msgrpc {
 

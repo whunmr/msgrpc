@@ -22,7 +22,7 @@ add_definitions(-DTHREADED)
 include_directories(~/lab/thrift-0.9.3/lib/cpp/src)
 include_directories(~/lab/cpp/msgrpc/msgrpc/include)
 include_directories(~/lab/cpp/msgrpc/msgrpc)
-include_directories(~/lab/cpp/msgrpc/)
+#include_directories(~/lab/cpp/msgrpc/)
 
 ################################################################################
 FILE(GLOB_RECURSE DEMO_SOURCE_FILES         demo/*.cpp demo/*.h demo/*.interface)

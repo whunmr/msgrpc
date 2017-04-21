@@ -1,7 +1,7 @@
 #include "demo/gen1/api_types.h"
 #include "demo/demo_api_struct_declare.h"
 
-#include <msgrpc/thrift_struct/thrift_codec.h>
+#include <msgrpc/thrift/thrift_codec.h>
 #include <gtest/gtest.h>
 using namespace std;
 using namespace org::example::msgrpc;

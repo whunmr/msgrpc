@@ -16,7 +16,7 @@ namespace demo {
     struct UdpMsgChannel : msgrpc::MsgChannel, msgrpc::ThreadLocalSingleton<UdpMsgChannel> {
         virtual bool send_msg(const msgrpc::service_id_t& remote_service_id, msgrpc::msg_id_t msg_id, const char* buf, size_t len) const {
             if (msg_id != k_msgrpc_set_timer_msg && msg_id != k_msgrpc_timeout_msg) {
-                //std::cout << ((remote_service_id == x_service_id) ? "X <------ " : "   ------> Y") << std::endl;
+                std::cout << ((remote_service_id == x_service_id) ? "X <------ " : "   ------> Y") << std::endl;
             }
 
             size_t msg_len_with_msgid = sizeof(msgrpc::msg_id_t) + len;

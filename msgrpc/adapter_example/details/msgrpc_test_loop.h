@@ -9,7 +9,7 @@
 #include <adapter_example/details/UdpChannel.h>
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
-#include <msgrpc/core/components/rsp_dispatcher.h>
+#include <msgrpc/core/components/rsp_msg_handler.h>
 #include <msgrpc/util/singleton.h>
 #include <adapter_example/details/set_timer_handler.h>
 
@@ -32,7 +32,7 @@ void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_fu
                                    return msgrpc::ReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
                                }
                            } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                               return msgrpc::RspDispatcher::instance().handle_rpc_rsp(msg_id, msg, len);
+                               return msgrpc::RspMsgHandler::instance().handle_rpc_rsp(msg_id, msg, len);
                            } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
                                return demo::SetTimerHandler::instance().set_timer(msg, len);
                            } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {

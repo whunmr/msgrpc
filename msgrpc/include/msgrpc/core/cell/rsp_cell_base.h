@@ -2,7 +2,7 @@
 #define MSGRPC_RSP_CELL_BASE_H
 
 #include <msgrpc/core/cell/rsp_sink.h>
-#include <msgrpc/core/components/rsp_dispatcher.h>
+#include <msgrpc/core/components/rsp_msg_handler.h>
 
 //TODO: to .h and .cpp
 
@@ -10,7 +10,7 @@ namespace msgrpc {
     struct RspCellBase : RspSink {
         virtual ~RspCellBase() {
             if (has_seq_id_) {
-                RspDispatcher::instance().remove_rsp_handler(seq_id_);
+                RspMsgHandler::instance().remove_rsp_handler(seq_id_);
             }
         }
 

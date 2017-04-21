@@ -6,7 +6,7 @@
 #include <msgrpc/util/singleton.h>
 #include <msgrpc/core/adapter/timer_adapter.h>
 #include <msgrpc/core/rpc_sequence_id.h>
-#include <msgrpc/core/components/rsp_dispatcher.h>
+#include <msgrpc/core/components/rsp_msg_handler.h>
 
 namespace msgrpc {
 
@@ -17,7 +17,7 @@ namespace msgrpc {
 
             msgrpc::rpc_sequence_id_t seq_id =  (msgrpc::rpc_sequence_id_t)((uintptr_t)(ti.user_data_));
 
-            msgrpc::RspDispatcher::instance().on_rsp_handler_timeout(seq_id);
+            msgrpc::RspMsgHandler::instance().on_rsp_handler_timeout(seq_id);
         }
     };
 }

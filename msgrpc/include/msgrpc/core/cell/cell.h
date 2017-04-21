@@ -66,6 +66,13 @@ namespace msgrpc {
         }
     };
 
+
+    template <typename T>
+    static Cell<T>* cell_with_value(T& value) {
+        Cell<T>* cell = new Cell<T>();
+        cell->set_value(value);
+        return cell;
+    }
 }
 
 #endif //MSGRPC_CELL_H

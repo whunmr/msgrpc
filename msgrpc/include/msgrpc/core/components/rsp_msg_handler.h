@@ -9,7 +9,7 @@
 namespace msgrpc {
 
     //TODO: split into .h and .cpp
-    struct RspDispatcher : msgrpc::ThreadLocalSingleton<RspDispatcher> {
+    struct RspMsgHandler : msgrpc::ThreadLocalSingleton<RspMsgHandler> {
         void on_rsp_handler_timeout(rpc_sequence_id_t sequence_id) {
             auto iter = id_func_map_.find(sequence_id);
             if (iter == id_func_map_.end()) {

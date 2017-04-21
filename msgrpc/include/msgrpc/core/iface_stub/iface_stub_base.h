@@ -29,7 +29,7 @@ namespace msgrpc {
             }
 
             auto seq_id = msgrpc::RpcSequenceId::instance().get();
-            msgrpc::RspDispatcher::instance().register_rsp_Handler(seq_id, rpc_rsp_cell_sink);
+            msgrpc::RspMsgHandler::instance().register_rsp_Handler(seq_id, rpc_rsp_cell_sink);
 
             auto header = (msgrpc::ReqMsgHeader *) mem;
             header->msgrpc_version_ = 0;

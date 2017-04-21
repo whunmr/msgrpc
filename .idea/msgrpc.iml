@@ -4,9 +4,9 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/rpc_sequence_id.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/types.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/rsp_msg_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/req_msg_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/rpc_timeout_handler.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/rsp_dispatcher.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/rpc_result.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_interaction/si_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/rsp_sink.h" isTestSource="false" />
@@ -37,9 +37,9 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/util/singleton.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_struct_define.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_struct_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_codec.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_struct_common.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_zookeeper.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_thrift_struct.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_async_rpc.cpp" isTestSource="false" />

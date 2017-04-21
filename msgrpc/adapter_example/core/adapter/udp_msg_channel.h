@@ -1,6 +1,7 @@
 #ifndef MSGRPC_UDP_MSG_CHANNEL_H
 #define MSGRPC_UDP_MSG_CHANNEL_H
 
+#include <msgrpc/core/types.h>
 #include <msgrpc/core/adapter/msg_channel.h>
 
 #include <iostream>

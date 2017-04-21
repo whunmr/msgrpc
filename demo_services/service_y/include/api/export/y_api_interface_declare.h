@@ -7,6 +7,6 @@
 #include <msgrpc/core/iface_impl/iface_impl_base_t.h>
 
 #include <msgrpc/api/api_interface_declare.h>
-#include <api/export/service_y.interface>
+#include <api/export/service_y.api>
 
 #endif //PROJECT_Y_API_INTERFACE_DECLARE_H

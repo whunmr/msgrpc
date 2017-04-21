@@ -7,6 +7,6 @@
 #include <msgrpc/core/iface_impl/iface_impl_base_t.h>
 
 #include <msgrpc/api/api_interface_declare.h>
-#include "demo_service.interface"
+#include "demo_service.api"
 
 #endif //PROJECT_DEMO_API_INTERFACE_DECLARE_H

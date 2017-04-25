@@ -101,8 +101,19 @@ namespace msgrpc {
         bind_type bind_;
     };
 
+    struct DummyPlaceHodler {
+        DummyPlaceHodler& operator--() {
+            return *this;
+        }
+
+        DummyPlaceHodler& operator< (DummyPlaceHodler& p) {
+            return p;
+        }
+
+    } g_dummy_holder;
+
     template<typename F, typename... Args>
-    auto derive_rpc_cell(RpcContext &ctxt, timeout_len_t timeout_ms, size_t retry_times, F f, Args &&... args)
+    auto derive_rpc_cell(RpcContext &ctxt, timeout_len_t timeout_ms, size_t retry_times, F f, const DummyPlaceHodler& dummyPlaceHodler, Args &&... args)
     -> TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>* {
         auto cell = new TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>(ctxt, timeout_ms, retry_times, f, std::ref(*args)...);
         ctxt.track(cell);
@@ -110,7 +121,7 @@ namespace msgrpc {
     }
 
     template<typename F, typename... Args>
-    auto derive_rpc_cell(RpcContext &ctxt, timeout_len_t timeout_ms, F f, Args &&... args)
+    auto derive_rpc_cell(RpcContext &ctxt, timeout_len_t timeout_ms, F f, const DummyPlaceHodler& dummyPlaceHodler, Args &&... args)
     -> TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>* {
         auto cell = new TimeoutCell<typename std::remove_pointer<typename std::result_of<F(decltype(*args)...)>::type>::type::value_type, decltype(*args)...>(ctxt, timeout_ms, /*retry_times=*/0, f, std::ref(*args)...);
         ctxt.track(cell);
@@ -122,6 +133,11 @@ namespace msgrpc {
 
 #define ___retry(...) __VA_ARGS__
 
-#define ___rpc(...) derive_rpc_cell(ctxt, __VA_ARGS__)
+#define ___rpc(...) derive_rpc_cell(ctxt, __VA_ARGS__, g_dummy_holder)
+
+#define ___rpcex(...) derive_rpc_cell(ctxt, __VA_ARGS__, g_dummy_holder
+#define ___on(...) g_dummy_holder, __VA_ARGS__)
+
+
 
 #endif //MSGRPC_TIMEOUT_CELL_H

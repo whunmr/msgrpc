@@ -199,8 +199,8 @@ Cell<ResponseBar>* call__sync_y_failed(RpcContext &ctxt, Cell<ResponseBar> &___r
         auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
 
         auto ___1 = ___rpc(___ms(10), init_first_rpc);
-        auto ___2 = ___rpc(___ms(10), call_sync_y_after___1, ___1);
-        auto ___3 = ___rpc(___ms(10), call_sync_y_after___2, ___2);
+        auto ___2 = ___rpcex(___ms(10), call_sync_y_after___1) <------ ___on(___1);
+        auto ___3 = ___rpcex(___ms(10), call_sync_y_after___2) <------ ___on(___2);
 
         return ___3;
     }
@@ -225,8 +225,8 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_sequential_rpc______case4001)
         auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
 
         auto ___1 = ___rpc(___ms(10), init_first_rpc);
-        auto ___2 = ___rpc(___ms(10), call_sync_y_after___1, ___1);
-        auto ___3 = ___rpc(___ms(10), call_sync_y_after___2, ___2);
+        auto ___2 = ___rpcex(___ms(10), call_sync_y_after___1) <------ ___on(___1);
+        auto ___3 = ___rpcex(___ms(10), call_sync_y_after___2) <------ ___on(___2);
 
         return ___3;
     }
@@ -249,8 +249,8 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
         auto call_sync_y_again            = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
 
         auto ___1 = ___rpc(___ms(10), init_first_rpc);
-        auto ___2 = ___rpc(___ms(10), call_sync_y_failed_after___1, ___1);
-        auto ___3 = ___rpc(___ms(10), call_sync_y_again, ___2);
+        auto ___2 = ___rpcex(___ms(10), call_sync_y_failed_after___1) <------ ___on(___1);
+        auto ___3 = ___rpcex(___ms(10), call_sync_y_again)            <------ ___on(___2);
 
         return ___3;
     }
@@ -362,8 +362,8 @@ void run_customized_action(CellBase<bool> &r) {
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);                                      //seq_id: 1, 2
                     ___action(run_customized_action, ___1->timeout());
         
-                    auto ___2 = ___rpc(___ms(10), ___retry(1), do_rpc_rollback, ___1->timeout());       //seq_id: 3, ...
-                    auto ___3 = ___rpc(___ms(10), ___retry(1), do_rpc_rollback, ___1->timeout());
+                    auto ___2 = ___rpcex(___ms(10), ___retry(1), do_rpc_rollback) <------ ___on(___1->timeout());       //seq_id: 3, ...
+                    auto ___3 = ___rpcex(___ms(10), ___retry(1), do_rpc_rollback) <------ ___on(___1->timeout());
 
         return ___cell(join_rollback_cells, ___1, ___2, ___3);
     }
@@ -448,9 +448,9 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_
         };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);
-        auto ___2 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y_after_1, ___1);
-        auto ___3 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y_after_2, ___2);
-        auto ___4 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y_after_2, ___3);
+        auto ___2 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y_after_1) <------ ___on(___1);
+        auto ___3 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y_after_2) <------ ___on(___2);
+        auto ___4 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y_after_2) <------ ___on(___3);
         return ___4;
     }
 
@@ -486,7 +486,7 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation__through_sequenti
         
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);                                       //seq_id: 1, 3
         auto ___2 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);                                       //seq_id: 2, 4
-        auto ___3 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y_after_1_2, ___1, ___2);
+        auto ___3 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y_after_1_2) <------ ___on(___1, ___2);
         return ___3;
     }
 
@@ -497,6 +497,16 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1000) {
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1000>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}                                   , drop_msg_with_seq_id({1, 2, 3, 4}));
+    test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
+}
+
+TEST_F(MsgRpcTest, should_able_to_support__happy_path______case1001) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_EQ(true, ___r.has_value());
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1000>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
     test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 
@@ -515,7 +525,7 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1000) {
         };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);
-        auto ___2 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y__after__1, ___1);
+        auto ___2 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y__after__1) <------ ___on(___1);
         return ___2;
     }
 
@@ -526,6 +536,32 @@ TEST_F(MsgRpcTest, DISABLED_should_able_to_support__timeout_propagation______cas
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1100>(then_check);}, not_drop_msg);
+    test_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
+    test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    DEFINE_SI(SI_case1200, RequestFoo, ResponseBar) {
+        auto do_rpc_sync_y = [&ctxt, req]() {
+            return InterfaceY(ctxt).______sync_y(req);
+        };
+
+        auto do_rpc_sync_y__after__1 = [&ctxt, req](Cell<ResponseBar>& ___1) -> Cell<demo::ResponseBar>* {
+            return InterfaceY(ctxt).______sync_y(req);
+        };
+
+        auto ___1 = ___rpc(___ms(10), do_rpc_sync_y);
+        auto ___2 = ___rpcex(___ms(10), do_rpc_sync_y__after__1) <------ ___on(___1);
+
+        return ___2;
+    }
+
+TEST_F(MsgRpcTest, should_able_to_support__map_operation_on_cell_____case1200) {
+    auto then_check = [](Cell<ResponseBar>& ___r) {
+        EXPECT_EQ(true, ___r.has_value());
+    };
+
+    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1200>(then_check);}, not_drop_msg);
     test_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
     test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }

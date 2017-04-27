@@ -23,13 +23,12 @@ DEF_TESTCASE(testcase_0001) {
 
     auto* rsp_cell = SI_call_y_f1m1().run(yreq);
 
-    if (rsp_cell != nullptr) {
-        derive_final_action([](msgrpc::Cell<YRsp>& r) {
-            EXPECT_EQ(true, r.has_value());
-            EXPECT_EQ(200, r.value().yrspa);
-            run_next_testcase();
-        }, rsp_cell);
-    }
+    derive_final_action([](msgrpc::Cell<YRsp>& r) {
+        EXPECT_EQ(true, r.has_value());
+        EXPECT_EQ(200, r.value().yrspa);
+        run_next_testcase();
+    }, rsp_cell);
+
 }
 
 DEF_TESTCASE(testcase_0002) {

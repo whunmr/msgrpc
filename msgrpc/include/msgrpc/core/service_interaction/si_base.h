@@ -11,6 +11,8 @@ namespace msgrpc {
             msgrpc::RpcContext *ctxt = new msgrpc::RpcContext();
 
             msgrpc::Cell<U> *result_cell = do_run(req, *ctxt);
+
+            assert(result_cell != nullptr && "should not return nullptr cell from SI");
             result_cell->set_binded_context(*ctxt);
             ctxt->release_list_.remove(result_cell);
 

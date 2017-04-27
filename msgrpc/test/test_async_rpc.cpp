@@ -72,12 +72,10 @@ void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
 
     auto* rsp_cell = SI().run(foo);
 
-    if (rsp_cell != nullptr) {
-        msgrpc::derive_final_action([f](msgrpc::Cell<ResponseBar>& r) {
-            f(r);
-            create_delayed_exiting_thread();
-        }, rsp_cell);
-    }
+    msgrpc::derive_final_action([f](msgrpc::Cell<ResponseBar>& r) {
+        f(r);
+        create_delayed_exiting_thread();
+    }, rsp_cell);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -238,7 +236,7 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4011_failed>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                          , not_drop_msg );
+    test_thread thread_y(y_service_id, []{}                                          , not_drop_msg);
     test_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
 }
 

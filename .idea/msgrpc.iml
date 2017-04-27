@@ -64,9 +64,11 @@
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/api/y_api_struct_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/api/y_api_interface_stub_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/service_x_main.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/test_util/test_runner.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/api/y_api_interface_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/api/y_api_struct_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/test_util/test_runner.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />

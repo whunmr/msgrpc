@@ -4,7 +4,7 @@
 #include <adapter_example/details/msgrpc_test.h>
 #include <msgrpc/core/service_interaction/si_base.h>
 
-void run_next_testcase();
+#include <test_util/test_runner.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 using namespace service_y;
@@ -12,7 +12,7 @@ DEFINE_SI(SI_call_y_f1m1, YReq, YRsp) {
     return IY(ctxt).___f1m1(req);
 }
 
-void testcase_0000() {
+DEF_TESTCASE(testcase_0001) {
     YReq yreq;
     yreq.yreqa = 100;
 
@@ -26,24 +26,9 @@ void testcase_0000() {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-void run_testcase(size_t index) {
-    std::vector<std::function<void(void)>> testcases = {
-        testcase_0000
-    };
-
-    if (index < testcases.size()) {
-        std::cout << "-------------------" << std::endl << "[RUN] testcase: " << index << std::endl;
-        testcases[index]();
-    } else {
-        std::cout << "------------------------" << std::endl << "[ALL testcases finished]" << std::endl;
-        exit(0);
-    }
-}
-
-void run_next_testcase() {
-    static size_t index = 0;
-    run_testcase(index++);
+DEF_TESTCASE(testcase_0002) {
+    std::cout << "hello from testcase_0002" << std::endl;
+    run_next_testcase();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

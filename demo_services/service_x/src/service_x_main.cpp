@@ -5,11 +5,16 @@
 #include <msgrpc/core/service_interaction/si_base.h>
 
 #include <test_util/test_runner.h>
+#include <msgrpc/core/cell/timeout_cell.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 using namespace service_y;
 DEFINE_SI(SI_call_y_f1m1, YReq, YRsp) {
-    return IY(ctxt).___f1m1(req);
+    auto call_y_f1m1 = [&ctxt, req]() {
+        return IY(ctxt).___f1m1(req);
+    };
+
+    return ___rpc(___ms(10), call_y_f1m1);
 }
 
 DEF_TESTCASE(testcase_0001) {
@@ -20,7 +25,8 @@ DEF_TESTCASE(testcase_0001) {
 
     if (rsp_cell != nullptr) {
         derive_final_action([](msgrpc::Cell<YRsp>& r) {
-            std::__1::cout << "value of result:" << r.value().yrspa << std::__1::endl;
+            EXPECT_EQ(true, r.has_value());
+            EXPECT_EQ(200, r.value().yrspa);
             run_next_testcase();
         }, rsp_cell);
     }
@@ -35,6 +41,7 @@ DEF_TESTCASE(testcase_0002) {
 int main() {
     std::cout << "[service_start_up] service_x_main" << std::endl;
 
+    test_thread thread_timer(timer_service_id, []{}, not_drop_msg);
     test_thread msg_loop_thread(x_service_id, run_next_testcase, not_drop_msg);
 
     return 0;

@@ -133,9 +133,9 @@ namespace msgrpc {
 
 #define ___retry(...) __VA_ARGS__
 
-#define ___rpc(...) derive_rpc_cell(ctxt, __VA_ARGS__, g_dummy_holder)
+#define ___rpc(...) derive_rpc_cell(ctxt, __VA_ARGS__, msgrpc::g_dummy_holder)
 
-#define ___rpcex(...) derive_rpc_cell(ctxt, __VA_ARGS__, g_dummy_holder
+#define ___rpcex(...) derive_rpc_cell(ctxt, __VA_ARGS__, msgrpc::g_dummy_holder
 #define ___on(...) g_dummy_holder, __VA_ARGS__)
 
 

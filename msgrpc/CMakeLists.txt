@@ -14,6 +14,7 @@ LINK_DIRECTORIES(/usr/local/Cellar/boost/1.60.0_1/lib)
 INCLUDE_DIRECTORIES(/usr/local/Cellar/boost/1.60.0_1/include)
 
 ################################################################################
+#TODO: using find_package
 LINK_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/lib/)
 INCLUDE_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/)
 add_definitions(-DTHREADED)

@@ -4,7 +4,7 @@
 namespace msgrpc {
 
     struct ServiceRegister {
-        virtual void register_service(const char* end_point) = 0;
+        virtual bool register_service(const char* end_point) = 0;
     };
 
 }

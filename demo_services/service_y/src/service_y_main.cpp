@@ -6,10 +6,12 @@
 int main() {
     std::cout << "[service_start_up] service_y_main" << std::endl;
 
-    test_thread thread_timer(timer_service_id, []{}, not_drop_msg);
-    test_thread msg_loop_thread(y_service_id, []{}, not_drop_msg);
+    auto init_y = [] {
+        service_y::msgrpc_register_service("127.0.0.1:7777");
+    };
 
-    service_y::msgrpc_register_service();
+    test_thread thread_timer(timer_service_id, init_y, not_drop_msg);
+    test_thread msg_loop_thread(y_service_id, []{}, not_drop_msg);
 
     return 0;
 }

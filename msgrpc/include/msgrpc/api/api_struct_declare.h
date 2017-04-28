@@ -11,7 +11,7 @@
 #define ___def_service(service_name_, version_) \
 namespace service_name_ {                       \
     extern const char* api_version;             \
-    void msgrpc_register_service();             \
+    void msgrpc_register_service(const char* endpoint); \
 }                                               \
 namespace service_name_
 

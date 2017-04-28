@@ -2,19 +2,22 @@
 #define MSGRPC_SERVICE_API_DEFINE_H_H
 
 #include <msgrpc/thrift/thrift_struct_define.h>
-
-#include <iostream>
+#include <msgrpc/core/adapter/config.h>
+#include <cassert>
 
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ___def_service
 #undef ___def_service
 #endif
 
-#define ___def_service(service_name_, version_)      \
-namespace service_name_ {                            \
-    const char* api_version = #version_;             \
-    void msgrpc_register_service() { std::cout << "register service to zk..." << std::endl; }  \
-}                                                    \
+#define ___def_service(service_name_, version_)                                   \
+namespace service_name_ {                                                         \
+    const char* api_version = #version_;                                          \
+    void msgrpc_register_service(const char* endpoint) {                          \
+        assert(msgrpc::Config::instance().service_register_ != nullptr);          \
+        msgrpc::Config::instance().service_register_->register_service(endpoint); \
+    }                                                                             \
+}                                                                                 \
 namespace service_name_
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -6,6 +6,7 @@
 #include <adapter_example/details/test_constants.h>
 #include <adapter_example/core/adapter/simple_timer_adapter.h>
 #include <adapter_example/core/adapter/udp_msg_channel.h>
+#include <adapter_example/core/adapter/zk_service_register.h>
 #include <adapter_example/details/UdpChannel.h>
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
@@ -16,6 +17,7 @@
 void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char *msg, size_t len)> should_drop) {
     msgrpc::Config::instance().init_with(&demo::UdpMsgChannel::instance()
             , &demo::SimpleTimerAdapter::instance()
+            , &demo::ZkServiceRegister::instance()
             , k_msgrpc_request_msg_id
             , k_msgrpc_response_msg_id
             , k_msgrpc_set_timer_msg

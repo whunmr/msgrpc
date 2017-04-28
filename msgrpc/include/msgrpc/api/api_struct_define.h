@@ -10,14 +10,14 @@
 #undef ___def_service
 #endif
 
-#define ___def_service(service_name_, version_)                                   \
-namespace service_name_ {                                                         \
-    const char* api_version = #version_;                                          \
-    void msgrpc_register_service(const char* endpoint) {                          \
-        assert(msgrpc::Config::instance().service_register_ != nullptr);          \
-        msgrpc::Config::instance().service_register_->register_service(endpoint); \
-    }                                                                             \
-}                                                                                 \
+#define ___def_service(service_name_, version_)                                                   \
+namespace service_name_ {                                                                         \
+    const char* api_version = #version_;                                                          \
+    void msgrpc_register_service(const char* endpoint) {                                          \
+        assert(msgrpc::Config::instance().service_register_ != nullptr);                          \
+        msgrpc::Config::instance().service_register_->register_service(#service_name_, endpoint); \
+    }                                                                                             \
+}                                                                                                 \
 namespace service_name_
 
 ////////////////////////////////////////////////////////////////////////////////

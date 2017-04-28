@@ -3,15 +3,18 @@
 
 #include <msgrpc/thrift/thrift_struct_define.h>
 
+#include <iostream>
+
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ___def_service
 #undef ___def_service
 #endif
 
-#define ___def_service(service_name_, version_) \
-namespace service_name_ {                       \
-    const char* api_version = #version_;        \
-}                                               \
+#define ___def_service(service_name_, version_)      \
+namespace service_name_ {                            \
+    const char* api_version = #version_;             \
+    void msgrpc_register_service() { std::cout << "register service to zk..." << std::endl; }  \
+}                                                    \
 namespace service_name_
 
 ////////////////////////////////////////////////////////////////////////////////

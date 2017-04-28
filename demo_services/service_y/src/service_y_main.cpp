@@ -8,5 +8,8 @@ int main() {
 
     test_thread thread_timer(timer_service_id, []{}, not_drop_msg);
     test_thread msg_loop_thread(y_service_id, []{}, not_drop_msg);
+
+    service_y::msgrpc_register_service();
+
     return 0;
 }

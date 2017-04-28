@@ -4,10 +4,15 @@
 #include <msgrpc/thrift/thrift_struct_define.h>
 
 ////////////////////////////////////////////////////////////////////////////////
-#ifdef ___api_version
-#undef ___api_version
+#ifdef ___def_service
+#undef ___def_service
 #endif
-#define ___api_version(version)  const char* api_version = #version;
+
+#define ___def_service(service_name_, version_) \
+namespace service_name_ {                       \
+    const char* api_version = #version_;        \
+}                                               \
+namespace service_name_
 
 ////////////////////////////////////////////////////////////////////////////////
 //during struct_declaration, do_nothing for interface related macros.

@@ -260,7 +260,7 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
     };
 
     test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4021_failed>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                          , not_drop_msg );
+    test_thread thread_y(y_service_id, []{}                                          , not_drop_msg);
     test_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
 }
 

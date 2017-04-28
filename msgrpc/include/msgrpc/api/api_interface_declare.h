@@ -3,11 +3,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //during interface declare, undef to ignore other macros
-#ifdef ___api_version
-#undef ___api_version
+#ifdef ___def_service
+#undef ___def_service
 #endif
 
-#define ___api_version(...)
+#define ___def_service(service_name_, version_) namespace service_name_
 
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ___as_struct

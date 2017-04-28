@@ -1,5 +1,4 @@
-namespace demo {
-    ___api_version(1.0.3)
+___def_service(demo, 1.0.3) {
 
     #define ___fields_of_struct___SingleOptionalFieldStruct(_, ...)                                                    \
         _(1, optional, int16_t, value,                                                          (字段注释), __VA_ARGS__)\

@@ -1,5 +1,4 @@
-namespace service_z {
-    ___api_version(1.0.0)
+___def_service(service_z, 1.0.0) {
 
     #define ___fields_of_struct___ZReq(_, ...)                                                                         \
         _(1, required, int32_t,  zreqa,                                                         (字段注释), __VA_ARGS__)\

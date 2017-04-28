@@ -28,7 +28,6 @@ DEF_TESTCASE(testcase_0001) {
         EXPECT_EQ(200, r.value().yrspa);
         run_next_testcase();
     }, rsp_cell);
-
 }
 
 DEF_TESTCASE(testcase_0002) {

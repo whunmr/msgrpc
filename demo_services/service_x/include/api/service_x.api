@@ -1,5 +1,4 @@
-namespace service_x {
-    ___api_version(1.0.0)
+___def_service(service_x, 1.0.0) {
 
     #define ___fields_of_struct___XReq(_, ...)                                                                         \
         _(1, required, int32_t,  xreqa,                                                         (字段注释), __VA_ARGS__)\

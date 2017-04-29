@@ -9,41 +9,70 @@
 #include <conservator/ConservatorFrameworkFactory.h>
 
 namespace demo {
-
     void close_zk_connection_at_exit();
 
     struct ZkServiceRegister : msgrpc::ServiceRegister, msgrpc::Singleton<ZkServiceRegister> {
+
+        bool zk_is_connected(const unique_ptr<ConservatorFramework>& zk) const {
+            return zk && (zk->getState() == ZOO_CONNECTED_STATE);
+        }
+
+        bool assure_zk_is_connected() {
+            if (zk_is_connected(zk_)) {
+                return true;
+            }
+
+            if ( ! zk_) {
+                std::atexit(close_zk_connection_at_exit);
+            }
+
+            //TODO: read zk server address from configuration
+            auto zk = ConservatorFrameworkFactory().newClient("localhost:2181");
+            zk->start();
+
+            bool is_connected = zk_is_connected(zk);
+            if (is_connected) {
+                zk_ = std::move(zk);
+            }
+
+            std::cout << "(zk_->getState() ==  ZOO_CONNECTED_STATE) ? " << is_connected << std::endl;
+
+            return is_connected;
+        }
 
         virtual bool register_service(const char* service_name, const char *end_point) override {
             if (service_name == nullptr || end_point == nullptr) {
                 return false;
             }
 
-            auto framework = ConservatorFrameworkFactory().newClient("localhost:2181");
-            framework_ = std::move(framework);
-            framework_->start();
-
-            std::cout << "framework_->isStarted(): " << framework_->isStarted() << std::endl;
-            std::cout << "(framework_->getState() ==  ZOO_CONNECTED_STATE) ? " << (framework_->getState() == ZOO_CONNECTED_STATE) << std::endl;
-
-            std::atexit(close_zk_connection_at_exit);
+            if ( ! assure_zk_is_connected()) {
+                std::cout << "[ERROR] connection to zk failed" << std::endl;
+                return false;
+            }
 
             string services = "/services";
 
             int ret;
-            ret = framework_->create()->forPath(services);
-            ret = framework_->create()->forPath(services + "/" + service_name);
-            ret = framework_->create()->withFlags(ZOO_EPHEMERAL | ZOO_SEQUENCE)->forPath(services + "/" + service_name + "/instance-");
+            ret = zk_->create()->forPath(services);
+            ret = zk_->create()->forPath(services + "/" + service_name);
+
+            string result_path;
+            ret = zk_->create()->withFlags(ZOO_EPHEMERAL | ZOO_SEQUENCE)->forPath(services + "/" + service_name + "/instance-", end_point, result_path);
 
             cout << "register result ZOK == ret: " << (ZOK == ret) << endl;
+            cout << "result_path: " << result_path << endl;
+
             return ZOK == ret;
         }
 
-        unique_ptr<ConservatorFramework> framework_;
+        unique_ptr<ConservatorFramework> zk_;
     };
 
     void close_zk_connection_at_exit() {
-        ZkServiceRegister::instance().framework_->close();
+        auto& zk = ZkServiceRegister::instance().zk_;
+
+        if (zk)
+            zk->close();
     }
 }
 

@@ -17,6 +17,7 @@ INCLUDE_DIRECTORIES(/usr/local/Cellar/boost/1.60.0_1/include)
 #TODO: using find_package
 LINK_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/lib/)
 INCLUDE_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/)
+INCLUDE_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/zookeeper)
 add_definitions(-DTHREADED)
 
 ################################################################################
@@ -37,7 +38,7 @@ set_target_properties(msgrpc PROPERTIES output_name "msgrpc")
 ################################################################################
 add_executable(msgrpc_demo ${DEMO_SOURCE_FILES} ${DEMO_TEST_SOURCE_FILES})
 
-target_link_libraries(msgrpc_demo ${___THRIFT_LIB} gtest gtest_main zookeeper_mt boost_system msgrpc)
+target_link_libraries(msgrpc_demo ${___THRIFT_LIB} gtest gtest_main zookeeper_mt conservator-framework boost_system msgrpc)
 
 ################################################################################
 find_program(VALGRIND "valgrind")

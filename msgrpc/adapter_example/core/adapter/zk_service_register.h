@@ -64,6 +64,10 @@ namespace demo {
             return ZOK == ret;
         }
 
+        virtual msgrpc::service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+            return (strcmp(service_name, "service_x") == 0) ? 6666 /*x_service_id*/ : 7777 /*y_service_id*/;
+        }
+
         unique_ptr<ConservatorFramework> zk_;
         string ephemeral_node_path_;
     };

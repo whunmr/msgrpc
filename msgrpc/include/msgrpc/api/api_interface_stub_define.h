@@ -27,7 +27,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #define ___expand_define_interface_stub_method(method_index_, rsp_, method_name_, req_, comments_, iface_name_, iface_id_, ...) \
     msgrpc::Cell<rsp_>* iface_name_::method_name_(const req_& req) {               \
-        return encode_request_and_send<req_, rsp_>(iface_id_, method_index_, req); \
+        return encode_request_and_send<req_, rsp_>(g_service_name, iface_id_, method_index_, req); \
     }
 
 ////////////////////////////////////////////////////////////////////////////////

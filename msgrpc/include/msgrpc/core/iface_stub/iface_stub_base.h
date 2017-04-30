@@ -18,8 +18,13 @@ namespace msgrpc {
         RpcContext& ctxt_;
 
         //TODO: split into .h and .cpp
-        bool send_rpc_request_buf(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index
-                , const uint8_t *pbuf, uint32_t len, RspSink* rpc_rsp_cell_sink) const {
+        bool send_rpc_request_buf(const char* to_service_name
+                                , msgrpc::iface_index_t iface_index
+                                , msgrpc::method_index_t method_index
+                                , const uint8_t *pbuf
+                                , uint32_t len
+                                , RspSink* rpc_rsp_cell_sink) const {
+
             size_t msg_len_with_header = sizeof(msgrpc::ReqMsgHeader) + len;
 
             char *mem = (char *) malloc(msg_len_with_header);
@@ -40,7 +45,10 @@ namespace msgrpc {
 
             //std::cout << "stub sending msg with length: " << msg_len_with_header << std::endl;
             //TODO: find y_service_id by iface_impl name "IBuzzMath"
-            msgrpc::service_id_t service_id = iface_index == 1 ? 6666 /*x_service_id*/ : 7777 /*y_service_id*/;
+            std::cout << "sending request to " << to_service_name << std::endl;
+
+            msgrpc::service_id_t service_id = msgrpc::Config::instance().service_register_->service_name_to_id(to_service_name, mem, msg_len_with_header);
+            //msgrpc::service_id_t service_id = iface_index == 1 ? 6666 /*x_service_id*/ : 7777 /*y_service_id*/;
 
             msgrpc::msg_id_t req_msg_type = msgrpc::Config::instance().request_msg_id_;
             bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(service_id, req_msg_type, mem, msg_len_with_header);
@@ -50,7 +58,7 @@ namespace msgrpc {
         }
 
         template<typename REQ, typename RSP>
-        Cell<RSP>* encode_request_and_send(msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const REQ &req) const {
+        Cell<RSP>* encode_request_and_send(const char* to_service_name, msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const REQ &req) const {
             uint8_t* pbuf;
             uint32_t len;
             /*TODO: extract iface_impl for encode/decode for other protocol adoption such as protobuf*/
@@ -62,7 +70,7 @@ namespace msgrpc {
 
             Cell<RSP>* rpc_result_cell = new Cell<RSP>();
 
-            if (! send_rpc_request_buf(iface_index, method_index, pbuf, len, rpc_result_cell)) {
+            if (! send_rpc_request_buf(to_service_name, iface_index, method_index, pbuf, len, rpc_result_cell)) {
                 delete rpc_result_cell;
                 return failed_cell_with_reason<RSP>(ctxt_, RpcResult::failed);
             }

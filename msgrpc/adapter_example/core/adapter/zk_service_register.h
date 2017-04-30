@@ -56,23 +56,21 @@ namespace demo {
             ret = zk_->create()->forPath(services);
             ret = zk_->create()->forPath(services + "/" + service_name);
 
-            string result_path;
-            ret = zk_->create()->withFlags(ZOO_EPHEMERAL | ZOO_SEQUENCE)->forPath(services + "/" + service_name + "/instance-", end_point, result_path);
+            ret = zk_->create()->withFlags(ZOO_EPHEMERAL | ZOO_SEQUENCE)->forPath(services + "/" + service_name + "/instance-", end_point, ephemeral_node_path_);
 
             cout << "register result ZOK == ret: " << (ZOK == ret) << endl;
-            cout << "result_path: " << result_path << endl;
+            cout << "result_path: " << ephemeral_node_path_ << endl;
 
             return ZOK == ret;
         }
 
         unique_ptr<ConservatorFramework> zk_;
+        string ephemeral_node_path_;
     };
 
     void close_zk_connection_at_exit() {
-        auto& zk = ZkServiceRegister::instance().zk_;
-
-        if (zk)
-            zk->close();
+        if (ZkServiceRegister::instance().zk_)
+            ZkServiceRegister::instance().zk_->close();
     }
 }
 

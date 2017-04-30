@@ -14,7 +14,7 @@
 #include <msgrpc/util/singleton.h>
 #include <adapter_example/details/set_timer_handler.h>
 
-void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_func, std::function<bool(const char *msg, size_t len)> should_drop) {
+void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void(void)> init_func, std::function<bool(const char *msg, size_t len)> should_drop) {
     msgrpc::Config::instance().init_with(&demo::UdpMsgChannel::instance()
             , &demo::SimpleTimerAdapter::instance()
             , &demo::ZkServiceRegister::instance()
@@ -23,11 +23,11 @@ void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_fu
             , k_msgrpc_set_timer_msg
             , k_msgrpc_timeout_msg);
 
-    demo::test_service::instance().current_service_id_ = udp_port;
+    demo::test_service::instance().current_service_id_ = service_id;
 
     try {
-        UdpChannel channel(udp_port,
-                           [&init_func, udp_port, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+        UdpChannel channel(service_id,
+                           [&init_func, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
                                if (0 == strcmp(msg, "init")) {
                                    return init_func();
                                } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
@@ -48,7 +48,7 @@ void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_fu
                            }
         );
     } catch (...) {
-        std::cout << "timer bind udp port failed, timer already existing on port: " << udp_port << std::endl;
+        std::cout << "timer bind udp port failed, timer already existing on port: " << service_id.port() << std::endl;
     }
 }
 

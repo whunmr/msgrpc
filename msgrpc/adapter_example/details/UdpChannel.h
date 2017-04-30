@@ -20,11 +20,11 @@ struct UdpChannel;
 thread_local UdpChannel* g_msg_channel;
 
 struct UdpChannel {
-    UdpChannel(unsigned short udp_port, OnMsgFunc on_msg_func)
-            : io_service_(), socket_(io_service_, udp::endpoint(udp::v4(), udp_port)), on_msg_func_(on_msg_func) {
+    UdpChannel(const msgrpc::service_id_t& service_id, OnMsgFunc on_msg_func)
+            : io_service_(), socket_(io_service_, service_id), on_msg_func_(on_msg_func) {
 
         start_receive();
-        this->send_msg_to_remote("00init", udp::endpoint(udp::v4(), udp_port)); //00 means leading msgrpc::msg_id_t
+        this->send_msg_to_remote("00init", service_id); //00 means leading msgrpc::msg_id_t
         g_msg_channel = this;
 
         mutex_.lock();

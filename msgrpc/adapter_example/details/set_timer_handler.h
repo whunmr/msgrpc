@@ -19,7 +19,7 @@ namespace demo {
             assert(msg != nullptr && len == sizeof(timer_info));
             timer_info& ti = *(timer_info*)msg;
 
-            unsigned short temp_udp_port = timer_service_id + entry_times;
+            unsigned short temp_udp_port = timer_service_id.port() + entry_times;
 
             std::thread timer_thread([ti, temp_udp_port]{
                 msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
@@ -30,7 +30,7 @@ namespace demo {
                                                     , k_msgrpc_set_timer_msg
                                                     , k_msgrpc_timeout_msg);
 
-                UdpChannel channel(temp_udp_port,
+                UdpChannel channel(msgrpc::service_id_t(boost::asio::ip::address::from_string("127.0.0.1"), temp_udp_port),
                                    [ti](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
                                        if (0 == strcmp(msg, "init")) {
                                            std::this_thread::sleep_for(std::chrono::milliseconds(ti.millionseconds_));

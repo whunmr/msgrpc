@@ -31,7 +31,7 @@ namespace demo {
             if (mem) {
                 *(msgrpc::msg_id_t*)(mem) = msg_id;
                 memcpy(mem + sizeof(msgrpc::msg_id_t), buf, len);
-                g_msg_channel->send_msg_to_remote(std::string(mem, msg_len_with_msgid), udp::endpoint(udp::v4(), remote_service_id));
+                g_msg_channel->send_msg_to_remote(std::string(mem, msg_len_with_msgid), remote_service_id);
                 free(mem);
             } else {
                 std::cout << "send msg failed: allocation failure." << std::endl;

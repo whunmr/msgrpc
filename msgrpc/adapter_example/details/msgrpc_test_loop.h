@@ -25,27 +25,31 @@ void msgrpc_test_loop(unsigned short udp_port, std::function<void(void)> init_fu
 
     demo::test_service::instance().current_service_id_ = udp_port;
 
-    UdpChannel channel(udp_port,
-                       [&init_func, udp_port, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
-                           if (0 == strcmp(msg, "init")) {
-                               return init_func();
-                           } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
-                               if (! should_drop(msg, len)) {
-                                   return msgrpc::ReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+    try {
+        UdpChannel channel(udp_port,
+                           [&init_func, udp_port, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+                               if (0 == strcmp(msg, "init")) {
+                                   return init_func();
+                               } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
+                                   if (! should_drop(msg, len)) {
+                                       return msgrpc::ReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
+                                   }
+                               } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+                                   return msgrpc::RspMsgHandler::instance().handle_rpc_rsp(msg_id, msg, len);
+                               } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
+                                   return demo::SetTimerHandler::instance().set_timer(msg, len);
+                               } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
+                                   if (! demo::TimerMgr::instance().should_ignore(msg, len)) {
+                                       return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
+                                   }
+                               } else {
+                                   std::cout << "got unknow msg with id: " << msg_id << std::endl;
                                }
-                           } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                               return msgrpc::RspMsgHandler::instance().handle_rpc_rsp(msg_id, msg, len);
-                           } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
-                               return demo::SetTimerHandler::instance().set_timer(msg, len);
-                           } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
-                               if (! demo::TimerMgr::instance().should_ignore(msg, len)) {
-                                   return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
-                               }
-                           } else {
-                               std::cout << "got unknow msg with id: " << msg_id << std::endl;
                            }
-                       }
-    );
+        );
+    } catch (...) {
+        std::cout << "timer bind udp port failed, timer already existing on port: " << udp_port << std::endl;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

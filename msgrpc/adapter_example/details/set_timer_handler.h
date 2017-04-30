@@ -44,5 +44,4 @@ namespace demo {
     };
 }
 
-
 #endif //MSGRPC_SET_TIMER_HANDLER_H

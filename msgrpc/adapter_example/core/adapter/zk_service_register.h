@@ -68,10 +68,10 @@ namespace demo {
             return create_ephemeral_node_for_service_instance(service_name, end_point);
         }
 
-        msgrpc::service_id_t str_to_service_id(const string& endpoint) {
+        boost::optional<msgrpc::service_id_t> str_to_service_id(const string& endpoint) {
             size_t sep = endpoint.find(":");
             if (sep == string::npos) {
-                return msgrpc::service_id_t(); //TODO: return nullptr
+                return boost::none;
             }
 
             string ip = string(endpoint, 0, sep);
@@ -80,10 +80,10 @@ namespace demo {
             return msgrpc::service_id_t(boost::asio::ip::address::from_string(ip), port);
         }
 
-        virtual msgrpc::service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        virtual boost::optional<msgrpc::service_id_t> service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
             if ( ! assure_zk_is_connected()) {
                 std::cout << "[ERROR] connection to zk failed" << std::endl;
-                return msgrpc::service_id_t(); //TODO: return nullptr
+                return boost::none;
             }
 
             vector<string> children = zk_->getChildren()->forPath(service_root + "/" + service_name);
@@ -92,7 +92,7 @@ namespace demo {
             }
 
             if (children.empty()) {
-                return msgrpc::service_id_t(); //TODO: return nullptr
+                return boost::none;
             }
 
             //TODO: select which service to route

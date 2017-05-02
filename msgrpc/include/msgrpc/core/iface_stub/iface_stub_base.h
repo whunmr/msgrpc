@@ -45,11 +45,17 @@ namespace msgrpc {
 
             //std::cout << "stub sending msg with length: " << msg_len_with_header << std::endl;
             //TODO: find y_service_id by iface_impl name "IBuzzMath"
-            msgrpc::service_id_t service_id = msgrpc::Config::instance().service_register_->service_name_to_id(to_service_name, mem, msg_len_with_header);
+            boost::optional<msgrpc::service_id_t> service_id = msgrpc::Config::instance().service_register_->service_name_to_id(to_service_name, mem, msg_len_with_header);
             //msgrpc::service_id_t service_id = iface_index == 1 ? 6666 /*x_service_id*/ : 7777 /*y_service_id*/;
 
+            if (!service_id) {
+                std::cout << "[ERROR]can not find instance of service: " << to_service_name << std::endl;
+                free(mem);
+                return false;
+            }
+
             msgrpc::msg_id_t req_msg_type = msgrpc::Config::instance().request_msg_id_;
-            bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(service_id, req_msg_type, mem, msg_len_with_header);
+            bool send_ret = msgrpc::Config::instance().msg_channel_->send_msg(service_id.value(), req_msg_type, mem, msg_len_with_header);
             free(mem);
 
             return send_ret;

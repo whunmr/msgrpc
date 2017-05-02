@@ -12,6 +12,7 @@ namespace demo {
     void close_zk_connection_at_exit();
 
     struct ZkServiceRegister : msgrpc::ServiceRegister, msgrpc::Singleton<ZkServiceRegister> {
+        const string service_root = "/services";
 
         bool zk_is_connected(const unique_ptr<ConservatorFramework>& zk) const {
             return zk && (zk->getState() == ZOO_CONNECTED_STATE);
@@ -35,9 +36,23 @@ namespace demo {
                 zk_ = std::move(zk);
             }
 
-            std::cout << "(zk_->getState() ==  ZOO_CONNECTED_STATE) ? " << is_connected << std::endl;
-
             return is_connected;
+        }
+
+        bool create_ephemeral_node_for_service_instance(const char* service_name, const char *end_point) {
+            int ret;
+            ret = zk_->create()->forPath(service_root);
+            ret = zk_->create()->forPath(service_root + "/" + service_name);
+
+            string path = service_root + "/" + service_name + "/" + end_point;
+            ret = zk_->create()->withFlags(ZOO_EPHEMERAL)->forPath(path, end_point);
+
+            bool result = (ZOK == ret || ZNODEEXISTS == ret);
+
+            cout << "register result: " << result << endl;
+            cout << "result_path: " << path << endl;
+
+            return result;
         }
 
         virtual bool register_service(const char* service_name, const char *end_point) override {
@@ -50,27 +65,40 @@ namespace demo {
                 return false;
             }
 
-            string services = "/services";
-
-            int ret;
-            ret = zk_->create()->forPath(services);
-            ret = zk_->create()->forPath(services + "/" + service_name);
-
-            ret = zk_->create()->withFlags(ZOO_EPHEMERAL | ZOO_SEQUENCE)->forPath(services + "/" + service_name + "/instance-", end_point, ephemeral_node_path_);
-
-            cout << "register result ZOK == ret: " << (ZOK == ret) << endl;
-            cout << "result_path: " << ephemeral_node_path_ << endl;
-
-            return ZOK == ret;
+            return create_ephemeral_node_for_service_instance(service_name, end_point);
         }
 
         virtual msgrpc::service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-            unsigned short port = (strcmp(service_name, "service_x") == 0) ? 6666 /*x_service_id*/ : 7777 /*y_service_id*/;
-            return msgrpc::service_id_t(boost::asio::ip::address::from_string("127.0.0.1"), port);
+            if ( ! assure_zk_is_connected()) {
+                std::cout << "[ERROR] connection to zk failed" << std::endl;
+                return msgrpc::service_id_t(); //TODO: return nullptr
+            }
+
+            vector<string> children = zk_->getChildren()->forPath(service_root + "/" + service_name);
+            for (auto child : children) {
+                std::cout << child << std::endl;
+            }
+
+            if (children.empty()) {
+                return msgrpc::service_id_t(); //TODO: return nullptr
+            }
+
+            //TODO: select which service to route
+            string endpoint = children[0];
+
+            size_t sep = endpoint.find(":");
+            if (sep == string::npos) {
+                return msgrpc::service_id_t(); //TODO: return nullptr
+            }
+
+            string ip = string(endpoint, 0, sep);
+            unsigned short port = (unsigned short)strtoul(endpoint.c_str() + sep + 1, NULL, 0);
+
+            //unsigned short port = (strcmp(service_name, "service_x") == 0) ? 6666 /*x_service_id*/ : 7777 /*y_service_id*/;
+            return msgrpc::service_id_t(boost::asio::ip::address::from_string(ip), port);
         }
 
         unique_ptr<ConservatorFramework> zk_;
-        string ephemeral_node_path_;
     };
 
     void close_zk_connection_at_exit() {

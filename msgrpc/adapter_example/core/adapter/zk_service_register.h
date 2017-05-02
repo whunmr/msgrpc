@@ -44,7 +44,12 @@ namespace demo {
             ret = zk_->create()->forPath(service_root);
             ret = zk_->create()->forPath(service_root + "/" + service_name);
 
-            string path = service_root + "/" + service_name + "/" + end_point;
+            const clientid_t* session_id = zoo_client_id(zk_->handle());
+            if (session_id == nullptr) {
+                return false;
+            }
+
+            string path = service_root + "/" + service_name + "/" + end_point + "@" + std::to_string(session_id->client_id);
             ret = zk_->create()->withFlags(ZOO_EPHEMERAL)->forPath(path, end_point);
 
             bool result = (ZOK == ret || ZNODEEXISTS == ret);

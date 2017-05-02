@@ -10,13 +10,15 @@ bool can_safely_exit = false;
 std::mutex can_safely_exit_mutex;
 std::condition_variable can_safely_exit_cv;
 
-
 struct MsgRpcTest : public ::testing::Test {
     virtual void SetUp() {
         can_safely_exit = false;
 
         msgrpc::RpcSequenceId::instance().reset();
         demo::TimerMgr::instance().reset();
+
+        demo::ZkServiceRegister::instance().register_service("demo_service_x", "127.0.0.1:6666");
+        demo::ZkServiceRegister::instance().register_service("demo_service_y", "127.0.0.1:7777");
     }
 
     virtual void TearDown() {

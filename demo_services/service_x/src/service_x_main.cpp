@@ -37,6 +37,8 @@ DEF_TESTCASE(testcase_0002) {
 
 ////////////////////////////////////////////////////////////////////////////////
 int main() {
+    const msgrpc::service_id_t x_service_id(boost::asio::ip::address::from_string("127.0.0.1"), 6666);
+
     std::cout << "[service_start_up] service_x_main" << std::endl;
 
     test_thread msg_loop_thread(x_service_id, run_next_testcase, not_drop_msg);

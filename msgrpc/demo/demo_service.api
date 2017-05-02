@@ -35,7 +35,6 @@ ___def_service(demo, 1.0.3) {
         _(17, optional, map_string_struct,           pet_map_string_struct,                     (字段注释), __VA_ARGS__)
     ___as_struct(ResponseData);
 
-
     #define ___fields_of_struct___RequestFoo(_, ...)                                                                   \
         _(1, required, int32_t,  reqa,                                                          (字段注释), __VA_ARGS__)\
         _(2, optional, int32_t,  reqb,                                                          (字段注释), __VA_ARGS__)
@@ -45,13 +44,18 @@ ___def_service(demo, 1.0.3) {
         _(1, required, int32_t,  rspa,                                                          (字段注释), __VA_ARGS__)\
         _(2, optional, int32_t,  rspb,                                                          (字段注释), __VA_ARGS__)
     ___as_struct(ResponseBar);
+}
 
-
+___def_service(demo_service_x, 1.0.3) {
+    using namespace demo;
 
     #define ___methods_of_interface___InterfaceX(_, ...)                                                               \
         _(1, ResponseBar, ______sync_x, RequestFoo,                                             (方法注释), __VA_ARGS__)
     ___as_interface(InterfaceX, 1);
+}
 
+___def_service(demo_service_y, 1.0.3) {
+    using namespace demo;
 
     #define ___methods_of_interface___InterfaceY(_, ...)                                                               \
         _(1, ResponseBar, ______sync_y                   , RequestFoo,                          (方法注释), __VA_ARGS__)\
@@ -59,6 +63,7 @@ ___def_service(demo, 1.0.3) {
         _(3, ResponseBar, ______sync_y_failed            , RequestFoo,                          (方法注释), __VA_ARGS__)\
         _(4, ResponseBar, ______sync_y_failed_immediately, RequestFoo,                          (方法注释), __VA_ARGS__)
     ___as_interface(InterfaceY, 2);
+}
 
 
 #if 0
@@ -67,5 +72,3 @@ ___def_service(demo, 1.0.3) {
         _(2,  required, std::string,  pet_name,  (方法注释), __VA_ARGS__)
     ___as_event(UserAttachedEvent)
 #endif
-
-}

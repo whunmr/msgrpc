@@ -20,7 +20,7 @@ namespace demo {
                 if (len > sizeof(msgrpc::MsgHeader)) {
                     msgrpc::MsgHeader* header = (msgrpc::MsgHeader*)buf;
 
-                    (remote_service_id == x_service_id)
+                    (remote_service_id.port() == 6666)
                         ? std::cout << "X(" << header->sequence_id_ << ") <------ "   << std::endl
                         : std::cout << "   ------> Y(" << header->sequence_id_ << ")" << std::endl;
                 }

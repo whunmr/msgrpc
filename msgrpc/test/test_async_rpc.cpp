@@ -11,6 +11,9 @@
 #include <demo/demo_api_interface_declare.h>
 #include <msgrpc/core/iface_impl/iface_impl_utility.h>
 
+const msgrpc::service_id_t x_service_id(boost::asio::ip::address::from_string("127.0.0.1"), 6666);
+const msgrpc::service_id_t y_service_id(boost::asio::ip::address::from_string("127.0.0.1"), 7777);
+
 //constants for testing.
 const int k_req_init_value = 1;
 const int k__sync_y__delta = 3;
@@ -18,6 +21,8 @@ const int k__sync_x__delta = 17;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using namespace demo;
+using namespace demo_service_x;
+using namespace demo_service_y;
 
 ////////////////////////////////////////////////////////////////////////////////
 msgrpc::Cell<ResponseBar>* InterfaceX_impl::______sync_x(const RequestFoo& req) {
@@ -563,3 +568,4 @@ TEST_F(MsgRpcTest, should_able_to_support__map_operation_on_cell_____case1200) {
     test_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
     test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
+

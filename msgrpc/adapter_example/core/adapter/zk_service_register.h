@@ -68,6 +68,18 @@ namespace demo {
             return create_ephemeral_node_for_service_instance(service_name, end_point);
         }
 
+        msgrpc::service_id_t str_to_service_id(const string& endpoint) {
+            size_t sep = endpoint.find(":");
+            if (sep == string::npos) {
+                return msgrpc::service_id_t(); //TODO: return nullptr
+            }
+
+            string ip = string(endpoint, 0, sep);
+            unsigned short port = (unsigned short)strtoul(endpoint.c_str() + sep + 1, NULL, 0);
+
+            return msgrpc::service_id_t(boost::asio::ip::address::from_string(ip), port);
+        }
+
         virtual msgrpc::service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
             if ( ! assure_zk_is_connected()) {
                 std::cout << "[ERROR] connection to zk failed" << std::endl;
@@ -84,17 +96,7 @@ namespace demo {
             }
 
             //TODO: select which service to route
-            string endpoint = children[0];
-
-            size_t sep = endpoint.find(":");
-            if (sep == string::npos) {
-                return msgrpc::service_id_t(); //TODO: return nullptr
-            }
-
-            string ip = string(endpoint, 0, sep);
-            unsigned short port = (unsigned short)strtoul(endpoint.c_str() + sep + 1, NULL, 0);
-
-            return msgrpc::service_id_t(boost::asio::ip::address::from_string(ip), port);
+            return str_to_service_id(children[0]);
         }
 
         unique_ptr<ConservatorFramework> zk_;

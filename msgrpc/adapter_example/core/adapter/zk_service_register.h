@@ -14,12 +14,12 @@ namespace demo {
     struct ZkServiceRegister : msgrpc::ServiceRegister, msgrpc::Singleton<ZkServiceRegister> {
         const string service_root = "/services";
 
-        bool zk_is_connected(const unique_ptr<ConservatorFramework>& zk) const {
+        bool is_zk_connected(const unique_ptr<ConservatorFramework> &zk) const {
             return zk && (zk->getState() == ZOO_CONNECTED_STATE);
         }
 
         bool assure_zk_is_connected() {
-            if (zk_is_connected(zk_)) {
+            if (is_zk_connected(zk_)) {
                 return true;
             }
 
@@ -31,7 +31,7 @@ namespace demo {
             auto zk = ConservatorFrameworkFactory().newClient("localhost:2181");
             zk->start();
 
-            bool is_connected = zk_is_connected(zk);
+            bool is_connected = is_zk_connected(zk);
             if (is_connected) {
                 zk_ = std::move(zk);
             }
@@ -94,7 +94,6 @@ namespace demo {
             string ip = string(endpoint, 0, sep);
             unsigned short port = (unsigned short)strtoul(endpoint.c_str() + sep + 1, NULL, 0);
 
-            //unsigned short port = (strcmp(service_name, "service_x") == 0) ? 6666 /*x_service_id*/ : 7777 /*y_service_id*/;
             return msgrpc::service_id_t(boost::asio::ip::address::from_string(ip), port);
         }
 

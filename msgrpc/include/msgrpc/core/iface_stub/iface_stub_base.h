@@ -43,10 +43,8 @@ namespace msgrpc {
             header->sequence_id_ = seq_id;
             memcpy(header + 1, (const char *) pbuf, len);
 
-            //std::cout << "stub sending msg with length: " << msg_len_with_header << std::endl;
-            //TODO: find y_service_id by iface_impl name "IBuzzMath"
-            boost::optional<msgrpc::service_id_t> service_id = msgrpc::Config::instance().service_register_->service_name_to_id(to_service_name, mem, msg_len_with_header);
-            //msgrpc::service_id_t service_id = iface_index == 1 ? 6666 /*x_service_id*/ : 7777 /*y_service_id*/;
+            boost::optional<msgrpc::service_id_t> service_id
+                = msgrpc::Config::instance().service_register_->service_name_to_id(to_service_name, mem, msg_len_with_header);
 
             if (!service_id) {
                 std::cout << "[ERROR]can not find instance of service: " << to_service_name << std::endl;

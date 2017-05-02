@@ -33,8 +33,7 @@ namespace msgrpc {
             rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
             rsp_header.sequence_id_ = req_header->sequence_id_;
 
-            //TODO: add sender info query method
-            msgrpc::service_id_t sender_id = req_header->iface_index_in_service_ == 2 ? x_service_id : y_service_id;
+            msgrpc::service_id_t sender_id = msgrpc::Config::instance().msg_channel_->sender();
 
             IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
             if (iface == nullptr) {

@@ -5,8 +5,10 @@
 int main() {
     std::cout << "[service_start_up] service_y_main" << std::endl;
 
+    const msgrpc::service_id_t y_service_id(boost::asio::ip::address::from_string("127.0.0.1"), 8888);
+
     auto init_y = [] {
-        service_y::msgrpc_register_service("127.0.0.1:7777");
+        service_y::msgrpc_register_service("127.0.0.1:8888");
     };
 
     test_thread msg_loop_thread(y_service_id, []{}, not_drop_msg);

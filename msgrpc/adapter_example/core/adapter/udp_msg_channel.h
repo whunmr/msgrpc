@@ -40,7 +40,12 @@ namespace demo {
         }
 
         virtual msgrpc::service_id_t sender() const override {
+            assert(g_msg_channel->remote_endpoint_.port() != 0 && "can only call sender() during msg handling.");
             return g_msg_channel->remote_endpoint_;
+        }
+
+        virtual msgrpc::service_id_t self() const override {
+            return g_msg_channel->service_id_;
         }
     };
 }

@@ -5,8 +5,12 @@
 #include <msgrpc/core/adapter/service_register.h>
 #include <cstdlib>
 #include <iostream>
+#include <map>
+#include <vector>
+
 #include <msgrpc/util/singleton.h>
 #include <conservator/ConservatorFrameworkFactory.h>
+
 
 namespace demo {
     void close_zk_connection_at_exit();
@@ -61,6 +65,22 @@ namespace demo {
             return result;
         }
 
+        boost::optional<msgrpc::service_id_t> str_to_service_id(const string& endpoint) {
+            size_t sep = endpoint.find(":");
+            if (sep == string::npos) {
+                return boost::none;
+            }
+
+            string ip = string(endpoint, 0, sep);
+            unsigned short port = (unsigned short)strtoul(endpoint.c_str() + sep + 1, NULL, 0);
+
+            return msgrpc::service_id_t(boost::asio::ip::address::from_string(ip), port);
+        }
+
+        //TODO: virtual bool init() override {
+        ////fetch server list for first time and start watch /services node
+        //}
+
         virtual bool register_service(const char* service_name, const char* version, const char *end_point) override {
             if (service_name == nullptr || end_point == nullptr) {
                 return false;
@@ -74,18 +94,6 @@ namespace demo {
             return create_ephemeral_node_for_service_instance(service_name, version, end_point);
         }
 
-        boost::optional<msgrpc::service_id_t> str_to_service_id(const string& endpoint) {
-            size_t sep = endpoint.find(":");
-            if (sep == string::npos) {
-                return boost::none;
-            }
-
-            string ip = string(endpoint, 0, sep);
-            unsigned short port = (unsigned short)strtoul(endpoint.c_str() + sep + 1, NULL, 0);
-
-            return msgrpc::service_id_t(boost::asio::ip::address::from_string(ip), port);
-        }
-
         virtual boost::optional<msgrpc::service_id_t> service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
             if ( ! assure_zk_is_connected()) {
                 std::cout << "[ERROR] connection to zk failed" << std::endl;
@@ -97,6 +105,8 @@ namespace demo {
                 std::cout << "service instance: " << child << std::endl;
             }
 
+            //TODO: save fetched service list into local service_discovery cache
+
             if (children.empty()) {
                 return boost::none;
             }
@@ -105,6 +115,17 @@ namespace demo {
             return str_to_service_id(children[0]);
         }
 
+        ////////////////////////////////////////////////////////////////////////
+        struct cmp_str {
+            bool operator()(char const *a, char const *b) {
+                return std::strcmp(a, b) < 0;
+            }
+        };
+
+        typedef std::vector<msgrpc::service_id_t> service_vector_t;
+        std::map<char *, service_vector_t, cmp_str> services_cache_;
+
+        ////////////////////////////////////////////////////////////////////////
         unique_ptr<ConservatorFramework> zk_;
     };
 

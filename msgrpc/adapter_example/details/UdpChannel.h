@@ -21,7 +21,10 @@ thread_local UdpChannel* g_msg_channel;
 
 struct UdpChannel {
     UdpChannel(const msgrpc::service_id_t& service_id, OnMsgFunc on_msg_func)
-            : io_service_(), socket_(io_service_, service_id), on_msg_func_(on_msg_func) {
+            : service_id_(service_id)
+            , io_service_()
+            , socket_(io_service_, service_id)
+            , on_msg_func_(on_msg_func) {
 
         start_receive();
         this->send_msg_to_remote("00init", service_id); //00 means leading msgrpc::msg_id_t
@@ -73,6 +76,8 @@ struct UdpChannel {
 
     static std::list<boost::asio::io_service*> io_services_;
     static std::mutex mutex_;
+
+    const msgrpc::service_id_t& service_id_;
     boost::asio::io_service io_service_;
     udp::socket socket_;
     OnMsgFunc on_msg_func_;

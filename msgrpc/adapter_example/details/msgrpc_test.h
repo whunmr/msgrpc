@@ -17,8 +17,8 @@ struct MsgRpcTest : public ::testing::Test {
         msgrpc::RpcSequenceId::instance().reset();
         demo::TimerMgr::instance().reset();
 
-        demo::ZkServiceRegister::instance().register_service("demo_service_x", "127.0.0.1:6666");
-        demo::ZkServiceRegister::instance().register_service("demo_service_y", "127.0.0.1:7777");
+        demo::ZkServiceRegister::instance().register_service("demo_service_x", "1.0.0", "127.0.0.1:6666");
+        demo::ZkServiceRegister::instance().register_service("demo_service_y", "1.0.0", "127.0.0.1:7777");
     }
 
     virtual void TearDown() {

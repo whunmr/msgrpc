@@ -39,7 +39,7 @@ namespace demo {
             return is_connected;
         }
 
-        bool create_ephemeral_node_for_service_instance(const char* service_name, const char *end_point) {
+        bool create_ephemeral_node_for_service_instance(const char* service_name, const char* version, const char *end_point) {
             int ret;
             ret = zk_->create()->forPath(service_root);
             ret = zk_->create()->forPath(service_root + "/" + service_name);
@@ -49,7 +49,7 @@ namespace demo {
                 return false;
             }
 
-            string path = service_root + "/" + service_name + "/" + end_point + "@" + std::to_string(session_id->client_id);
+            string path = service_root + "/" + service_name + "/" + end_point + "@" + std::to_string(session_id->client_id) + "@" + version;
             ret = zk_->create()->withFlags(ZOO_EPHEMERAL)->forPath(path, end_point);
 
             bool result = (ZOK == ret || ZNODEEXISTS == ret);
@@ -60,7 +60,7 @@ namespace demo {
             return result;
         }
 
-        virtual bool register_service(const char* service_name, const char *end_point) override {
+        virtual bool register_service(const char* service_name, const char* version, const char *end_point) override {
             if (service_name == nullptr || end_point == nullptr) {
                 return false;
             }
@@ -70,7 +70,7 @@ namespace demo {
                 return false;
             }
 
-            return create_ephemeral_node_for_service_instance(service_name, end_point);
+            return create_ephemeral_node_for_service_instance(service_name, version, end_point);
         }
 
         boost::optional<msgrpc::service_id_t> str_to_service_id(const string& endpoint) {

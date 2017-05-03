@@ -71,4 +71,8 @@ ___def_service(demo_service_y, 1.0.3) {
         _(1,  required, int32_t,      pet_id,    (方法注释), __VA_ARGS__)\
         _(2,  required, std::string,  pet_name,  (方法注释), __VA_ARGS__)
     ___as_event(UserAttachedEvent)
+
+        #define ___methods_of_interface___InterfaceY(_, ...)                                                               \
+            _(1, ResponseBar, ______sync_y                   , RequestFoo,                          (方法注释), __VA_ARGS__)\
+        ___as_interface(InterfaceY, 2, ___priority(3)); //TODO: add msg priority
 #endif

@@ -39,6 +39,11 @@ namespace demo {
             return true;
         }
 
+        virtual bool send_msg_to_self(msgrpc::msg_id_t msg_id, const char* buf, size_t len) const override {
+            msgrpc::service_id_t self_id = self();
+            return send_msg(self_id, msg_id, buf, len);
+        }
+
         virtual msgrpc::service_id_t sender() const override {
             assert(g_msg_channel->remote_endpoint_.port() != 0 && "can only call sender() during msg handling.");
             return g_msg_channel->remote_endpoint_;

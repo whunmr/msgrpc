@@ -11,6 +11,7 @@
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
 #include <msgrpc/core/components/rsp_msg_handler.h>
+#include <msgrpc/core/schedule/task_run_on_main_queue.h>
 #include <msgrpc/util/singleton.h>
 #include <adapter_example/details/set_timer_handler.h>
 
@@ -43,6 +44,11 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
                                    if (! demo::TimerMgr::instance().should_ignore(msg, len)) {
                                        return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
                                    }
+                               } else if (msg_id == k_msgrpc_schedule_task_on_main_thread_msg) {
+                                   auto* taskptr = (msgrpc::TaskRunOnMainQueue::TaskPtr*)msg;
+                                   msgrpc::TaskRunOnMainQueue* task = reinterpret_cast<msgrpc::TaskRunOnMainQueue*>(taskptr->ptr_);
+                                   task->run_task();
+                                   delete task;
                                } else {
                                    std::cout << "got unknow msg with id: " << msg_id << std::endl;
                                }

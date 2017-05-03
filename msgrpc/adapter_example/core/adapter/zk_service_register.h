@@ -3,6 +3,7 @@
 
 #include <zookeeper/zookeeper.h>
 #include <msgrpc/core/adapter/service_register.h>
+#include <msgrpc/core/schedule/task_run_on_main_queue.h>
 #include <cstdlib>
 #include <iostream>
 #include <map>
@@ -94,7 +95,11 @@ namespace demo {
             return create_ephemeral_node_for_service_instance(service_name, version, end_point);
         }
 
-        
+        struct HandleZkNotificationTask : msgrpc::TaskRunOnMainQueue {
+            virtual void run_task() const override {
+                std::cout << "struct HandleZkNotification : msgrpc::TaskRunOnMainQueue, run_task()." << std::endl;
+            }
+        };
 
         virtual boost::optional<msgrpc::service_id_t> service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
             if ( ! assure_zk_is_connected()) {
@@ -111,8 +116,8 @@ namespace demo {
             //TODO: first add auto register msg handler then schedule msg to self's msg queue.
             //TODO: 1. read services_cache_ and answer request of service_name_to_id directly
             //TODO: 2. populate services_cache_ at process init, and during handling of zookeeper watcher notifications.
-
-
+            HandleZkNotificationTask* task = new HandleZkNotificationTask();
+            task->schedule();
 
             if (children.empty()) {
                 return boost::none;

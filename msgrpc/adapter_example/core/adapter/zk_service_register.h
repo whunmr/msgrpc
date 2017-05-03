@@ -53,10 +53,11 @@ namespace demo {
             ret = zk_->create()->withFlags(ZOO_EPHEMERAL)->forPath(path, end_point);
 
             bool result = (ZOK == ret || ZNODEEXISTS == ret);
+            if (!result) {
+                cout << "register service on zk failed: zk_reuslt: " << ret << " for path:" << path << endl;
+            }
 
-            cout << "register result: " << result << endl;
             cout << "result_path: " << path << endl;
-
             return result;
         }
 
@@ -93,7 +94,7 @@ namespace demo {
 
             vector<string> children = zk_->getChildren()->forPath(service_root + "/" + service_name);
             for (auto child : children) {
-                std::cout << child << std::endl;
+                std::cout << "service instance: " << child << std::endl;
             }
 
             if (children.empty()) {

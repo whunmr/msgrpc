@@ -49,6 +49,7 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
         );
     } catch (...) {
         std::cout << "timer bind udp port failed, timer already existing on port: " << service_id.port() << std::endl;
+        init_func();
     }
 }
 

@@ -94,6 +94,8 @@ namespace demo {
             return create_ephemeral_node_for_service_instance(service_name, version, end_point);
         }
 
+        
+
         virtual boost::optional<msgrpc::service_id_t> service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
             if ( ! assure_zk_is_connected()) {
                 std::cout << "[ERROR] connection to zk failed" << std::endl;
@@ -106,6 +108,11 @@ namespace demo {
             }
 
             //TODO: save fetched service list into local service_discovery cache
+            //TODO: first add auto register msg handler then schedule msg to self's msg queue.
+            //TODO: 1. read services_cache_ and answer request of service_name_to_id directly
+            //TODO: 2. populate services_cache_ at process init, and during handling of zookeeper watcher notifications.
+
+
 
             if (children.empty()) {
                 return boost::none;

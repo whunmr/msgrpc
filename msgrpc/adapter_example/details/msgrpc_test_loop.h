@@ -32,6 +32,7 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
                                    return init_func();
                                } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
                                    if (! should_drop(msg, len)) {
+                                       //TODO: add msgrpc::MsgHandlerBase to auto register to a global map
                                        return msgrpc::ReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
                                    }
                                } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {

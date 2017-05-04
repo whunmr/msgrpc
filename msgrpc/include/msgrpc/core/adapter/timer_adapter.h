@@ -12,6 +12,7 @@ namespace msgrpc {
     };
 
     struct TimerAdapter {
+        ~TimerAdapter() = default;
         virtual void set_timer(timeout_len_t millionseconds, msg_id_t timeout_msg_id, void *user_data) const = 0;
         virtual void cancel_timer(msg_id_t timeout_msg_id, void *user_data) const = 0;
     };

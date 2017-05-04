@@ -95,7 +95,7 @@ namespace demo {
                 return false;
             }
 
-            zk->checkExists()->withWatcher(session_watcher_fn, zk_.get())->forPath("/");
+            zk->checkExists()->withWatcher(session_watcher_fn, this)->forPath("/");
             zk_ = std::move(zk);
             return true;
         }
@@ -153,7 +153,8 @@ namespace demo {
 
             cout << "service_child_watcher_fn get child watcher function called, state: " << state << ", path: " << path << endl;
 
-            auto* srv_register = (ZkServiceRegister*)watcherCtx;
+            ZkServiceRegister* srv_register = (ZkServiceRegister*)watcherCtx;
+
             msgrpc::Task::schedule_run_on_main_queue(
                     [srv_register] {
                         srv_register->try_fetch_services_from_zk();
@@ -171,6 +172,7 @@ namespace demo {
             auto* srv_register = (ZkServiceRegister*)watcherCtx;
             msgrpc::Task::schedule_run_on_main_queue(
                     [srv_register] {
+                        //TODO: only fetch instances of this service.
                         srv_register->try_fetch_services_from_zk();
                     }
             );
@@ -235,11 +237,6 @@ namespace demo {
             //TODO: first add auto register msg handler then schedule msg to self's msg queue.
             //TODO: 1. read services_cache_ and answer request of service_name_to_id directly
             //TODO: 2. populate services_cache_ at process init, and during handling of zookeeper watcher notifications.
-//            msgrpc::Task::schedule_run_on_main_queue(
-//                    []{
-//                        std::cout << "struct HandleZkNotification : TaskRunOnMainQueue, run_task()." << std::endl;
-//                      }
-//            );
 
             if (children.empty()) {
                 return boost::none;

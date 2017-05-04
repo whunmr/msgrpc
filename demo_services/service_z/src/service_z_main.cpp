@@ -1,9 +1,11 @@
 #include <iostream>
+#include <adapter_example/details/msgrpc_test.h>
+#include <adapter_example/details/msgrpc_test_loop.h>
 
 int main() {
-
-    //const msgrpc::service_id_t z_service_id(boost::asio::ip::address::from_string("127.0.0.1"), 3333);
-
     std::cout << "service_z_main" << std::endl;
+
+    test_thread timer_thread(timer_service_id, []{}, not_drop_msg);
+
     return 0;
 }

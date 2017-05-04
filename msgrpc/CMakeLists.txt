@@ -27,6 +27,9 @@ include_directories(~/lab/cpp/msgrpc/msgrpc)
 #include_directories(~/lab/cpp/msgrpc/)
 
 ################################################################################
+add_definitions(-DUSE_THREAD_SIMULATE_MSGRPC_PROCESS)
+
+################################################################################
 FILE(GLOB_RECURSE DEMO_SOURCE_FILES         demo/*.cpp demo/*.h demo/*.interface)
 FILE(GLOB_RECURSE MSGRPC_SOURCE_FILES       include/*.h src/*.cpp)
 FILE(GLOB_RECURSE DEMO_TEST_SOURCE_FILES    test/*.cpp test/*.h)

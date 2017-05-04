@@ -39,7 +39,7 @@ namespace msgrpc {
     struct Task {
         template<typename LAMBDA>
         static bool schedule_run_on_main_queue(const LAMBDA& lambda) {
-            auto* task = new details::LambdaTaskRunOnMainQueue<decltype(lambda)>(lambda);
+            auto* task = new details::LambdaTaskRunOnMainQueue<typename std::remove_reference<decltype(lambda)>::type>(lambda);
 
             if ( ! task->schedule()) {
                 std::cout << "[ERROR] schedule task failed" << std::endl;

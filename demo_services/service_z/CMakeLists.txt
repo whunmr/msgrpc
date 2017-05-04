@@ -16,18 +16,22 @@ INCLUDE_DIRECTORIES(/usr/local/Cellar/boost/1.60.0_1/include)
 
 LINK_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/lib/)
 INCLUDE_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/)
+INCLUDE_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/zookeeper)
 add_definitions(-DTHREADED)
 
 ################################################################################
 include_directories(~/lab/thrift-0.9.3/lib/cpp/src)
 include_directories(~/lab/cpp/msgrpc/msgrpc/include)
+include_directories(~/lab/cpp/msgrpc/msgrpc)
+
+include_directories(~/lab/cpp/msgrpc/demo_services/service_z/include)
 
 ################################################################################
 FILE(GLOB_RECURSE SERVICE_Y_SOURCE_FILES ./*.cpp ./*.h)
 
 add_executable(service_z ${SERVICE_Y_SOURCE_FILES})
 
-target_link_libraries(service_z ${___THRIFT_LIB} gtest zookeeper_mt boost_system msgrpc)
+target_link_libraries(service_z ${___THRIFT_LIB} gtest zookeeper_mt conservator-framework boost_system msgrpc)
 
 ################################################################################
 find_program(VALGRIND "valgrind")

@@ -23,7 +23,12 @@ namespace msgrpc {
         }
 
         static inline Config& instance() {
-            static thread_local Config instance;
+            static
+#ifdef USE_THREAD_SIMULATE_MSGRPC_PROCESS
+            thread_local
+#endif
+            Config instance;
+
             return instance;
         }
 

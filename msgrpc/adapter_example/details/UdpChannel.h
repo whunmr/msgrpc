@@ -17,7 +17,12 @@ using boost::asio::ip::udp;
 typedef std::function<void(msgrpc::msg_id_t msg_id, const char* msg, size_t len)> OnMsgFunc;
 
 struct UdpChannel;
-thread_local UdpChannel* g_msg_channel;
+
+
+#ifdef USE_THREAD_SIMULATE_MSGRPC_PROCESS
+thread_local
+#endif
+UdpChannel* g_msg_channel;
 
 struct UdpChannel {
     UdpChannel(const msgrpc::service_id_t& service_id, OnMsgFunc on_msg_func)

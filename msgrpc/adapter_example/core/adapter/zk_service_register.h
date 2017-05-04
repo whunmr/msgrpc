@@ -230,25 +230,18 @@ namespace demo {
 
 
         virtual boost::optional<msgrpc::service_id_t> service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-            //TODO: refactor to only read cached_ services
-            //wait_util_zk_is_connected();
-
-            vector<string> children = zk_->getChildren()->forPath(k_services_root + "/" + service_name);
-            for (auto child : children) {
-                std::cout << "service instance: " << child << std::endl;
-            }
-
-            //TODO: save fetched service list into local service_discovery cache
-            //TODO: first add auto register msg handler then schedule msg to self's msg queue.
-            //TODO: 1. read services_cache_ and answer request of service_name_to_id directly
-            //TODO: 2. populate services_cache_ at process init, and during handling of zookeeper watcher notifications.
-
-            if (children.empty()) {
+            //TODO: select which service to route
+            const auto& iter = services_cache_.find(service_name);
+            if (iter == services_cache_.end()) {
                 return boost::none;
             }
 
-            //TODO: select which service to route
-            return str_to_service_id(children[0]);
+            instance_vector_t& instances = iter->second;
+            if (instances.empty()) {
+                return boost::none;
+            }
+
+            return instances[0].service_id_;
         }
 
         ////////////////////////////////////////////////////////////////////////

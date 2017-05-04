@@ -151,17 +151,14 @@ namespace demo {
                 return;
             }
 
-            cout << "get child watcher function called, state: " << state << endl;
-            ZKHandle* zk = (ZKHandle *)watcherCtx;
+            cout << "service_child_watcher_fn get child watcher function called, state: " << state << ", path: " << path << endl;
 
-            if (type == ZOO_CHILD_EVENT) {
-                cout << "got ZOO_CHILD_EVENT: path: " << path << endl;
-                if (k_services_root == path) {
-                    //TODO: get list of /services and update services_cache_
-                }
-            }
-
-            zk->getChildren()->withWatcher(service_child_watcher_fn, zk)->forPath(path);
+            auto* srv_register = (ZkServiceRegister*)watcherCtx;
+            msgrpc::Task::schedule_run_on_main_queue(
+                    [srv_register] {
+                        srv_register->try_fetch_services_from_zk();
+                    }
+            );
         }
 
         static void instance_child_watcher_fn(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
@@ -169,43 +166,49 @@ namespace demo {
                 return;
             }
 
-            cout << "get child watcher function called, state: " << state << endl;
-            ZKHandle* zk = (ZKHandle *)watcherCtx;
+            cout << "instance_child_watcher_fn get child watcher function called, state: " << state << ", path: " << path << endl;
 
-            if (type == ZOO_CHILD_EVENT) {
-                cout << "got ZOO_CHILD_EVENT: path: " << path << endl;
-            }
-
-            zk->getChildren()->withWatcher(service_child_watcher_fn, zk)->forPath(path);
+            auto* srv_register = (ZkServiceRegister*)watcherCtx;
+            msgrpc::Task::schedule_run_on_main_queue(
+                    [srv_register] {
+                        srv_register->try_fetch_services_from_zk();
+                    }
+            );
         }
 
+        bool try_fetch_services_from_zk() {
+            bool connected = try_connect_zk();
+            if (!connected) {
+                cout << "[ERROR] try_fetch_services_from_zk failed, can not connect to zk." << endl;
+                return false;
+            }
 
-        bool fetch_services_from_zk() {
-            wait_util_zk_is_connected();
+            std::map<string, instance_vector_t> tmp_cache;
 
-            vector<string> services = zk_->getChildren()->withWatcher(service_child_watcher_fn, zk_.get())->forPath(k_services_root);
+            vector<string> services = zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
 
             for (auto& service : services) {
-                vector<string> service_instances = zk_->getChildren()->withWatcher(instance_child_watcher_fn, zk_.get())->forPath(k_services_root + "/" + service);
-                services_cache_[service] = instance_vector_from(service_instances);
+                vector<string> service_instances = zk_->getChildren()->withWatcher(instance_child_watcher_fn, this)->forPath(k_services_root + "/" + service);
+                tmp_cache[service] = instance_vector_from(service_instances);
 
-                std::cout << "service list: " << service << std::endl;
+                std::cout << "[DEBUG] service list: " << service << std::endl;
                 for (auto& service_instance : service_instances) {
-                    std::cout << "    instance list: " << service_instance << std::endl;
+                    std::cout << "[DEBUG]    instance list: " << service_instance << std::endl;
                 }
+            }
+
+            if (tmp_cache.size() > 0) {
+                services_cache_ = std::move(tmp_cache);
+            } else if (services_cache_.size() > 0) {
+                cout << "[WARNING]: got empty services info from zookeeper, will continue use old services_cache_." << endl;
             }
 
             return true;
         }
 
         virtual bool init() override {
-            //TODO: fetch server list for first time and start watch /services node
-            return fetch_services_from_zk();
-            //            msgrpc::Task::schedule_run_on_main_queue(
-            //                    []{
-            //                        std::cout << "get init service and instances from zk, and set watcher for changes." << std::endl;
-            //                    }
-            //            );
+            wait_util_zk_is_connected();
+            return try_fetch_services_from_zk();
         }
 
         virtual bool register_service(const char* service_name, const char* version, const char *end_point) override {
@@ -221,7 +224,7 @@ namespace demo {
 
         virtual boost::optional<msgrpc::service_id_t> service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
             //TODO: refactor to only read cached_ services
-            wait_util_zk_is_connected();
+            //wait_util_zk_is_connected();
 
             vector<string> children = zk_->getChildren()->forPath(k_services_root + "/" + service_name);
             for (auto child : children) {
@@ -232,11 +235,11 @@ namespace demo {
             //TODO: first add auto register msg handler then schedule msg to self's msg queue.
             //TODO: 1. read services_cache_ and answer request of service_name_to_id directly
             //TODO: 2. populate services_cache_ at process init, and during handling of zookeeper watcher notifications.
-            msgrpc::Task::schedule_run_on_main_queue(
-                    []{
-                        std::cout << "struct HandleZkNotification : TaskRunOnMainQueue, run_task()." << std::endl;
-                      }
-            );
+//            msgrpc::Task::schedule_run_on_main_queue(
+//                    []{
+//                        std::cout << "struct HandleZkNotification : TaskRunOnMainQueue, run_task()." << std::endl;
+//                      }
+//            );
 
             if (children.empty()) {
                 return boost::none;

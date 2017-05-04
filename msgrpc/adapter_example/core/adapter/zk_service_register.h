@@ -170,12 +170,30 @@ namespace demo {
             cout << "instance_child_watcher_fn get child watcher function called, state: " << state << ", path: " << path << endl;
 
             auto* srv_register = (ZkServiceRegister*)watcherCtx;
+
+            assert(strlen(path) > k_services_root.length() + 1 /* / */  && "should only handle path starts with /services/");
+
+            string service_name = path + k_services_root.length() + 1 /* / */;
             msgrpc::Task::schedule_run_on_main_queue(
-                    [srv_register] {
-                        //TODO: only fetch instances of this service.
-                        srv_register->try_fetch_services_from_zk();
+                    [srv_register, service_name] {
+                        srv_register->fetch_service_instances_from_zk(service_name);
                     }
             );
+        }
+
+        void fetch_service_instances_from_zk(const string& service) {
+            bool connected = try_connect_zk();
+            if (!connected) {
+                cout << "[ERROR] try_fetch_services_from_zk failed, can not connect to zk." << endl;
+                return;
+            }
+
+            vector<string> service_instances = zk_->getChildren()->withWatcher(instance_child_watcher_fn, this)->forPath(k_services_root + "/" + service);
+            services_cache_[service] = instance_vector_from(service_instances);
+
+            for (auto& service_instance : service_instances) {
+                std::cout << "[DEBUG]    instance list: " << service_instance << std::endl;
+            }
         }
 
         bool try_fetch_services_from_zk() {
@@ -185,24 +203,11 @@ namespace demo {
                 return false;
             }
 
-            std::map<string, instance_vector_t> tmp_cache;
-
             vector<string> services = zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
 
             for (auto& service : services) {
-                vector<string> service_instances = zk_->getChildren()->withWatcher(instance_child_watcher_fn, this)->forPath(k_services_root + "/" + service);
-                tmp_cache[service] = instance_vector_from(service_instances);
-
                 std::cout << "[DEBUG] service list: " << service << std::endl;
-                for (auto& service_instance : service_instances) {
-                    std::cout << "[DEBUG]    instance list: " << service_instance << std::endl;
-                }
-            }
-
-            if (tmp_cache.size() > 0) {
-                services_cache_ = std::move(tmp_cache);
-            } else if (services_cache_.size() > 0) {
-                cout << "[WARNING]: got empty services info from zookeeper, will continue use old services_cache_." << endl;
+                fetch_service_instances_from_zk(service);
             }
 
             return true;

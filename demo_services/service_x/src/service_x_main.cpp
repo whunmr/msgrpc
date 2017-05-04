@@ -41,7 +41,12 @@ int main() {
 
     std::cout << "[service_start_up] service_x_main" << std::endl;
 
-    test_thread msg_loop_thread(x_service_id, run_next_testcase, not_drop_msg);
+    auto x_init = []{
+        msgrpc::Config::instance().service_register_->init();
+        run_next_testcase();
+    };
+
+    test_thread msg_loop_thread(x_service_id, x_init, not_drop_msg);
     test_thread timer_thread(timer_service_id, []{}, not_drop_msg);
 
     return 0;

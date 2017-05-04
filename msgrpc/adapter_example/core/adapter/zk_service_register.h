@@ -44,6 +44,8 @@ namespace demo {
             return is_connected;
         }
 
+        //TODO: peroidically test existence of ephemeral node of service, and create the ephemeral node if need.
+        //      after macbook sleep, and after sleep the ephemeral nodes were disappeared.
         bool create_ephemeral_node_for_service_instance(const char* service_name, const char* version, const char *end_point) {
             int ret;
             ret = zk_->create()->forPath(service_root);
@@ -95,12 +97,6 @@ namespace demo {
             return create_ephemeral_node_for_service_instance(service_name, version, end_point);
         }
 
-        struct HandleZkNotificationTask : msgrpc::TaskRunOnMainQueue {
-            virtual void run_task() const override {
-                std::cout << "struct HandleZkNotification : msgrpc::TaskRunOnMainQueue, run_task()." << std::endl;
-            }
-        };
-
         virtual boost::optional<msgrpc::service_id_t> service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
             if ( ! assure_zk_is_connected()) {
                 std::cout << "[ERROR] connection to zk failed" << std::endl;
@@ -116,8 +112,11 @@ namespace demo {
             //TODO: first add auto register msg handler then schedule msg to self's msg queue.
             //TODO: 1. read services_cache_ and answer request of service_name_to_id directly
             //TODO: 2. populate services_cache_ at process init, and during handling of zookeeper watcher notifications.
-            HandleZkNotificationTask* task = new HandleZkNotificationTask();
-            task->schedule();
+            msgrpc::Task::schedule_run_on_main_queue(
+                    []{
+                        std::cout << "struct HandleZkNotification : TaskRunOnMainQueue, run_task()." << std::endl;
+                      }
+            );
 
             if (children.empty()) {
                 return boost::none;

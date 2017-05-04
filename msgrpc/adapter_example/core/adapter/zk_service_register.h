@@ -12,15 +12,52 @@
 #include <msgrpc/util/singleton.h>
 #include <conservator/ConservatorFrameworkFactory.h>
 
-
-namespace demo {  //TODO: split into .h and .cpp
+//TODO: split into .h and .cpp
+namespace demo {
     void close_zk_connection_at_exit();
 
+    const string k_services_root = "/services";
+
+    /////////////////////////////////////////////////////////////////////
+    struct InstanceInfo {
+        msgrpc::service_id_t service_id_;
+    };
+
+    typedef std::vector<InstanceInfo> instance_vector_t;
+    typedef ConservatorFramework ZKHandle;
+
+    /////////////////////////////////////////////////////////////////////
+    namespace {
+        boost::optional<msgrpc::service_id_t> str_to_service_id(const string& endpoint) {
+            size_t sep = endpoint.find(":");
+            if (sep == string::npos) {
+                return boost::none;
+            }
+
+            string ip = string(endpoint, 0, sep);
+            unsigned short port = (unsigned short)strtoul(endpoint.c_str() + sep + 1, NULL, 0);
+
+            return msgrpc::service_id_t(boost::asio::ip::address::from_string(ip), port);
+        }
+
+        instance_vector_t instance_vector_from(const vector<string>& service_instances) {
+            instance_vector_t iv;
+            for (auto& si : service_instances) {
+                boost::optional<msgrpc::service_id_t> service_id = str_to_service_id(si);
+
+                if (service_id) {
+                    InstanceInfo ii;
+                    ii.service_id_ = service_id.value();
+
+                    iv.push_back(ii);
+                }
+            }
+
+            return iv;
+        }
+    }
+
     struct ZkServiceRegister : msgrpc::ServiceRegister, msgrpc::Singleton<ZkServiceRegister> {
-        typedef ConservatorFramework ZKHandle;
-
-        const string service_root = "/services";
-
         bool is_zk_connected(const unique_ptr<ZKHandle> &zk) const {
             return zk && (zk->getState() == ZOO_CONNECTED_STATE);
         }
@@ -78,15 +115,15 @@ namespace demo {  //TODO: split into .h and .cpp
 
         bool create_ephemeral_node_for_service_instance(const char* service_name, const char* version, const char *end_point) {
             int ret;
-            ret = zk_->create()->forPath(service_root);
-            ret = zk_->create()->forPath(service_root + "/" + service_name);
+            ret = zk_->create()->forPath(k_services_root);
+            ret = zk_->create()->forPath(k_services_root + "/" + service_name);
 
             const clientid_t* session_id = zoo_client_id(zk_->handle());
             if (session_id == nullptr) {
                 return false;
             }
 
-            string path = service_root + "/" + service_name + "/" + end_point + "@" + std::to_string(session_id->client_id) + "@" + version;
+            string path = k_services_root + "/" + service_name + "/" + end_point + "@" + std::to_string(session_id->client_id) + "@" + version;
             ret = zk_->create()->withFlags(ZOO_EPHEMERAL)->forPath(path, end_point);
 
             bool result = (ZOK == ret || ZNODEEXISTS == ret);
@@ -98,38 +135,7 @@ namespace demo {  //TODO: split into .h and .cpp
             return result;
         }
 
-        boost::optional<msgrpc::service_id_t> str_to_service_id(const string& endpoint) {
-            size_t sep = endpoint.find(":");
-            if (sep == string::npos) {
-                return boost::none;
-            }
-
-            string ip = string(endpoint, 0, sep);
-            unsigned short port = (unsigned short)strtoul(endpoint.c_str() + sep + 1, NULL, 0);
-
-            return msgrpc::service_id_t(boost::asio::ip::address::from_string(ip), port);
-        }
-
-        static void get_child_watcher_fn2(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
-            if (type == ZOO_SESSION_EVENT) {
-                cout << "2 got ZOO_SESSION_EVENT" << endl;
-                //TODO: handle loss connection,  set state to loss_connection
-                //TODO: handle reconnected to zk event, and reset watcher on services/instances znodes.
-                return;
-            }
-
-            cout << "2 get child watcher function called, state: " << state << endl;
-
-            ZKHandle* zk = (ZKHandle *)watcherCtx;
-
-            if (type == ZOO_CHILD_EVENT) {
-                cout << "2 got ZOO_CHILD_EVENT: path: " << path << endl;
-            }
-
-            zk->getChildren()->withWatcher(get_child_watcher_fn, zk)->forPath(path);
-        }
-
-        static void get_child_watcher_fn(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+        static void service_child_watcher_fn(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
             if (type == ZOO_SESSION_EVENT) {
                 cout << "got ZOO_SESSION_EVENT" << endl;
                 //TODO: handle loss connection,  set state to loss_connection
@@ -143,24 +149,30 @@ namespace demo {  //TODO: split into .h and .cpp
 
             if (type == ZOO_CHILD_EVENT) {
                 cout << "got ZOO_CHILD_EVENT: path: " << path << endl;
+                if (k_services_root == path) {
+                    //TODO: get list of /services and update services_cache_
+                }
             }
 
-            zk->getChildren()->withWatcher(get_child_watcher_fn, zk)->forPath(path);
+            zk->getChildren()->withWatcher(service_child_watcher_fn, zk)->forPath(path);
         }
+
 
         bool fetch_services_from_zk() {
             wait_zk_is_connected();
 
-            vector<string> services = zk_->getChildren()->withWatcher(get_child_watcher_fn, zk_.get())->forPath(service_root);
-            vector<string> servicesx = zk_->getChildren()->withWatcher(get_child_watcher_fn2, zk_.get())->forPath("/aa");
+            vector<string> services = zk_->getChildren()->withWatcher(service_child_watcher_fn, zk_.get())->forPath(k_services_root);
 
             for (auto& service : services) {
                 std::cout << "service list: " << service << std::endl;
 
-                vector<string> service_instances = zk_->getChildren()->forPath(service_root + "/" + service);
+                vector<string> service_instances = zk_->getChildren()->withWatcher(service_child_watcher_fn, zk_.get())->forPath(k_services_root + "/" + service);
+
                 for (auto& service_instance : service_instances) {
-                    std::cout << "instance list: " << service_instance << std::endl;
+                    std::cout << "    instance list: " << service_instance << std::endl;
                 }
+
+                services_cache_[service] = instance_vector_from(service_instances);
             }
 
             return true;
@@ -191,7 +203,7 @@ namespace demo {  //TODO: split into .h and .cpp
             //TODO: refactor to only read cached_ services
             wait_zk_is_connected();
 
-            vector<string> children = zk_->getChildren()->forPath(service_root + "/" + service_name);
+            vector<string> children = zk_->getChildren()->forPath(k_services_root + "/" + service_name);
             for (auto child : children) {
                 std::cout << "service instance: " << child << std::endl;
             }
@@ -215,14 +227,7 @@ namespace demo {  //TODO: split into .h and .cpp
         }
 
         ////////////////////////////////////////////////////////////////////////
-        struct cmp_str {
-            bool operator()(char const *a, char const *b) {
-                return std::strcmp(a, b) < 0;
-            }
-        };
-
-        typedef std::vector<msgrpc::service_id_t> service_vector_t;
-        std::map<char *, service_vector_t, cmp_str> services_cache_;
+        std::map<string, instance_vector_t> services_cache_;
 
         ////////////////////////////////////////////////////////////////////////
         unique_ptr<ZKHandle> zk_;

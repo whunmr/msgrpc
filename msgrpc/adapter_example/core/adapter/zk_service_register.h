@@ -62,6 +62,15 @@ namespace demo {
             return zk && (zk->getState() == ZOO_CONNECTED_STATE);
         }
 
+        static void session_watcher_fn(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+            if (type == ZOO_SESSION_EVENT) {
+                cout << "got ZOO_SESSION_EVENT" << endl;
+                //TODO: handle loss connection,  set state to loss_connection
+                //TODO: handle reconnected to zk event, and reset watcher on services/instances znodes.
+                return;
+            }
+        }
+
         bool try_connect_zk() {
             if (is_zk_connected(zk_)) {
                 return true;
@@ -81,15 +90,17 @@ namespace demo {
                 return false;
             }
 
-            bool is_connected = is_zk_connected(zk);
-            if (is_connected) {
-                zk_ = std::move(zk);
+            if ( ! is_zk_connected(zk)) {
+                zk->close();
+                return false;
             }
 
-            return is_connected;
+            zk->checkExists()->withWatcher(session_watcher_fn, zk_.get())->forPath("/");
+            zk_ = std::move(zk);
+            return true;
         }
 
-        void wait_zk_is_connected() {
+        void wait_util_zk_is_connected() {
             bool connected;
 
             do {
@@ -136,15 +147,11 @@ namespace demo {
         }
 
         static void service_child_watcher_fn(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
-            if (type == ZOO_SESSION_EVENT) {
-                cout << "got ZOO_SESSION_EVENT" << endl;
-                //TODO: handle loss connection,  set state to loss_connection
-                //TODO: handle reconnected to zk event, and reset watcher on services/instances znodes.
+            if (type != ZOO_CHILD_EVENT) {
                 return;
             }
 
             cout << "get child watcher function called, state: " << state << endl;
-
             ZKHandle* zk = (ZKHandle *)watcherCtx;
 
             if (type == ZOO_CHILD_EVENT) {
@@ -157,22 +164,35 @@ namespace demo {
             zk->getChildren()->withWatcher(service_child_watcher_fn, zk)->forPath(path);
         }
 
+        static void instance_child_watcher_fn(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx) {
+            if (type != ZOO_CHILD_EVENT) {
+                return;
+            }
+
+            cout << "get child watcher function called, state: " << state << endl;
+            ZKHandle* zk = (ZKHandle *)watcherCtx;
+
+            if (type == ZOO_CHILD_EVENT) {
+                cout << "got ZOO_CHILD_EVENT: path: " << path << endl;
+            }
+
+            zk->getChildren()->withWatcher(service_child_watcher_fn, zk)->forPath(path);
+        }
+
 
         bool fetch_services_from_zk() {
-            wait_zk_is_connected();
+            wait_util_zk_is_connected();
 
             vector<string> services = zk_->getChildren()->withWatcher(service_child_watcher_fn, zk_.get())->forPath(k_services_root);
 
             for (auto& service : services) {
+                vector<string> service_instances = zk_->getChildren()->withWatcher(instance_child_watcher_fn, zk_.get())->forPath(k_services_root + "/" + service);
+                services_cache_[service] = instance_vector_from(service_instances);
+
                 std::cout << "service list: " << service << std::endl;
-
-                vector<string> service_instances = zk_->getChildren()->withWatcher(service_child_watcher_fn, zk_.get())->forPath(k_services_root + "/" + service);
-
                 for (auto& service_instance : service_instances) {
                     std::cout << "    instance list: " << service_instance << std::endl;
                 }
-
-                services_cache_[service] = instance_vector_from(service_instances);
             }
 
             return true;
@@ -193,7 +213,7 @@ namespace demo {
                 return false;
             }
 
-            wait_zk_is_connected();
+            wait_util_zk_is_connected();
 
             return create_ephemeral_node_for_service_instance(service_name, version, end_point);
         }
@@ -201,7 +221,7 @@ namespace demo {
 
         virtual boost::optional<msgrpc::service_id_t> service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
             //TODO: refactor to only read cached_ services
-            wait_zk_is_connected();
+            wait_util_zk_is_connected();
 
             vector<string> children = zk_->getChildren()->forPath(k_services_root + "/" + service_name);
             for (auto child : children) {

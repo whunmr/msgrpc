@@ -1,13 +1,15 @@
 #include <iostream>
 #include <adapter_example/details/msgrpc_test.h>
-#include <api/z_api_struct_declare.h>
+#include <api/service_z/z_api_struct_declare.h>
 
 int main() {
     std::cout << "service_z_main" << std::endl;
 
+    //using service_z as TimerHandler, so before running service_x and service_y, should start service_z first.
     test_thread timer_thread(timer_service_id, []{}, not_drop_msg);
 
 
+    ////////////////////////////////////////////////////////////////////////////////
     auto init_y = [] {
         msgrpc::Config::instance().service_register_->init();
         service_z::msgrpc_register_service("127.0.0.1:10000");

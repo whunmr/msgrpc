@@ -1,5 +1,5 @@
 #include <iostream>
-#include <api/y_api_struct_declare.h>
+#include <api/service_y/y_api_struct_declare.h>
 #include <adapter_example/details/msgrpc_test.h>
 #include <random>
 

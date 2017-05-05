@@ -1,11 +1,11 @@
-#include <api/y_api_interface_declare.h>
+#include <api/service_y/y_api_interface_declare.h>
 
 #include <msgrpc/core/cell/cell.h>
 #include <msgrpc/api/api_interface_impl_define.h>
-#include <api/service_y.api>
+#include <api/service_y/service_y.api>
 
 #include <msgrpc/core/service_interaction/si_base.h>
-#include <api/z_api_interface_declare.h>
+#include <api/service_z/z_api_interface_declare.h>
 #include <msgrpc/core/cell/timeout_cell.h>
 #include <msgrpc/core/cell/derived_cell.h>
 
@@ -39,8 +39,11 @@ namespace service_y {
         };
 
         auto ___1 = ___rpc(___ms(10), call_z_f1m1);
-        return ___cell(map_zrsp_to_yrsp, ___1);
+        auto ___2 = ___cell(map_zrsp_to_yrsp, ___1);
+
+        return ___2;
     };
+
 
     Cell<YRsp>* IY_impl::____async_f1m2(const YReq& req) {
         return SI_call_z_async().run(req);

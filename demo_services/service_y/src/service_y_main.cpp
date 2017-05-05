@@ -7,7 +7,7 @@ int main() {
     std::cout << "[service_start_up] service_y_main" << std::endl;
 
     srand (time(NULL));
-    unsigned short port = 7777; //rand() % 100 + 7777;
+    unsigned short port = rand() % 100 + 7777;
 
     auto init_y = [port] {
         string endpoint = string("127.0.0.1:") + std::to_string(port);

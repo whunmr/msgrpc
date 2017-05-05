@@ -14,7 +14,7 @@
 namespace msgrpc {
 
     struct ReqMsgHandler {
-        static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
+        static void on_rpc_req_msg(msgrpc::msg_id_t msg_id, const char *msg, size_t len, const udp::endpoint& sender_id) {
             msg_id_t req_msg_type = Config::instance().request_msg_id_;
 
             assert(msg_id == req_msg_type && "invalid msg id for rpc");
@@ -33,7 +33,7 @@ namespace msgrpc {
             rsp_header.method_index_in_interface_ = req_header->method_index_in_interface_;
             rsp_header.sequence_id_ = req_header->sequence_id_;
 
-            msgrpc::service_id_t sender_id = msgrpc::Config::instance().msg_channel_->sender();
+            //msgrpc::service_id_t sender_id = msgrpc::Config::instance().msg_channel_->sender();
 
             IfaceImplBase *iface = IfaceRepository::instance().get_iface_impl_by(req_header->iface_index_in_service_);
             if (iface == nullptr) {

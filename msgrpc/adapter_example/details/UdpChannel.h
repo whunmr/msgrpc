@@ -14,7 +14,7 @@
 
 using boost::asio::ip::udp;
 
-typedef std::function<void(msgrpc::msg_id_t msg_id, const char* msg, size_t len)> OnMsgFunc;
+typedef std::function<void(msgrpc::msg_id_t msg_id, const char* msg, size_t len, udp::endpoint sender)> OnMsgFunc;
 
 struct UdpChannel;
 
@@ -56,7 +56,7 @@ struct UdpChannel {
     void handle_receive(const boost::system::error_code& error, std::size_t bytes_transferred) {
         if (!error || error == boost::asio::error::message_size) {
             msgrpc::msg_id_t* msg_id = (msgrpc::msg_id_t*)recv_buffer_.data();
-            on_msg_func_(*msg_id, (const char*)(msg_id + 1), bytes_transferred - sizeof(msgrpc::msg_id_t));
+            on_msg_func_(*msg_id, (const char*)(msg_id + 1), bytes_transferred - sizeof(msgrpc::msg_id_t), remote_endpoint_);
 
             start_receive();
         }

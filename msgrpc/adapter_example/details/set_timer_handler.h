@@ -31,7 +31,7 @@ namespace demo {
                                                     , k_msgrpc_timeout_msg);
 
                 UdpChannel channel(msgrpc::service_id_t(boost::asio::ip::address::from_string("127.0.0.1"), temp_udp_port),
-                                   [ti](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {
+                                   [ti](msgrpc::msg_id_t msg_id, const char* msg, size_t len, udp::endpoint sender) {
                                        if (0 == strcmp(msg, "init")) {
                                            std::this_thread::sleep_for(std::chrono::milliseconds(ti.millionseconds_));
                                            msgrpc::Config::instance().msg_channel_->send_msg(ti.service_id_, k_msgrpc_timeout_msg, (const char*)&ti, sizeof(ti));

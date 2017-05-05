@@ -36,7 +36,7 @@
         virtual msgrpc::RpcResult onRpcInvoke( const msgrpc::ReqMsgHeader& msg_header                \
                                              , const char* msg, size_t len                           \
                                              , msgrpc::RspMsgHeader& rsp_header                      \
-                                             , msgrpc::service_id_t& sender_id) override;            \
+                                             , const msgrpc::service_id_t& sender_id) override;      \
     };
 
 

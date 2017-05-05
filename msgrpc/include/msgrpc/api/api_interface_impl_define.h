@@ -37,7 +37,7 @@ msgrpc::RpcResult iface_name_##_impl::onRpcInvoke( const msgrpc::ReqMsgHeader& r
                                                 , const char* msg                                       \
                                                 , size_t len                                            \
                                                 , msgrpc::RspMsgHeader& rsp_header                      \
-                                                , msgrpc::service_id_t& sender_id) {                    \
+                                                , const msgrpc::service_id_t& sender_id) {              \
     msgrpc::RpcResult ret;                                                                              \
                                                                                                         \
     ___apply_expand(iface_name_, ___expand_define_interface_impl_invoke_method, iface_name_, iface_id_) \

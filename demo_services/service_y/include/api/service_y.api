@@ -16,16 +16,4 @@ ___def_service(service_y, 1.0.0) {
         _(1, YRsp, ___f1m1, YReq,                                                               (方法注释), __VA_ARGS__)
     ___as_interface(IY, 2);
 
-
-
 }
-
-/*
-    TODO: register endpoint into zk
-    /services/service_y/instance-1=endpoint=127.0.0.1:5555
-    /services/service_y/instance-1=version=1.0.0
-    /services/service_y/instance-2=endpoint=127.0.0.1:6666
-    /services/service_y/instance-2=version=1.0.1
-    /services/service_y/instance-3=endpoint=127.0.0.1:7777
-    /services/service_y/instance-3=version=1.0.0
-*/

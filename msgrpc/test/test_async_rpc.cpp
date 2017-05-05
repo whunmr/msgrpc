@@ -450,7 +450,7 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_
             return InterfaceY(ctxt).______sync_y(req);
         };
 
-        auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);
+        auto ___1 = ___rpc  (___ms(10), ___retry(1), do_rpc_sync_y);
         auto ___2 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y_after_1) <------ ___on(___1);
         auto ___3 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y_after_2) <------ ___on(___2);
         auto ___4 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y_after_2) <------ ___on(___3);

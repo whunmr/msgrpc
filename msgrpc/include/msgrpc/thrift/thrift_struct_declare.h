@@ -1,5 +1,5 @@
-#ifndef MSGRPC_THRIFT_STRUCT_DEF_IDL_H
-#define MSGRPC_THRIFT_STRUCT_DEF_IDL_H
+//#ifndef MSGRPC_THRIFT_STRUCT_DEF_IDL_H
+//#define MSGRPC_THRIFT_STRUCT_DEF_IDL_H
 
 #include "thrift_struct_common.h"
 
@@ -170,4 +170,4 @@
         ___declare_struct(struct_name_)
 
 
-#endif //MSGRPC_THRIFT_STRUCT_DEF_IDL_H
+//#endif //MSGRPC_THRIFT_STRUCT_DEF_IDL_H

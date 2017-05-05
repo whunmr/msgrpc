@@ -1,5 +1,13 @@
-#ifndef PROJECT_SERVICE_API_INTERFACE_DECLARE_H
-#define PROJECT_SERVICE_API_INTERFACE_DECLARE_H
+////////////////////////////////////////////////////////////////////////////////
+#ifdef ___as_struct
+#undef ___as_struct
+#endif
+
+#define ___as_struct(...)
+
+
+//#ifndef PROJECT_SERVICE_API_INTERFACE_DECLARE_H
+//#define PROJECT_SERVICE_API_INTERFACE_DECLARE_H
 
 ////////////////////////////////////////////////////////////////////////////////
 //during interface declare, undef to ignore other macros
@@ -8,13 +16,6 @@
 #endif
 
 #define ___def_service(service_name_, version_) namespace service_name_
-
-////////////////////////////////////////////////////////////////////////////////
-#ifdef ___as_struct
-#undef ___as_struct
-#endif
-
-#define ___as_struct(...)
 
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ___apply_expand
@@ -65,4 +66,4 @@
 #define ___as_interface(...) \
             ___declare_interface(__VA_ARGS__)
 
-#endif //PROJECT_SERVICE_API_INTERFACE_DECLARE_H
+//#endif //PROJECT_SERVICE_API_INTERFACE_DECLARE_H

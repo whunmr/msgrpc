@@ -10,7 +10,7 @@ namespace service_z {
 
     Cell<ZRsp>* IZ_impl::___z_f1m1(const ZReq& req) {
         ZRsp rsp;
-        rsp.zrspa = 1;
+        rsp.zrspa = 7;
 
         return cell_with_value(rsp);
     }

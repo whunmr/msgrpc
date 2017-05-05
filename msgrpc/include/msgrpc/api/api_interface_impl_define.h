@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////////////////////////////////
+#ifdef ___as_struct
+#undef ___as_struct
+#endif
+
+#define ___as_struct(...)
+
+
 #ifndef PROJECT_API_INTERFACE_IMPL_DEFINE_H
 #define PROJECT_API_INTERFACE_IMPL_DEFINE_H
 
@@ -8,13 +16,6 @@
 #endif
 
 #define ___def_service(service_name_, version_) namespace service_name_
-
-////////////////////////////////////////////////////////////////////////////////
-#ifdef ___as_struct
-#undef ___as_struct
-#endif
-
-#define ___as_struct(...)
 
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef ___apply_expand

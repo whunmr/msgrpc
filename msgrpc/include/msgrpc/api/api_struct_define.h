@@ -1,5 +1,5 @@
-#ifndef MSGRPC_SERVICE_API_DEFINE_H_H
-#define MSGRPC_SERVICE_API_DEFINE_H_H
+//#ifndef MSGRPC_SERVICE_API_DEFINE_H_H
+//#define MSGRPC_SERVICE_API_DEFINE_H_H
 
 #include <msgrpc/thrift/thrift_struct_define.h>
 #include <msgrpc/core/adapter/config.h>
@@ -21,6 +21,8 @@ namespace service_name_ {                                                       
 }                                                                                                            \
 namespace service_name_
 
+//#endif //MSGRPC_SERVICE_API_DEFINE_H_H
+
 ////////////////////////////////////////////////////////////////////////////////
 //during struct_declaration, do_nothing for interface related macros.
 #ifdef ___as_interface
@@ -29,5 +31,3 @@ namespace service_name_
 
 #define ___as_interface(...)
 ////////////////////////////////////////////////////////////////////////////////
-
-#endif //MSGRPC_SERVICE_API_DEFINE_H_H

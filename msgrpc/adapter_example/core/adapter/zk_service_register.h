@@ -155,6 +155,7 @@ namespace demo {
 
             ZkServiceRegister* srv_register = (ZkServiceRegister*)watcherCtx;
 
+            //TODO: fetch data from zk and only schedule to set the result data, so it will never block the main thread
             msgrpc::Task::schedule_run_on_main_queue(
                     [srv_register] {
                         srv_register->try_fetch_services_from_zk();
@@ -174,6 +175,8 @@ namespace demo {
             assert(strlen(path) > k_services_root.length() + 1 /* / */  && "should only handle path starts with /services/");
 
             string service_name = path + k_services_root.length() + 1 /* / */;
+
+            //TODO: fetch data from zk and only schedule to set the result data, so it will never block the main thread
             msgrpc::Task::schedule_run_on_main_queue(
                     [srv_register, service_name] {
                         srv_register->fetch_service_instances_from_zk(service_name);

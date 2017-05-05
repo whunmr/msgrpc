@@ -38,7 +38,7 @@ namespace msgrpc {
 
     struct Task {
         template<typename LAMBDA>
-        static bool schedule_run_on_main_queue(const LAMBDA& lambda) {
+        static bool dispatch_async_to_main_queue(const LAMBDA &lambda) {
             auto* task = new details::LambdaTaskRunOnMainQueue<typename std::remove_reference<decltype(lambda)>::type>(lambda);
 
             if ( ! task->schedule()) {

@@ -11,6 +11,8 @@ int main() {
 
     auto init_y = [port] {
         string endpoint = string("127.0.0.1:") + std::to_string(port);
+
+        msgrpc::Config::instance().service_register_->init();
         service_y::msgrpc_register_service(endpoint.c_str());
     };
 

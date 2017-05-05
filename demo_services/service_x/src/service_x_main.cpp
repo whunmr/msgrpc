@@ -37,12 +37,17 @@ DEF_TESTCASE(testcase_0002) {
 
 ////////////////////////////////////////////////////////////////////////////////
 int main() {
-    const msgrpc::service_id_t x_service_id(boost::asio::ip::address::from_string("127.0.0.1"), 6666);
+    unsigned short port = 6666;
+    const msgrpc::service_id_t x_service_id(boost::asio::ip::address::from_string("127.0.0.1"), port);
 
     std::cout << "[service_start_up] service_x_main" << std::endl;
 
-    auto x_init = []{
+    auto x_init = [port]{
         msgrpc::Config::instance().service_register_->init();
+
+        //string endpoint = string("127.0.0.1:") + std::to_string(port);
+        //service_x::msgrpc_register_service(endpoint.c_str());
+
         run_next_testcase();
     };
 

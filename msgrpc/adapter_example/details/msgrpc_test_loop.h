@@ -26,6 +26,8 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
 
     demo::test_service::instance().current_service_id_ = service_id;
 
+    msgrpc::Config::instance().service_register_->init();
+
     try {
         UdpChannel channel(service_id,
                            [&init_func, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len) {

@@ -5,10 +5,6 @@
 int main() {
     std::cout << "service_z_main" << std::endl;
 
-    //using service_z as TimerHandler, so before running service_x and service_y, should start service_z first.
-    test_thread timer_thread(timer_service_id, []{}, not_drop_msg);
-
-
     ////////////////////////////////////////////////////////////////////////////////
     auto init_y = [] {
         msgrpc::Config::instance().service_register_->init();
@@ -17,6 +13,10 @@ int main() {
 
     const msgrpc::service_id_t y_service_id(boost::asio::ip::address::from_string("127.0.0.1"), 10000);
     test_thread msg_loop_thread(y_service_id, init_y, not_drop_msg);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    //using service_z as TimerHandler, so before running service_x and service_y, should start service_z first.
+    test_thread timer_thread(timer_service_id, []{}, not_drop_msg);
 
     return 0;
 }

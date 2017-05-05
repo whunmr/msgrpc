@@ -18,18 +18,18 @@ DEFINE_SI(SI_call_y_f1m1, YReq, YRsp) {
     return ___rpc(___ms(10), call_y_f1m1);
 }
 
-//DEF_TESTCASE(testcase_0000) {
-//    YReq yreq;
-//    yreq.yreqa = 100;
-//
-//    auto* rsp_cell = SI_call_y_f1m1().run(yreq);
-//
-//    derive_final_action([](msgrpc::Cell<YRsp>& r) {
-//        EXPECT_EQ(true, r.has_value());
-//        EXPECT_EQ(200, r.value().yrspa);
-//        run_next_testcase();
-//    }, rsp_cell);
-//}
+DEF_TESTCASE(testcase_0000) {
+    YReq yreq;
+    yreq.yreqa = 100;
+
+    auto* rsp_cell = SI_call_y_f1m1().run(yreq);
+
+    derive_final_action([](msgrpc::Cell<YRsp>& r) {
+        EXPECT_EQ(true, r.has_value());
+        EXPECT_EQ(200, r.value().yrspa);
+        run_next_testcase();
+    }, rsp_cell);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 using namespace service_z;
@@ -63,18 +63,18 @@ DEFINE_SI(SI_call_y_async_f1m2, YReq, YRsp) {
     return ___rpc(___ms(10000), call_async_f1m2);
 }
 
-//DEF_TESTCASE(testcase_0002) {
-//    YReq yreq;
-//    yreq.yreqa = 100;
-//
-//    auto* rsp_cell = SI_call_y_async_f1m2().run(yreq);
-//
-//    derive_final_action([](msgrpc::Cell<YRsp>& r) {
-//        EXPECT_EQ(true, r.has_value());
-//        EXPECT_EQ(14, r.value().yrspa);
-//        run_next_testcase();
-//    }, rsp_cell);
-//}
+DEF_TESTCASE(testcase_0002) {
+    YReq yreq;
+    yreq.yreqa = 100;
+
+    auto* rsp_cell = SI_call_y_async_f1m2().run(yreq);
+
+    derive_final_action([](msgrpc::Cell<YRsp>& r) {
+        EXPECT_EQ(true, r.has_value());
+        EXPECT_EQ(14, r.value().yrspa);
+        run_next_testcase();
+    }, rsp_cell);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 int main() {

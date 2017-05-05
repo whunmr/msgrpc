@@ -33,7 +33,10 @@ struct UdpChannel {
 
         start_receive();
         this->send_msg_to_remote("00init", service_id); //00 means leading msgrpc::msg_id_t
-        g_msg_channel = this;
+
+        if (g_msg_channel == nullptr) {
+            g_msg_channel = this;
+        }
 
         mutex_.lock();
         io_services_.push_back(&io_service_);

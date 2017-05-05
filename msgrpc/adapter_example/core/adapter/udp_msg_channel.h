@@ -24,8 +24,10 @@ namespace demo {
                         std::cout << "------>> X(" << header->sequence_id_ << ")"   << std::endl;
                     else if (remote_service_id.port() == 10000)
                         std::cout << "------>> Z(" << header->sequence_id_ << ")"   << std::endl;
-                    else
+                    else if (remote_service_id.port() == 7777)
                         std::cout << "------>> Y(" << header->sequence_id_ << ")"   << std::endl;
+                    else
+                        std::cout << "------>> " << remote_service_id.port() << "(" << header->sequence_id_ << ")" << std::endl;
                 }
             }
 

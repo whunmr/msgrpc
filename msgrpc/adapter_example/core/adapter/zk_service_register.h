@@ -43,6 +43,7 @@ namespace demo {
 
 
         void strings_to_instances(const vector<string>& instance_strings, instance_vector_t& instances) {
+            //TODO: remove duplicated
             for (auto& si : instance_strings) {
                 boost::optional<msgrpc::service_id_t> service_id = str_to_service_id(si);
 

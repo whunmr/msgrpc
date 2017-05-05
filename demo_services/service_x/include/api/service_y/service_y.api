@@ -13,7 +13,8 @@ ___def_service(service_y, 1.0.0) {
 
 
     #define ___methods_of_interface___IY(_, ...)                                                                       \
-        _(1, YRsp, ___f1m1, YReq,                                                               (方法注释), __VA_ARGS__)
+        _(1, YRsp, ___f1m1       , YReq,                                                               (方法注释), __VA_ARGS__)\
+        _(2, YRsp, ____async_f1m2, YReq,                                                               (方法注释), __VA_ARGS__)
     ___as_interface(IY, 2);
 
 }

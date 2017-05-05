@@ -26,7 +26,9 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
 
     demo::test_service::instance().current_service_id_ = service_id;
 
+#ifdef USE_THREAD_SIMULATE_MSGRPC_PROCESS
     msgrpc::Config::instance().service_register_->init();
+#endif
 
     try {
         UdpChannel channel(service_id,
@@ -35,6 +37,7 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
                                    return init_func();
                                } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
                                    if (! should_drop(msg, len)) {
+                                        std::cout << "------> got rpc request." <<std::endl;
                                        //TODO: add msgrpc::MsgHandlerBase to auto register to a global map
                                        return msgrpc::ReqMsgHandler::on_rpc_req_msg(msg_id, msg, len);
                                    }

@@ -19,7 +19,7 @@ namespace demo {
             assert(msg != nullptr && len == sizeof(timer_info));
             timer_info& ti = *(timer_info*)msg;
 
-            unsigned short temp_udp_port = timer_service_id.port() + entry_times;
+            unsigned short temp_udp_port = 20000 + entry_times;
 
             std::thread timer_thread([ti, temp_udp_port]{
                 msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()

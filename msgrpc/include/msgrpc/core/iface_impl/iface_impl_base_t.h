@@ -35,7 +35,7 @@ namespace msgrpc {
         template<typename REQ, typename RSP>
         RpcResult invoke_templated_method(msgrpc::Cell<RSP>* (T::*method_impl)(const REQ&)
                 , const char *msg, size_t len
-                , msgrpc::service_id_t& sender_id
+                , const msgrpc::service_id_t& sender_id
                 , msgrpc::RspMsgHeader& rsp_header) {
 
             REQ req;

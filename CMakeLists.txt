@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 2.8)
 
 SET(___THRIFT_LIB ${PROJECT_SOURCE_DIR}/../../../lab/thrift-0.9.3/lib/cpp/.libs/libthrift.a)
 

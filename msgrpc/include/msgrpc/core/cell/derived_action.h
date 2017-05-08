@@ -8,7 +8,8 @@ namespace msgrpc {
     template<typename T, typename... Args>
     struct DerivedAction : Updatable {
         DerivedAction(bool is_final_action, std::function<T(Args...)> logic, Args &&... args)
-                : is_final_action_(is_final_action), bind_(logic, std::ref(args)...) {
+                : is_final_action_(is_final_action)
+                , bind_(logic, std::ref(args)...) {
             register_as_listener(std::forward<Args>(args)...);
         }
 

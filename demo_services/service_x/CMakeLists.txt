@@ -9,8 +9,8 @@ LINK_DIRECTORIES(${___GTEST_LIB})
 INCLUDE_DIRECTORIES(${___GTEST_INCLUDE})
 
 #using boost to make udp sockets for testcases to simulate IPC
-LINK_DIRECTORIES(/usr/local/Cellar/boost/1.60.0_1/lib)
-INCLUDE_DIRECTORIES(/usr/local/Cellar/boost/1.60.0_1/include)
+LINK_DIRECTORIES(${___BOOST_LIB})
+INCLUDE_DIRECTORIES(${___BOOST_INCLUDE})
 
 LINK_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/lib/)
 INCLUDE_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/)

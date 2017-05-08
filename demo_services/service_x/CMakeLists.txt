@@ -12,9 +12,9 @@ INCLUDE_DIRECTORIES(${___GTEST_INCLUDE})
 LINK_DIRECTORIES(${___BOOST_LIB})
 INCLUDE_DIRECTORIES(${___BOOST_INCLUDE})
 
-LINK_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/lib/)
-INCLUDE_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/)
-INCLUDE_DIRECTORIES(~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/zookeeper)
+################################################################################
+LINK_DIRECTORIES(${___ZOOKEEPER_LIB})
+INCLUDE_DIRECTORIES(${___ZOOKEEPER_INCLUDE})
 add_definitions(-DTHREADED)
 
 ################################################################################

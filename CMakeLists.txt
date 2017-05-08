@@ -13,6 +13,11 @@ SET(___ZOOKEEPER_INCLUDE ~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/inclu
                          ~/lab/zookeeper/zookeeper-3.4.9/build/c/build/usr/include/zookeeper)
 
 
+SET(___THRIFT_INCLUDE ~/lab/thrift-0.9.3/lib/cpp/src)
+
+SET(___MSGRPC_INCLUDE ~/lab/cpp/msgrpc/msgrpc/include
+                      ~/lab/cpp/msgrpc/msgrpc)
+
 
 add_subdirectory(msgrpc)
 add_subdirectory(demo_services/service_x)

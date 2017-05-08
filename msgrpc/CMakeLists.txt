@@ -5,9 +5,8 @@ project(msgrpc_demo)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 ################################################################################
-#separate libraries depended by msgrpc and testcases
-LINK_DIRECTORIES(~/lab/repo/googletest/googlemock/gtest)
-INCLUDE_DIRECTORIES(~/lab/repo/googletest/googletest/include)
+LINK_DIRECTORIES(${___GTEST_LIB})
+INCLUDE_DIRECTORIES(${___GTEST_INCLUDE})
 
 #using boost to make udp sockets for testcases to simulate IPC
 LINK_DIRECTORIES(/usr/local/Cellar/boost/1.60.0_1/lib)
@@ -24,7 +23,6 @@ add_definitions(-DTHREADED)
 include_directories(~/lab/thrift-0.9.3/lib/cpp/src)
 include_directories(~/lab/cpp/msgrpc/msgrpc/include)
 include_directories(~/lab/cpp/msgrpc/msgrpc)
-#include_directories(~/lab/cpp/msgrpc/)
 
 ################################################################################
 add_definitions(-DUSE_THREAD_SIMULATE_MSGRPC_PROCESS)

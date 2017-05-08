@@ -21,7 +21,7 @@ add_definitions    (-DTHREADED)
 include_directories(${___THRIFT_INCLUDE})
 include_directories(${___MSGRPC_INCLUDE})
 
-include_directories(~/lab/cpp/msgrpc/demo_services/service_y/include)
+include_directories(./include)
 
 ################################################################################
 FILE(GLOB_RECURSE SERVICE_Y_SOURCE_FILES ./*.cpp ./*.h)

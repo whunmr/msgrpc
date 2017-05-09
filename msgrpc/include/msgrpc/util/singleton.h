@@ -5,7 +5,7 @@ namespace msgrpc {
 
     template<typename T>
     struct ThreadLocalSingleton {
-        virtual ~ThreadLocalSingleton() {}
+        virtual ~ThreadLocalSingleton() = default;
 
         static T &instance() {
             static thread_local T t;
@@ -16,7 +16,7 @@ namespace msgrpc {
 
     template<typename T>
     struct Singleton {
-        virtual ~Singleton() {}
+        virtual ~Singleton() = default;
 
         static T &instance() {
             static T t;

@@ -14,11 +14,10 @@ namespace msgrpc {
         void on_rsp_handler_timeout(rpc_sequence_id_t sequence_id);
 
         void remove_rsp_handler(rpc_sequence_id_t sequence_id);
-
         void register_rsp_Handler(rpc_sequence_id_t sequence_id, RspSink *sink);
-
         void handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len);
 
+    private:
         void delete_rsp_handler_if_exist(const rpc_sequence_id_t &seq_id);
 
     private:

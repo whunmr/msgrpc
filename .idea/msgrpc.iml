@@ -3,6 +3,7 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/components/rsp_msg_handler.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/components/rpc_timeout_handler.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/iface_impl/iface_repository.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/schedule/task_run_on_main_queue.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/msg_sender.cpp" isTestSource="false" />

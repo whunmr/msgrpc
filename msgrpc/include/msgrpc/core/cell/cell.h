@@ -3,6 +3,7 @@
 
 #include <utility>
 #include <iostream>
+#include <msgrpc/core/types.h>
 #include <msgrpc/core/rpc_result.h>
 #include <msgrpc/thrift/thrift_codec.h>
 #include <msgrpc/core/cell/cell_base.h>

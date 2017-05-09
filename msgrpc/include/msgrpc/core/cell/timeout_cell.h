@@ -140,5 +140,4 @@ namespace msgrpc {
 #define ___on(...) g_dummy_holder, __VA_ARGS__)
 
 
-
 #endif //MSGRPC_TIMEOUT_CELL_H

@@ -2,15 +2,11 @@
 <module type="CPP_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_define.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_stub_define.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_impl_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/iface_stub/iface_stub_base.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/schedule/task_run_on_main_queue.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/iface_impl/iface_repository.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/msg_sender.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/rpc_sequence_id.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/types.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/rsp_msg_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/req_msg_handler.h" isTestSource="false" />
@@ -51,11 +47,16 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_struct_common.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_codec.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_struct_define.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_stub_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_impl_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/CMakeLists.txt" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/iface_stub/iface_stub_base.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/schedule/task_run_on_main_queue.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/msg_sender.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/rpc_sequence_id.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_thrift_struct.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_zookeeper.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_async_rpc.cpp" isTestSource="false" />

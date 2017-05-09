@@ -1,6 +1,8 @@
 #ifndef PROJECT_LOGGER_H
 #define PROJECT_LOGGER_H
 
+#include <string>
+
 namespace msgrpc {
 
     struct Logger {
@@ -17,6 +19,13 @@ namespace msgrpc {
         virtual void log_warning(const char* log) = 0;
         virtual void log_error  (const char* log) = 0;
         virtual void log_fatal  (const char* log) = 0;
+
+        virtual void log_trace  (const std::string& log) = 0;
+        virtual void log_debug  (const std::string& log) = 0;
+        virtual void log_info   (const std::string& log) = 0;
+        virtual void log_warning(const std::string& log) = 0;
+        virtual void log_error  (const std::string& log) = 0;
+        virtual void log_fatal  (const std::string& log) = 0;
     };
 
     Logger& get_logger();

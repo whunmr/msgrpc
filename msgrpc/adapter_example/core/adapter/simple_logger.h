@@ -17,6 +17,14 @@ namespace demo {
         virtual void log_error   (const char *log) override { std::cout << "[ERROR]  " << log << std::endl; }
         virtual void log_fatal   (const char *log) override { std::cout << "[FATAL]  " << log << std::endl; }
 
+
+        virtual void log_trace  (const std::string& log) override { log_trace  (log.c_str()); }
+        virtual void log_debug  (const std::string& log) override { log_debug  (log.c_str()); }
+        virtual void log_info   (const std::string& log) override { log_info   (log.c_str()); }
+        virtual void log_warning(const std::string& log) override { log_warning(log.c_str()); }
+        virtual void log_error  (const std::string& log) override { log_error  (log.c_str()); }
+        virtual void log_fatal  (const std::string& log) override { log_fatal  (log.c_str()); }
+
     private:
         severity_level level_ = { msgrpc::Logger::info };
     };

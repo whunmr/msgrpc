@@ -7,6 +7,7 @@
 #include <thrift/protocol/TJSONProtocol.h>
 #include <thrift/transport/TSocket.h>
 #include <thrift/transport/TTransportUtils.h>
+#include <msgrpc/core/adapter/logger.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace msgrpc {
@@ -48,8 +49,8 @@ namespace msgrpc {
                 if (*len > apache::thrift::transport::TMemoryBuffer::defaultSize) {
                     should_reset_to_default_size_ = true;
                 }
-            } catch (...) {
-                //TODO: add debug log
+            } catch (const std::exception& ex) {
+                ___log_error(ex.what());
                 return false;
             }
 
@@ -73,8 +74,8 @@ namespace msgrpc {
         bool do_decode(T &___struct) {
             try {
                 return ___struct.read(protocol_.get()) > 0;
-            } catch (...) {
-                //TODO: add debug log
+            } catch (const std::exception& ex) {
+                ___log_error(ex.what());
                 return false;
             }
         }

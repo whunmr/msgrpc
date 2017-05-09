@@ -1,10 +1,10 @@
-#include <msgrpc/core/components/rpc_timeout_handler.h>
+#include <msgrpc/core/msg/msg_handlers/rpc_timeout_handler.h>
 
 #include <cassert>
 
 #include <msgrpc/core/adapter/timer_adapter.h>
 #include <msgrpc/core/rpc_sequence_id.h>
-#include <msgrpc/core/components/rsp_msg_handler.h>
+#include <msgrpc/core/msg/msg_handlers/rsp_msg_handler.h>
 
 namespace msgrpc {
 

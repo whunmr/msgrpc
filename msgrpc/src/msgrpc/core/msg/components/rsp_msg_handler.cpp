@@ -1,4 +1,4 @@
-#include <msgrpc/core/components/rsp_msg_handler.h>
+#include <msgrpc/core/msg/msg_handlers/rsp_msg_handler.h>
 
 #include <msgrpc/core/adapter/logger.h>
 
@@ -39,7 +39,7 @@ namespace msgrpc {
 
     void RspMsgHandler::handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
         if (msg == nullptr) {
-            ___log_warning(std::string("invalid rpc components with msg == nullptr, msgid:") + std::to_string(msg_id));
+            ___log_warning(std::string("invalid rpc msg_handlers with msg == nullptr, msgid:") + std::to_string(msg_id));
             return;
         }
 
@@ -59,8 +59,8 @@ namespace msgrpc {
 
         (iter->second)->set_rpc_rsp(*rsp_header, msg + sizeof(RspMsgHeader), len - sizeof(RspMsgHeader));
 
-        //if this components finishes a SI, the handler (iter->second) will be release in whole SI context teardown;
-        //otherwise, we should erase this very components handler only.
+        //if this msg_handlers finishes a SI, the handler (iter->second) will be release in whole SI context teardown;
+        //otherwise, we should erase this very msg_handlers handler only.
         delete_rsp_handler_if_exist(rsp_header->sequence_id_);
     }
 

@@ -1,4 +1,4 @@
-#include <msgrpc/core/components/req_msg_handler.h>
+#include <msgrpc/core/msg/msg_handlers/req_msg_handler.h>
 
 #include <msgrpc/core/iface_impl/iface_impl_base.h>
 #include <msgrpc/core/adapter/config.h>

@@ -3,7 +3,7 @@
 #include <msgrpc/core/adapter/config.h>
 #include <msgrpc/core/adapter/service_register.h>
 #include <msgrpc/core/adapter/msg_channel.h>
-#include <msgrpc/core/components/rsp_msg_handler.h>
+#include <msgrpc/core/msg/msg_handlers/rsp_msg_handler.h>
 
 namespace msgrpc {
 

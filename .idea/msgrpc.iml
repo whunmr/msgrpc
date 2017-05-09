@@ -2,34 +2,34 @@
 <module type="CPP_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/components/rsp_msg_handler.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/components/req_msg_handler.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/components/rpc_timeout_handler.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/cell/rsp_cell_base.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/iface_impl/iface_repository.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/schedule/task_run_on_main_queue.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/cell/rsp_cell_base.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/components/rsp_msg_handler.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/components/req_msg_handler.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/components/rpc_timeout_handler.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/msg_sender.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/rpc_sequence_id.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/schedule/task_run_on_main_queue.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/iface_stub/iface_stub_base.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/adapter/config.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/types.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/rsp_msg_handler.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/req_msg_handler.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/components/rpc_timeout_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_base_t.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_utility.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_repository.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_interaction/si_base.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/cell_base.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/derived_async_cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/derived_cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/rsp_cell_base.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/derived_async_cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/derived_action.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/cell_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/rsp_sink.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/timeout_cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/msg/msg_sender.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/msg/msg_handlers/req_msg_handler.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/msg/msg_handlers/rsp_msg_handler.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/msg/msg_handlers/rpc_timeout_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/rpc_sequence_id.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/rpc_result.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/schedule/task_run_on_main_queue.h" isTestSource="false" />

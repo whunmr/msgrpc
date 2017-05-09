@@ -12,6 +12,7 @@ namespace msgrpc {
 
     struct Config {
         static void switch_into_thread_local_mode();
+        static bool is_thread_local_mode();
         static Config& instance();
 
         void init_with( MsgChannel* msg_channel

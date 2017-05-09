@@ -2,16 +2,21 @@
 
 namespace msgrpc {
 
-    bool is_thread_local_mode = false;
+    static bool is_thread_local_mode_ = false;
+
     void Config::switch_into_thread_local_mode() {
-        is_thread_local_mode = true;
+        is_thread_local_mode_ = true;
+    }
+
+    bool Config::is_thread_local_mode() {
+        return is_thread_local_mode_;
     }
 
     Config& Config::instance() {
         static thread_local Config thread_local_instance;
         static              Config global_instance;
 
-        return is_thread_local_mode ? thread_local_instance : global_instance;
+        return is_thread_local_mode_ ? thread_local_instance : global_instance;
     }
 
     void Config::init_with( MsgChannel* msg_channel

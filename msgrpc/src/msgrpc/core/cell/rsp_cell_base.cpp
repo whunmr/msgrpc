@@ -1,6 +1,6 @@
 #include <msgrpc/core/cell/rsp_cell_base.h>
 
-#include <msgrpc/core/components/rsp_msg_handler.h>
+#include <msgrpc/core/msg/msg_handlers/rsp_msg_handler.h>
 
 namespace msgrpc {
 

@@ -9,9 +9,9 @@
 #include <adapter_example/core/adapter/zk_service_register.h>
 #include <adapter_example/core/adapter/simple_logger.h>
 #include <adapter_example/details/UdpChannel.h>
-#include <msgrpc/core/components/req_msg_handler.h>
-#include <msgrpc/core/components/rpc_timeout_handler.h>
-#include <msgrpc/core/components/rsp_msg_handler.h>
+#include <msgrpc/core/msg/msg_handlers/req_msg_handler.h>
+#include <msgrpc/core/msg/msg_handlers/rpc_timeout_handler.h>
+#include <msgrpc/core/msg/msg_handlers/rsp_msg_handler.h>
 #include <msgrpc/core/schedule/task_run_on_main_queue.h>
 #include <msgrpc/util/singleton.h>
 #include <adapter_example/details/set_timer_handler.h>
@@ -29,13 +29,13 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
 
     demo::test_service::instance().current_service_id_ = service_id;
 
-#ifdef USE_THREAD_SIMULATE_MSGRPC_PROCESS
-    msgrpc::Config::instance().service_register_->init();
-#endif
-
+    if (msgrpc::Config::is_thread_local_mode()) {
+        msgrpc::Config::instance().service_register_->init();
+    }
+    
     try {
         UdpChannel channel(service_id,
-           [&init_func, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len, udp::endpoint sender) {
+           [&init_func, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len, msgrpc::service_id_t sender) {
                if (msg_id == msgrpc::Config::instance().request_msg_id_ && should_drop(msg, len)) {
                    return;
                }

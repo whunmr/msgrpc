@@ -29,7 +29,8 @@ namespace demo {
                                                     , k_msgrpc_request_msg_id
                                                     , k_msgrpc_response_msg_id
                                                     , k_msgrpc_set_timer_msg
-                                                    , k_msgrpc_timeout_msg);
+                                                    , k_msgrpc_timeout_msg
+                                                    , k_msgrpc_schedule_task_on_main_thread_msg);
 
                 UdpChannel channel(msgrpc::service_id_t(boost::asio::ip::address::from_string("127.0.0.1"), temp_udp_port),
                                    [ti](msgrpc::msg_id_t msg_id, const char* msg, size_t len, udp::endpoint sender) {

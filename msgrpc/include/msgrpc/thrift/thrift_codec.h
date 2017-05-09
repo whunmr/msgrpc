@@ -15,12 +15,12 @@ namespace msgrpc {
     struct ThriftCodecBase {
         ThriftCodecBase() : mem_buf_(new apache::thrift::transport::TMemoryBuffer()),
                             protocol_(new apache::thrift::protocol::TBinaryProtocol(mem_buf_)) {}
-        //, protocol_(new TJSONProtocol(mem_buf_)) { }
+                        //, protocol_(new TJSONProtocol(mem_buf_)) { }
 
     protected:
         boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> mem_buf_;
         boost::shared_ptr<apache::thrift::protocol::TBinaryProtocol> protocol_;
-        //boost::shared_ptr<TJSONProtocol> protocol_;
+        //boost::shared_ptr<apache::thrift::protocol::TJSONProtocol> protocol_;
     };
 
     struct ThriftEncoder : ThriftCodecBase, msgrpc::ThreadLocalSingleton<ThriftEncoder> {

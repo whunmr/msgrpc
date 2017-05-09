@@ -31,6 +31,7 @@ FILE(GLOB_RECURSE DEMO_TEST_SOURCE_FILES    test/*.cpp test/*.h)
 
 ################################################################################
 add_library(msgrpc SHARED ${MSGRPC_SOURCE_FILES})
+target_link_libraries(msgrpc boost_system)
 set_target_properties(msgrpc PROPERTIES output_name "msgrpc")
 
 ################################################################################

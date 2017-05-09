@@ -32,7 +32,7 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
     if (msgrpc::Config::is_thread_local_mode()) {
         msgrpc::Config::instance().service_register_->init();
     }
-    
+
     try {
         UdpChannel channel(service_id,
            [&init_func, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len, msgrpc::service_id_t sender) {
@@ -44,14 +44,16 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
                    return;
                }
 
+               if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
+                   return demo::SetTimerHandler::instance().set_timer(msg, len);
+               }
+
                if (0 == strcmp(msg, "init")) {
                    return init_func();
                } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
                    return msgrpc::ReqMsgHandler::on_rpc_req_msg(msg_id, msg, len, sender);
                } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
                    return msgrpc::RspMsgHandler::instance().handle_rpc_rsp(msg_id, msg, len);
-               } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
-                   return demo::SetTimerHandler::instance().set_timer(msg, len);
                } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
                    return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
                } else if (msg_id == k_msgrpc_schedule_task_on_main_thread_msg) {

@@ -126,7 +126,7 @@ void save_rsp_to_log(Cell<ResponseBar>& r)                    { std::cout << "2/
 
 TEST_F(MsgRpcTest, should_able_to_support___SI_with_single_rpc____which_bind_with_actions______________case200) {
     // x ----(req)---->y (sync_y)
-    // x <---(components)-----y
+    // x <---(msg_handlers)-----y
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_TRUE(___r.has_value());
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);

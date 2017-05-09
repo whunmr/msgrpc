@@ -35,32 +35,34 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
 
     try {
         UdpChannel channel(service_id,
-                           [&init_func, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len, udp::endpoint sender) {
-                               if (msg_id == msgrpc::Config::instance().request_msg_id_ && should_drop(msg, len)) {
-                                   return;
-                               }
+           [&init_func, &should_drop](msgrpc::msg_id_t msg_id, const char* msg, size_t len, udp::endpoint sender) {
+               if (msg_id == msgrpc::Config::instance().request_msg_id_ && should_drop(msg, len)) {
+                   return;
+               }
 
-                               if (0 == strcmp(msg, "init")) {
-                                   return init_func();
-                               } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
-                                   return msgrpc::ReqMsgHandler::on_rpc_req_msg(msg_id, msg, len, sender);
-                               } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
-                                   return msgrpc::RspMsgHandler::instance().handle_rpc_rsp(msg_id, msg, len);
-                               } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
-                                   return demo::SetTimerHandler::instance().set_timer(msg, len);
-                               } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
-                                   if (! demo::TimerMgr::instance().should_ignore(msg, len)) {
-                                       return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
-                                   }
-                               } else if (msg_id == k_msgrpc_schedule_task_on_main_thread_msg) {
-                                   auto* taskptr = (msgrpc::TaskRunOnMainQueue::TaskPtr*)msg;
-                                   msgrpc::TaskRunOnMainQueue* task = reinterpret_cast<msgrpc::TaskRunOnMainQueue*>(taskptr->ptr_);
-                                   task->run_task();
-                                   delete task;
-                               } else {
-                                   std::cout << "got unknow msg with id: " << msg_id << std::endl;
-                               }
-                           }
+               if (msg_id == msgrpc::Config::instance().timeout_msg_id_ && demo::TimerMgr::instance().should_ignore(msg, len)) {
+                   return;
+               }
+
+               if (0 == strcmp(msg, "init")) {
+                   return init_func();
+               } else if (msg_id == msgrpc::Config::instance().request_msg_id_) {
+                   return msgrpc::ReqMsgHandler::on_rpc_req_msg(msg_id, msg, len, sender);
+               } else if (msg_id == msgrpc::Config::instance().response_msg_id_) {
+                   return msgrpc::RspMsgHandler::instance().handle_rpc_rsp(msg_id, msg, len);
+               } else if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
+                   return demo::SetTimerHandler::instance().set_timer(msg, len);
+               } else if (msg_id == msgrpc::Config::instance().timeout_msg_id_) {
+                   return msgrpc::RpcTimeoutHandler::instance().on_timeout(msg, len);
+               } else if (msg_id == k_msgrpc_schedule_task_on_main_thread_msg) {
+                   auto* taskptr = (msgrpc::TaskRunOnMainQueue::TaskPtr*)msg;
+                   msgrpc::TaskRunOnMainQueue* task = reinterpret_cast<msgrpc::TaskRunOnMainQueue*>(taskptr->ptr_);
+                   task->run_task();
+                   delete task;
+               } else {
+                   std::cout << "got unknow msg with id: " << msg_id << std::endl;
+               }
+           }
         );
     } catch (...) {
         std::cout << "timer bind udp port failed, timer already existing on port: " << service_id.port() << std::endl;

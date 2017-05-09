@@ -12,6 +12,8 @@ std::condition_variable can_safely_exit_cv;
 
 struct MsgRpcTest : public ::testing::Test {
     virtual void SetUp() {
+        msgrpc::Config::switch_into_thread_local_mode();
+
         can_safely_exit = false;
 
         msgrpc::RpcSequenceId::instance().reset();

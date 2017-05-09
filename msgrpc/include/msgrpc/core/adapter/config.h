@@ -11,6 +11,9 @@ namespace msgrpc {
     struct Logger;
 
     struct Config {
+        static void switch_into_thread_local_mode();
+        static Config& instance();
+
         void init_with( MsgChannel* msg_channel
                       , TimerAdapter* timer
                       , ServiceRegister* service_register
@@ -19,31 +22,7 @@ namespace msgrpc {
                       , msgrpc::msg_id_t response_msg_id
                       , msgrpc::msg_id_t set_timer_msg_id
                       , msgrpc::msg_id_t timeout_msg_id
-                      , msgrpc::msg_id_t schedule_task_on_main_thread_msg_id) {
-
-            assert(msg_channel != nullptr && timer != nullptr && service_register != nullptr);
-
-            msg_channel_ = msg_channel;
-            timer_ = timer;
-            service_register_ = service_register;
-            logger_ = logger;
-
-            request_msg_id_  = request_msg_id;
-            response_msg_id_ = response_msg_id;
-            set_timer_msg_id_ = set_timer_msg_id;
-            timeout_msg_id_ = timeout_msg_id;
-            schedule_task_on_main_thread_msg_id_ = schedule_task_on_main_thread_msg_id;
-        }
-
-        static inline Config& instance() {
-            static
-#ifdef USE_THREAD_SIMULATE_MSGRPC_PROCESS
-            thread_local
-#endif
-            Config instance;
-
-            return instance;
-        }
+                      , msgrpc::msg_id_t schedule_task_on_main_thread_msg_id);
 
         MsgChannel* msg_channel_ = {nullptr};
         TimerAdapter* timer_ = {nullptr};
@@ -56,6 +35,7 @@ namespace msgrpc {
         msg_id_t timeout_msg_id_ = 0;
         msg_id_t schedule_task_on_main_thread_msg_id_ = 0;
     };
+
 }
 
 #endif //MSGRPC_CONFIG_H

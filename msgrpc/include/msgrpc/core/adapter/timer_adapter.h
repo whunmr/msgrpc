@@ -2,6 +2,7 @@
 #define MSGRPC_TIMER_ADAPTER_H
 
 #include <msgrpc/core/typedefs.h>
+#include <msgrpc/core/adapter/adapter_base.h>
 
 namespace msgrpc {
 
@@ -11,7 +12,7 @@ namespace msgrpc {
         void *user_data_;
     };
 
-    struct TimerAdapter {
+    struct TimerAdapter : AdapterBase {
         virtual ~TimerAdapter() = default;
 
         virtual void set_timer(timeout_len_t millionseconds, msg_id_t timeout_msg_id, void *user_data) const = 0;

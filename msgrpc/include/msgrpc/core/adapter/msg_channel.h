@@ -3,10 +3,11 @@
 
 #include <msgrpc/core/typedefs.h>
 #include <cstddef>
+#include <msgrpc/core/adapter/adapter_base.h>
 
 namespace msgrpc {
 
-    struct MsgChannel {
+    struct MsgChannel : AdapterBase {
         virtual ~MsgChannel() = default;
 
         virtual bool send_msg(const service_id_t& remote_service_id, msg_id_t msg_id, const char* buf, size_t len) const = 0;

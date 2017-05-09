@@ -20,7 +20,6 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
     msgrpc::Config::instance().init_with(&demo::UdpMsgChannel::instance()
             , &demo::SimpleTimerAdapter::instance()
             , &demo::ZkServiceRegister::instance()
-            , &demo::SimpleLogger::instance()
             , k_msgrpc_request_msg_id
             , k_msgrpc_response_msg_id
             , k_msgrpc_set_timer_msg

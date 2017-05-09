@@ -8,7 +8,6 @@ namespace demo {
 
     struct SimpleLogger : msgrpc::Logger, msgrpc::Singleton<SimpleLogger> {
         virtual void set_log_level(severity_level level)  override { level_ = level; }
-        virtual severity_level get_log_level()            override { return level_; }
         virtual bool is_logging_for(severity_level level) override { return level_ <= level; }
 
         virtual void log_trace   (const char *log) override { std::cout << "[TRACE]  " << log << std::endl; }
@@ -21,6 +20,12 @@ namespace demo {
     private:
         severity_level level_ = { msgrpc::Logger::info };
     };
+}
+
+namespace msgrpc {
+    Logger& get_logger() {
+        return demo::SimpleLogger::instance();
+    }
 }
 
 #endif //PROJECT_SIMPLE_LOGGER_H

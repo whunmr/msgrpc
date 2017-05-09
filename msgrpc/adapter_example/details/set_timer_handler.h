@@ -26,7 +26,6 @@ namespace demo {
                 msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
                                                     , &SimpleTimerAdapter::instance()
                                                     , &ZkServiceRegister::instance()
-                                                    , &SimpleLogger::instance()
                                                     , k_msgrpc_request_msg_id
                                                     , k_msgrpc_response_msg_id
                                                     , k_msgrpc_set_timer_msg

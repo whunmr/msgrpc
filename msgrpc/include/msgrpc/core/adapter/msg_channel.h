@@ -7,7 +7,8 @@
 namespace msgrpc {
 
     struct MsgChannel {
-        ~MsgChannel() = default;
+        virtual ~MsgChannel() = default;
+
         virtual bool send_msg(const service_id_t& remote_service_id, msg_id_t msg_id, const char* buf, size_t len) const = 0;
         virtual bool send_msg_to_self(msg_id_t msg_id, const char* buf, size_t len) const = 0;
         virtual msgrpc::service_id_t sender() const = 0;

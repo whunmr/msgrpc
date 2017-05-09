@@ -9,6 +9,7 @@
 #include <msgrpc/util/singleton.h>
 #include <adapter_example/details/UdpChannel.h>
 #include <adapter_example/core/adapter/udp_msg_channel.h>
+#include <adapter_example/core/adapter/simple_logger.h>
 
 namespace demo {
     struct SetTimerHandler : msgrpc::ThreadLocalSingleton<SetTimerHandler> {
@@ -25,6 +26,7 @@ namespace demo {
                 msgrpc::Config::instance().init_with( &UdpMsgChannel::instance()
                                                     , &SimpleTimerAdapter::instance()
                                                     , &ZkServiceRegister::instance()
+                                                    , &SimpleLogger::instance()
                                                     , k_msgrpc_request_msg_id
                                                     , k_msgrpc_response_msg_id
                                                     , k_msgrpc_set_timer_msg

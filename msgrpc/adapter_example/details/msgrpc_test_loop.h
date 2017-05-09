@@ -7,6 +7,7 @@
 #include <adapter_example/core/adapter/simple_timer_adapter.h>
 #include <adapter_example/core/adapter/udp_msg_channel.h>
 #include <adapter_example/core/adapter/zk_service_register.h>
+#include <adapter_example/core/adapter/simple_logger.h>
 #include <adapter_example/details/UdpChannel.h>
 #include <msgrpc/core/components/req_msg_handler.h>
 #include <msgrpc/core/components/rpc_timeout_handler.h>
@@ -19,6 +20,7 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
     msgrpc::Config::instance().init_with(&demo::UdpMsgChannel::instance()
             , &demo::SimpleTimerAdapter::instance()
             , &demo::ZkServiceRegister::instance()
+            , &demo::SimpleLogger::instance()
             , k_msgrpc_request_msg_id
             , k_msgrpc_response_msg_id
             , k_msgrpc_set_timer_msg

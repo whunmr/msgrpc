@@ -9,6 +9,8 @@ int main() {
     auto init_y = [] {
         msgrpc::Config::instance().service_register_->init();
         service_z::msgrpc_register_service("127.0.0.1:10000");
+
+
     };
 
     const msgrpc::service_id_t y_service_id(boost::asio::ip::address::from_string("127.0.0.1"), 10000);

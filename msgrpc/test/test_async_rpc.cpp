@@ -94,8 +94,8 @@ TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case000) {
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case000>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case000>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,8 +109,8 @@ TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case100) {
         EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case100>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case100>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -132,8 +132,8 @@ TEST_F(MsgRpcTest, should_able_to_support___SI_with_single_rpc____which_bind_wit
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&] {rpc_main<SI_case200>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&] {rpc_main<SI_case200>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,8 +168,8 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_concurrent_rpc__and__merge_mu
         EXPECT_EQ(expect_value, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case300>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case300>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -215,9 +215,9 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_sequential_rpc______case4001)
         EXPECT_EQ(k_req_init_value + k__sync_y__delta * 3, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4001>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                   , not_drop_msg );
-    test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case4001>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                   , not_drop_msg );
+    msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -240,9 +240,9 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
         EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4011_failed>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                          , not_drop_msg);
-    test_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case4011_failed>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                          , not_drop_msg);
+    msg_loop_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -264,9 +264,9 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
         EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case4021_failed>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                          , not_drop_msg);
-    test_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case4021_failed>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                          , not_drop_msg);
+    msg_loop_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -294,8 +294,8 @@ TEST_F(MsgRpcTest, should_able_to_support___parallel_rpcs_merge_after___1_transf
         EXPECT_EQ(expect_value, ___r.value().rspa);
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case500>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case500>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -314,8 +314,8 @@ TEST_F(MsgRpcTest, should_able_to_support_failure_propagation__during__bind_cell
         EXPECT_FALSE(___r.has_value());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case600>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case600>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -337,9 +337,9 @@ TEST_F(MsgRpcTest, should_able_to_support__rpc_with_timer_and_retry___case700) {
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case700_timeout>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                          , drop_all_msg);
-    test_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case700_timeout>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                          , drop_all_msg);
+    msg_loop_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -377,9 +377,9 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc__after__rpc_fail
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case701_timeout_action>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                                 , drop_msg_with_seq_id({1, 2, 3}) );
-    test_thread thread_timer(timer_service_id, []{}                                         , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case701_timeout_action>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                                 , drop_msg_with_seq_id({1, 2, 3}) );
+    msg_loop_thread thread_timer(timer_service_id, []{}                                         , not_drop_msg);
 }
 
 TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc___do_not_rollback__if_rpc_succeeded_______case7011) {
@@ -387,9 +387,9 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc___do_not_rollbac
         EXPECT_EQ(true, ___r.has_value());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case701_timeout_action>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                                 , not_drop_msg);
-    test_thread thread_timer(timer_service_id, []{}                                         , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case701_timeout_action>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                                 , not_drop_msg);
+    msg_loop_thread thread_timer(timer_service_id, []{}                                         , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -406,9 +406,9 @@ TEST_F(MsgRpcTest, should_able_to_support__cancel_timer_after__retry_rpc_succeed
         EXPECT_EQ(true, ___r.has_value());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case702_cancel_timer_after_success>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                                             , not_drop_msg);
-    test_thread thread_timer(timer_service_id, []{}                                                     , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case702_cancel_timer_after_success>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                                             , not_drop_msg);
+    msg_loop_thread thread_timer(timer_service_id, []{}                                                     , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -425,9 +425,9 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_
         EXPECT_EQ(RpcResult::succeeded, ___r.failed_reason());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case8>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                , drop_msg_with_seq_id({1, 2}) );
-    test_thread thread_timer(timer_service_id, []{}                        , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case8>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                , drop_msg_with_seq_id({1, 2}) );
+    msg_loop_thread thread_timer(timer_service_id, []{}                        , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -463,9 +463,9 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation__through_sequenti
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case900>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                  , drop_all_msg);
-    test_thread thread_timer(timer_service_id, []{}                          , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case900>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                  , drop_all_msg);
+    msg_loop_thread thread_timer(timer_service_id, []{}                          , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -498,9 +498,9 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1000) {
         EXPECT_EQ(false, ___r.has_value());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1000>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                   , drop_msg_with_seq_id({1, 2, 3, 4}));
-    test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case1000>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                   , drop_msg_with_seq_id({1, 2, 3, 4}));
+    msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 
 TEST_F(MsgRpcTest, should_able_to_support__happy_path______case1001) {
@@ -508,9 +508,9 @@ TEST_F(MsgRpcTest, should_able_to_support__happy_path______case1001) {
         EXPECT_EQ(true, ___r.has_value());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1000>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
-    test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case1000>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
+    msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -538,9 +538,9 @@ TEST_F(MsgRpcTest, DISABLED_should_able_to_support__timeout_propagation______cas
         EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1100>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
-    test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case1100>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
+    msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -564,8 +564,8 @@ TEST_F(MsgRpcTest, should_able_to_support__map_operation_on_cell_____case1200) {
         EXPECT_EQ(true, ___r.has_value());
     };
 
-    test_thread thread_x(x_service_id, [&]{rpc_main<SI_case1200>(then_check);}, not_drop_msg);
-    test_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
-    test_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case1200>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
+    msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 

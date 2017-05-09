@@ -29,11 +29,11 @@ struct MsgRpcTest : public ::testing::Test {
     }
 };
 
-struct test_thread : std::thread {
+struct msg_loop_thread : std::thread {
     template<typename... Args>
-    test_thread(Args... args) : std::thread(msgrpc_test_loop, args...) { /**/ }
+    msg_loop_thread(Args... args) : std::thread(msgrpc_test_loop, args...) { /**/ }
 
-    ~test_thread() {
+    ~msg_loop_thread() {
         join();
         //valgrind bug: https://bugs.kde.org/show_bug.cgi?id=349128
     }

@@ -15,7 +15,7 @@ namespace {
             get_testcases()[index]->run();
         } else {
             std::cout << "------------------------" << std::endl << "[ALL testcases finished]" << std::endl;
-            //exit(0);
+            exit(0);
         }
     }
 }

@@ -86,13 +86,10 @@ int main() {
     auto x_init = [port]{
         msgrpc::Config::instance().service_register_->init();
 
-        //string endpoint = string("127.0.0.1:") + std::to_string(port);
-        //service_x::msgrpc_register_service(endpoint.c_str());
-
         run_next_testcase();
     };
 
-    test_thread msg_loop_thread(x_service_id, x_init, not_drop_msg);
+    msg_loop_thread msg_loop_thread(x_service_id, x_init, not_drop_msg);
 
     return 0;
 }

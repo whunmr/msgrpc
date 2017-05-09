@@ -142,7 +142,6 @@ namespace demo {
                 cout << "register service on zk failed: zk_reuslt: " << ret << " for path:" << path << endl;
             }
 
-            cout << "result_path: " << path << endl;
             return result;
         }
 
@@ -150,8 +149,6 @@ namespace demo {
             if (type != ZOO_CHILD_EVENT) {
                 return;
             }
-
-            cout << "service_child_watcher_fn get child watcher function called, state: " << state << ", path: " << path << endl;
 
             ZkServiceRegister* srv_register = (ZkServiceRegister*)watcher_ctxt;
 
@@ -172,7 +169,6 @@ namespace demo {
                 return;
             }
 
-            cout << "instance_child_watcher_fn get child watcher function called, state: " << state << ", path: " << path << endl;
             assert(strlen(path) > k_services_root.length() + 1 /* / */  && "should only handle path starts with /services/");
 
             auto* srv_register = (ZkServiceRegister*)watcher_ctxt;

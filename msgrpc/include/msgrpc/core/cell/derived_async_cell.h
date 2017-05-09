@@ -13,7 +13,7 @@ namespace msgrpc {
         }
 
         void update() override {
-            if (!CellBase<T>::has_value_) {  //TODO:refactor to got_rsp, which can be got_value or got_error
+            if (!CellBase<T>::has_value_or_error()) {
 
                 Cell<T>& cell = f_();
                 if (cell.has_error()) {

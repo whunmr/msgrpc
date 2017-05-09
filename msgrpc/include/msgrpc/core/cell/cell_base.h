@@ -11,6 +11,7 @@ namespace msgrpc {
         virtual void update() = 0;
     };
 
+    ////////////////////////////////////////////////////////////////////////////
     struct CellStatus {
         virtual ~CellStatus() = default;
 
@@ -78,6 +79,8 @@ namespace msgrpc {
         template<typename T> friend struct DefaultCell;
     };
 
+
+    ////////////////////////////////////////////////////////////////////////////
     struct RpcContext {
         ~RpcContext() {
             for (auto* r: release_list_) {
@@ -94,6 +97,8 @@ namespace msgrpc {
         std::list<Updatable*> release_list_;
     };
 
+
+    ////////////////////////////////////////////////////////////////////////////
     struct CellContextBase {
         virtual ~CellContextBase() {
             if (context_ != nullptr) {
@@ -109,6 +114,8 @@ namespace msgrpc {
         RpcContext* context_ = {nullptr};
     };
 
+
+    ////////////////////////////////////////////////////////////////////////////
     template<typename T>
     struct CellBase : Updatable, CellStatus, CellContextBase {
         typedef T value_type;

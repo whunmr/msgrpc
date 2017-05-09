@@ -1,6 +1,7 @@
 #include <msgrpc/core/msg/msg_sender.h>
 
 #include <msgrpc/core/adapter/config.h>
+#include <msgrpc/core/adapter/msg_channel.h>
 
 namespace msgrpc {
 

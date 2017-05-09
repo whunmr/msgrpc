@@ -1,6 +1,8 @@
 #include <msgrpc/core/iface_stub/iface_stub_base.h>
 
 #include <msgrpc/core/adapter/config.h>
+#include <msgrpc/core/adapter/service_register.h>
+#include <msgrpc/core/adapter/msg_channel.h>
 
 namespace msgrpc {
 

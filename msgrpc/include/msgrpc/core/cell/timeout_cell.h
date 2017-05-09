@@ -3,6 +3,7 @@
 
 #include <msgrpc/core/cell/cell.h>
 #include <msgrpc/core/adapter/config.h>
+#include <msgrpc/core/adapter/timer_adapter.h>
 
 namespace msgrpc {
 

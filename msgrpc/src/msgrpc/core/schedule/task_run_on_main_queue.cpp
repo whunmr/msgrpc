@@ -1,6 +1,7 @@
 #include <msgrpc/core/schedule/task_run_on_main_queue.h>
 
 #include <msgrpc/core/adapter/config.h>
+#include <msgrpc/core/adapter/msg_channel.h>
 
 namespace msgrpc {
 

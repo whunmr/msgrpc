@@ -2,6 +2,7 @@
 #define PROJECT_LOGGER_H
 
 #include <string>
+#include <msgrpc/core/adapter/config.h>
 
 namespace msgrpc {
 
@@ -28,14 +29,13 @@ namespace msgrpc {
         virtual void log_fatal  (const std::string& log) = 0;
     };
 
-    Logger& get_logger();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 #define ___msgrpc_log(level_, ...) \
 do {\
-    if (msgrpc::get_logger().is_logging_for(msgrpc::Logger::level_)) {\
-        msgrpc::get_logger().log_##level_(__VA_ARGS__);\
+    if (msgrpc::Config::instance().logger_->is_logging_for(msgrpc::Logger::level_)) {\
+        msgrpc::Config::instance().logger_->log_##level_(__VA_ARGS__);\
     }\
 } while(0)
 

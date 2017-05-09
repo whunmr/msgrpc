@@ -3,6 +3,7 @@
 
 #include <msgrpc/thrift/thrift_struct_define.h>
 #include <msgrpc/core/adapter/config.h>
+#include <msgrpc/core/adapter/service_register.h>
 #include <cassert>
 
 ////////////////////////////////////////////////////////////////////////////////

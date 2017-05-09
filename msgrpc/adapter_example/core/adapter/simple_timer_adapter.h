@@ -13,6 +13,7 @@
 #include <adapter_example/details/test_constants.h>
 #include <msgrpc/core/adapter/config.h>
 #include <msgrpc/core/adapter/timer_adapter.h>
+#include <msgrpc/core/adapter/msg_channel.h>
 
 namespace demo {
 

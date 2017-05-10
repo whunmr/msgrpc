@@ -14,21 +14,12 @@ namespace msgrpc {
         virtual void set_log_level(severity_level level) = 0;
         virtual bool is_logging_for(severity_level level) = 0;
 
-        virtual void log_trace  (const char* log) = 0;
-        virtual void log_debug  (const char* log) = 0;
-        virtual void log_info   (const char* log) = 0;
-        virtual void log_warning(const char* log) = 0;
-        virtual void log_error  (const char* log) = 0;
-        virtual void log_fatal  (const char* log) = 0;
-
-        virtual void log_trace  (const std::string& log) = 0;
-        virtual void log_debug  (const std::string& log) = 0;
-        virtual void log_info   (const std::string& log) = 0;
-        virtual void log_warning(const std::string& log) = 0;
-        virtual void log_error  (const std::string& log) = 0;
-        virtual void log_fatal  (const std::string& log) = 0;
-
-
+        virtual void log_trace  (const char* format, ...) = 0;
+        virtual void log_debug  (const char* format, ...) = 0;
+        virtual void log_info   (const char* format, ...) = 0;
+        virtual void log_warning(const char* format, ...) = 0;
+        virtual void log_error  (const char* format, ...) = 0;
+        virtual void log_fatal  (const char* format, ...) = 0;
     };
 
 }

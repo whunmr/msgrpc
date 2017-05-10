@@ -5,7 +5,7 @@ namespace msgrpc {
 
     void MainQueueTaskHandler::handle_task(msgrpc::msg_id_t msg_id, const char *msg, size_t len, const service_id_t& sender_id) {
         if (len < sizeof(TaskRunOnMainQueue::TaskPtr)) {
-            ___log_error(std::string("insufficient payload length of msg_id: ") + std::to_string(msg_id));
+            ___log_error("insufficient payload length of msg_id: %d", msg_id);
             return;
         }
 

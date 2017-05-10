@@ -7,7 +7,7 @@ namespace msgrpc {
     void RspMsgHandler::on_rsp_handler_timeout(rpc_sequence_id_t sequence_id) {
         auto iter = id_func_map_.find(sequence_id);
         if (iter == id_func_map_.end()) {
-            ___log_warning(std::string("not existing handler to remove caused by timeout. seq id: ") + std::to_string(sequence_id));
+            ___log_warning("not existing handler to remove caused by timeout. seq id: %d", sequence_id);
             return;
         }
 
@@ -23,7 +23,7 @@ namespace msgrpc {
     void RspMsgHandler::remove_rsp_handler(rpc_sequence_id_t sequence_id) {
         auto iter = id_func_map_.find(sequence_id);
         if (iter == id_func_map_.end()) {
-            ___log_warning(std::string("WARNING: not existing handler to remove: id: ") + std::to_string(sequence_id));
+            ___log_warning("WARNING: not existing handler to remove: id: %d", sequence_id);
             return;
         }
 
@@ -39,13 +39,12 @@ namespace msgrpc {
 
     void RspMsgHandler::handle_rpc_rsp(msgrpc::msg_id_t msg_id, const char *msg, size_t len) {
         if (msg == nullptr) {
-            ___log_warning(std::string("invalid rpc msg_handlers with msg == nullptr, msgid:") + std::to_string(msg_id));
+            ___log_warning("invalid rpc msg_handlers with msg == nullptr, msgid: %d", msg_id);
             return;
         }
 
         if (len < sizeof(RspMsgHeader)) {
-            //TODO: let ___log_warning support string format like: log("%s %s", a, b)
-            ___log_warning(std::string("invalid msg payload len for msgid:") + std::to_string(msg_id) + " ,len:" + std::to_string(len));
+            ___log_warning("invalid msg payload len for msgid: %d, msg_len: %d", msg_id, len);
             return;
         }
 
@@ -53,7 +52,7 @@ namespace msgrpc {
 
         auto iter = id_func_map_.find(rsp_header->sequence_id_);
         if (iter == id_func_map_.end()) {
-            ___log_warning(std::string("can not find rpc rsp handler for seq_id:") + std::to_string(rsp_header->sequence_id_));
+            ___log_warning("can not find rpc rsp handler for seq_id: %d", rsp_header->sequence_id_);
             return;
         }
 

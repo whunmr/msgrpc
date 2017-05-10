@@ -73,7 +73,7 @@ namespace demo {
                 } else if (ZOO_CONNECTED_STATE == state) {
                     ___log_warning("zookeeper connection status changed to: ZOO_CONNECTED_STATE");
                 } else {
-                    ___log_warning(string("zookeeper connection status changed to:") + std::to_string(state));
+                    ___log_warning("zookeeper connection status changed to: %d", state);
                 }
             }
         }
@@ -93,7 +93,7 @@ namespace demo {
                 zk->start();
             } catch (const char* msg) {
                 zk->close();
-                ___log_error(string("catched exception during zk_start:") + msg);
+                ___log_error("catched exception during zk_start: %s", msg);
                 return false;
             }
 

@@ -23,8 +23,6 @@ namespace service_y {
 
     ////////////////////////////////////////////////////////////////////////////////
     void map_zrsp_to_yrsp(Cell<YRsp>& result, Cell<service_z::ZRsp>& zrsp)  {
-        std::cout << "[DEBUG] got value from service_z, zrsp.has_value()? " << zrsp.has_value() << std::endl;
-
         if (zrsp.has_value()) {
             YRsp yrsp;
             yrsp.__set_yrspa(zrsp.value().zrspa * 2);
@@ -37,8 +35,6 @@ namespace service_y {
     DEFINE_SI(SI_call_z_async, YReq, YRsp) {
         auto call_z_f1m1 = [&ctxt, req]() {
             service_z::ZReq zreq;
-
-            std::cout << "y sending request to z: service_z::IZ(ctxt).___z_f1m1(zreq)." << std::endl;
             return service_z::IZ(ctxt).___z_f1m1(zreq);
         };
 

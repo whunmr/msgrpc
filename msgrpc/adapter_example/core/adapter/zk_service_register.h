@@ -238,7 +238,6 @@ namespace demo {
             return create_ephemeral_node_for_service_instance(service_name, version, end_point);
         }
 
-
         virtual boost::optional<msgrpc::service_id_t> service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
             //TODO: select which service to route
             const auto& iter = services_cache_.find(service_name);

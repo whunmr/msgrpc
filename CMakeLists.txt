@@ -23,3 +23,7 @@ add_subdirectory(msgrpc)
 add_subdirectory(demo_services/service_x)
 add_subdirectory(demo_services/service_y)
 add_subdirectory(demo_services/service_z)
+
+#TODO: notify user about service's online and offline
+#TODO: support default roundrobin loadbalance strategy
+#TODO: support customized loadbalance strategy

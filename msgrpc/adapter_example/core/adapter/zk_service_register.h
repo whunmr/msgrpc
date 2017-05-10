@@ -180,6 +180,7 @@ namespace demo {
             msgrpc::Task::dispatch_async_to_main_queue(
                 [srv_register, service_name, instances] {
                     srv_register->services_cache_[service_name] = instances;
+                    //call user registered listeners
                 }
             );
         }
@@ -255,8 +256,19 @@ namespace demo {
                 return boost::none;
             }
 
-            return instances[0].service_id_;
+            size_t size = instances.size();
+            if (size == 1) {
+                return instances[0].service_id_;
+            }
+
+            //using round-robin as default load-balance strategy
+            size_t next_rr_index = round_robin_map_[service_name];
+            round_robin_map_[service_name] = next_rr_index + 1;
+
+            return instances[ next_rr_index % size ].service_id_;
         }
+
+        std::map<string, size_t> round_robin_map_;
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //1. the zk client can only access this services_cache_ during init().

@@ -35,8 +35,8 @@ namespace msgrpc {
         header->sequence_id_ = seq_id;
         memcpy(header + 1, (const char *) pbuf, len);
 
-        boost::optional<msgrpc::service_id_t> service_id
-                = msgrpc::Config::instance().service_register_->service_name_to_id(to_service_name, mem, msg_len_with_header);
+        optional_service_id_t service_id = msgrpc::Config::instance().service_register_
+                                           ->service_name_to_id(to_service_name, mem, msg_len_with_header);
 
         if (!service_id) {
             std::cout << "[ERROR]can not find instance of service: " << to_service_name << std::endl;

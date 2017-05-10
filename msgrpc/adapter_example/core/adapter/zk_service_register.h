@@ -6,6 +6,7 @@
 #include <msgrpc/core/schedule/task_run_on_main_queue.h>
 #include <msgrpc/core/adapter/logger.h>
 #include <cstdlib>
+#include <map>
 
 #include <msgrpc/util/singleton.h>
 #include <conservator/ConservatorFrameworkFactory.h>
@@ -16,13 +17,13 @@ namespace demo {
 
     const string k_services_root = "/services";
 
-    typedef ConservatorFramework ZKHandle;
-
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     using msgrpc::InstanceInfo;
     using msgrpc::instance_vector_t;
     using msgrpc::instance_set_t;
-    using msgrpc::services_cache_t;
+
+    typedef ConservatorFramework ZKHandle;
+    typedef std::map<std::string, instance_vector_t> services_cache_t;
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     namespace {
         boost::optional<msgrpc::service_id_t> str_to_service_id(const string& endpoint) {
@@ -116,18 +117,10 @@ namespace demo {
         }
 
         //TODO: peroidically test existence of ephemeral node of service, and create the ephemeral node if need.
-        //      after macbook sleep, and after sleep the ephemeral nodes were disappeared.
         //      should re-register into zk, if zk's data was accidentally deleted.
 
         //TODO: should periodically fetch services/instances info from zk,
         //      incase miss notifications between handling watch notification and set watch again.
-
-        //TODO: when connected to zk, and restart zk server, then we should able to reconnect to zk,
-        //      instead of continuous print out "ZOO_ERROR@handle_socket_error_msg@1746: \
-        //                                       Socket [::1:2181] zk retcode=-4, errno=64(Host is down): \
-        //                                       failed while receiving a server response"
-        //      test shutdown zk, wait 30 minutes, and restart zk, see if we'll connected again.
-
 
         bool create_ephemeral_node_for_service_instance(const char* service_name, const char* version, const char *end_point) {
             int ret;
@@ -251,8 +244,7 @@ namespace demo {
             return create_ephemeral_node_for_service_instance(service_name, version, end_point);
         }
 
-        virtual boost::optional<msgrpc::service_id_t> service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-            //TODO: select which service to route
+        virtual msgrpc::optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
             const auto& iter = services_cache_.find(service_name);
             if (iter == services_cache_.end()) {
                 return boost::none;
@@ -267,7 +259,15 @@ namespace demo {
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //1. the zk client can only access this services_cache_ during init().
+        //2. otherwise, all access to services_cache_ should schedule as task and dispatch into main_queue. like:
+        //    msgrpc::Task::dispatch_async_to_main_queue(
+        //        [srv_register, cache] {
+        //            srv_register->services_cache_ = cache;
+        //        }
+        //    );
         services_cache_t services_cache_;
+
         unique_ptr<ZKHandle> zk_;
     };
 

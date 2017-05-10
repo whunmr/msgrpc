@@ -27,3 +27,9 @@ add_subdirectory(demo_services/service_z)
 #TODO: notify user about service's online and offline
 #TODO: support default roundrobin loadbalance strategy
 #TODO: support customized loadbalance strategy
+#TODO: testing support
+#TODO: auto generate testing from SI ?
+#TODO: contract testing
+#TODO: test log call flow draw
+#TODO: msgrpc message capture and save
+#TODO: wireshare plugin support to open captured msgrpc messages

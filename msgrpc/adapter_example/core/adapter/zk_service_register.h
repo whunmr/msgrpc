@@ -6,10 +6,6 @@
 #include <msgrpc/core/schedule/task_run_on_main_queue.h>
 #include <msgrpc/core/adapter/logger.h>
 #include <cstdlib>
-#include <iostream>
-#include <map>
-#include <set>
-#include <vector>
 
 #include <msgrpc/util/singleton.h>
 #include <conservator/ConservatorFrameworkFactory.h>
@@ -20,22 +16,13 @@ namespace demo {
 
     const string k_services_root = "/services";
 
-    /////////////////////////////////////////////////////////////////////
-    struct InstanceInfo {
-        msgrpc::service_id_t service_id_;
-    };
-
-    struct instance_info_compare {
-        bool operator() (const InstanceInfo &a, const InstanceInfo &b) const{
-            return a.service_id_ < b.service_id_;
-        }
-    };
-
-    typedef std::vector<InstanceInfo> instance_vector_t;
-    typedef std::set<InstanceInfo, instance_info_compare> instance_set_t;
     typedef ConservatorFramework ZKHandle;
-    typedef std::map<string, instance_vector_t> services_cache_t;
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    using msgrpc::InstanceInfo;
+    using msgrpc::instance_vector_t;
+    using msgrpc::instance_set_t;
+    using msgrpc::services_cache_t;
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     namespace {
         boost::optional<msgrpc::service_id_t> str_to_service_id(const string& endpoint) {
@@ -157,7 +144,7 @@ namespace demo {
 
             bool result = (ZOK == ret || ZNODEEXISTS == ret);
             if (!result) {
-                cout << "register service on zk failed: zk_reuslt: " << ret << " for path:" << path << endl;
+                ___log_error("register service on zk failed, path: %s, zk_reuslt: %d", path.c_str(), ret);
             }
 
             return result;
@@ -228,14 +215,14 @@ namespace demo {
         bool try_fetch_services_from_zk(services_cache_t& cache) {
             bool connected = try_connect_zk();
             if (!connected) {
-                cout << "[ERROR] try_fetch_services_from_zk failed, can not connect to zk." << endl;
+                ___log_error("try_fetch_services_from_zk failed, can not connect to zk.");
                 return false;
             }
 
             vector<string> services = zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
 
             for (auto& service : services) {
-                std::cout << "[DEBUG] service list: " << service << std::endl;
+                ___log_debug("service list: %s", service.c_str());
 
                 instance_vector_t instances;
                 bool fetch_ok = fetch_service_instances_from_zk(service, instances);

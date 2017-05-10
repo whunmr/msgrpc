@@ -27,6 +27,8 @@ namespace msgrpc {
         virtual void log_warning(const std::string& log) = 0;
         virtual void log_error  (const std::string& log) = 0;
         virtual void log_fatal  (const std::string& log) = 0;
+
+
     };
 
 }

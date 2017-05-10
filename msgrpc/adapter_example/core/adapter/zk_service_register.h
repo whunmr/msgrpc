@@ -4,6 +4,7 @@
 #include <zookeeper/zookeeper.h>
 #include <msgrpc/core/adapter/service_register.h>
 #include <msgrpc/core/schedule/task_run_on_main_queue.h>
+#include <msgrpc/core/adapter/logger.h>
 #include <cstdlib>
 #include <iostream>
 #include <map>
@@ -27,7 +28,7 @@ namespace demo {
     typedef ConservatorFramework ZKHandle;
     typedef std::map<string, instance_vector_t> services_cache_t;
 
-    /////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     namespace {
         boost::optional<msgrpc::service_id_t> str_to_service_id(const string& endpoint) {
             size_t sep = endpoint.find(":");
@@ -57,6 +58,8 @@ namespace demo {
         }
     }
 
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct ZkServiceRegister : msgrpc::ServiceRegister, msgrpc::Singleton<ZkServiceRegister> {
         bool is_zk_connected(const unique_ptr<ZKHandle> &zk) const {
             return zk && (zk->getState() == ZOO_CONNECTED_STATE);
@@ -64,10 +67,14 @@ namespace demo {
 
         static void session_watcher_fn(zhandle_t *zh, int type, int state, const char *path, void *watcher_ctxt) {
             if (type == ZOO_SESSION_EVENT) {
-                cout << "got ZOO_SESSION_EVENT" << endl;
-                //TODO: handle loss connection,  set state to loss_connection
-                //TODO: handle reconnected to zk event, and reset watcher on services/instances znodes.
-                return;
+
+                if (ZOO_CONNECTING_STATE == state) {
+                    ___log_warning("zookeeper connection status changed to: ZOO_CONNECTING_STATE");
+                } else if (ZOO_CONNECTED_STATE == state) {
+                    ___log_warning("zookeeper connection status changed to: ZOO_CONNECTED_STATE");
+                } else {
+                    ___log_warning(string("zookeeper connection status changed to:") + std::to_string(state));
+                }
             }
         }
 
@@ -86,7 +93,7 @@ namespace demo {
                 zk->start();
             } catch (const char* msg) {
                 zk->close();
-                cout << "[ERROR] catched exception: " << msg << endl;
+                ___log_error(string("catched exception during zk_start:") + msg);
                 return false;
             }
 
@@ -105,7 +112,7 @@ namespace demo {
 
             do {
                 if ( ! (connected = try_connect_zk())) {
-                    std::cout << "[ERROR] connection to zk failed" << std::endl;
+                    ___log_warning("connect to zookeeper failed, will continue retry.");
                 }
             } while( ! connected);
         }
@@ -145,6 +152,7 @@ namespace demo {
             return result;
         }
 
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         static void service_child_watcher_fn(zhandle_t *zh, int type, int state, const char *path, void *watcher_ctxt) {
             if (type != ZOO_CHILD_EVENT) {
                 return;
@@ -164,6 +172,7 @@ namespace demo {
             }
         }
 
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         static void instance_child_watcher_fn(zhandle_t *zh, int type, int state, const char *path, void *watcher_ctxt) {
             if (type != ZOO_CHILD_EVENT) {
                 return;
@@ -184,6 +193,7 @@ namespace demo {
             );
         }
 
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         bool fetch_service_instances_from_zk(const string& service, instance_vector_t& instances) {
             bool connected = try_connect_zk();
             if (!connected) {
@@ -201,6 +211,7 @@ namespace demo {
             return true;
         }
 
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         bool try_fetch_services_from_zk(services_cache_t& cache) {
             bool connected = try_connect_zk();
             if (!connected) {
@@ -223,6 +234,8 @@ namespace demo {
             return true;
         }
 
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual bool init() override {
             wait_util_zk_is_connected();
             return try_fetch_services_from_zk(services_cache_);
@@ -253,7 +266,7 @@ namespace demo {
             return instances[0].service_id_;
         }
 
-        ////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         services_cache_t services_cache_;
         unique_ptr<ZKHandle> zk_;
     };

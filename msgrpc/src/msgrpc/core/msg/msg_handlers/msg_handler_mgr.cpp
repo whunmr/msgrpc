@@ -24,6 +24,7 @@ namespace msgrpc {
 
         } else if (msg_id == Config::instance().schedule_task_on_main_thread_msg_id_) {
             MainQueueTaskHandler::instance().handle_task(msg_id, msg, len, sender_id);
+            return true;
         }
 
         return false;

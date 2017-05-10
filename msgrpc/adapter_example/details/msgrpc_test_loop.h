@@ -40,14 +40,17 @@ void msgrpc_test_loop(const msgrpc::service_id_t& service_id, std::function<void
                    return init_func();
                }
 
+               //drop msgs to simulate message loss
                if (msg_id == msgrpc::Config::instance().request_msg_id_ && should_drop(msg, len)) {
                    return;
                }
 
+               //ignore messages to implement cancelled timer
                if (msg_id == msgrpc::Config::instance().timeout_msg_id_ && demo::TimerMgr::instance().should_ignore(msg, len)) {
                    return;
                }
 
+               //timer implement
                if (msg_id == msgrpc::Config::instance().set_timer_msg_id_) {
                    return demo::SetTimerHandler::instance().set_timer(msg, len);
                }

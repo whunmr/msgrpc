@@ -2,6 +2,7 @@
 #define MSGRPC_REQ_MSG_HANDLER_H
 
 #include <msgrpc/core/typedefs.h>
+#include "msg_handler_mgr.h"
 
 namespace msgrpc {
     struct ReqMsgHandler {

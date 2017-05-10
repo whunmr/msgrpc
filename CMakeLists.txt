@@ -27,6 +27,7 @@ add_subdirectory(demo_services/service_z)
 #TODO: notify user about service's online and offline
 #TODO: support default roundrobin loadbalance strategy
 #TODO: support customized loadbalance strategy
+#TODO: add batch service list support, like erlang_rpc's mcall
 #TODO: testing support
 #TODO: auto generate testing from SI ?
 #TODO: contract testing

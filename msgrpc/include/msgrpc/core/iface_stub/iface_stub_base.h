@@ -22,7 +22,10 @@ namespace msgrpc {
                                  , RspSink* rpc_rsp_cell_sink) const;
 
         template<typename REQ, typename RSP>
-        Cell<RSP>* encode_request_and_send(const char* to_service_name, msgrpc::iface_index_t iface_index, msgrpc::method_index_t method_index, const REQ &req) const {
+        Cell<RSP>* encode_request_and_send( const char* to_service_name
+                                          , msgrpc::iface_index_t iface_index
+                                          , msgrpc::method_index_t method_index
+                                          , const REQ &req) const {
             uint8_t* pbuf;
             uint32_t len;
 

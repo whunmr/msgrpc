@@ -33,7 +33,7 @@ namespace demo {
         }
 
     private:
-        severity_level level_ = { msgrpc::Logger::info };
+        severity_level level_ = { msgrpc::Logger::debug };
     };
 }
 

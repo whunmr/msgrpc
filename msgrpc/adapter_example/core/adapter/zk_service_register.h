@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <map>
+#include <set>
 #include <vector>
 
 #include <msgrpc/util/singleton.h>
@@ -24,7 +25,14 @@ namespace demo {
         msgrpc::service_id_t service_id_;
     };
 
+    struct instance_info_compare {
+        bool operator() (const InstanceInfo &a, const InstanceInfo &b) const{
+            return a.service_id_ < b.service_id_;
+        }
+    };
+
     typedef std::vector<InstanceInfo> instance_vector_t;
+    typedef std::set<InstanceInfo, instance_info_compare> instance_set_t;
     typedef ConservatorFramework ZKHandle;
     typedef std::map<string, instance_vector_t> services_cache_t;
 
@@ -44,7 +52,8 @@ namespace demo {
 
 
         void strings_to_instances(const vector<string>& instance_strings, instance_vector_t& instances) {
-            //TODO: remove duplicated
+            instance_set_t instance_set;
+
             for (auto& si : instance_strings) {
                 boost::optional<msgrpc::service_id_t> service_id = str_to_service_id(si);
 
@@ -52,9 +61,11 @@ namespace demo {
                     InstanceInfo ii;
                     ii.service_id_ = service_id.value();
 
-                    instances.push_back(ii);
+                    instance_set.insert(ii);
                 }
             }
+
+            instances.assign(instance_set.begin(), instance_set.end());
         }
     }
 
@@ -197,17 +208,19 @@ namespace demo {
         bool fetch_service_instances_from_zk(const string& service, instance_vector_t& instances) {
             bool connected = try_connect_zk();
             if (!connected) {
-                cout << "[ERROR] try_fetch_services_from_zk failed, can not connect to zk." << endl;
+                ___log_error("try_fetch_services_from_zk failed, can not connect to zk.");
                 return false;
             }
 
             vector<string> instance_strings = zk_->getChildren()->withWatcher(instance_child_watcher_fn, this)->forPath(k_services_root + "/" + service);
 
             for (auto& service_instance : instance_strings) {
-                std::cout << "[DEBUG]    instance list: " << service_instance << std::endl;
+                ___log_debug("    %s instance : %s", service.c_str(), service_instance.c_str());
             }
 
             strings_to_instances(instance_strings, instances);
+
+            ___log_debug("%s instance count: %d", service.c_str(), instances.size());
             return true;
         }
 

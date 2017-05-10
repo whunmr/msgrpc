@@ -26,7 +26,9 @@ DEF_TESTCASE(testcase_0000) {
 
     derive_final_action([](msgrpc::Cell<YRsp>& r) {
         EXPECT_EQ(true, r.has_value());
-        if (r.has_value())  EXPECT_EQ(200, r.value().yrspa);
+        if (r.has_value())
+            EXPECT_EQ(200, r.value().yrspa);
+
         run_next_testcase();
     }, rsp_cell);
 }
@@ -49,7 +51,8 @@ DEF_TESTCASE(testcase_0001) {
 
     derive_final_action([](msgrpc::Cell<ZRsp>& r) {
         EXPECT_EQ(true, r.has_value());
-        if (r.has_value())  EXPECT_EQ(7   , r.value().zrspa);
+        if (r.has_value())
+            EXPECT_EQ(7, r.value().zrspa);
         run_next_testcase();
     }, rsp_cell);
 }
@@ -71,7 +74,8 @@ DEF_TESTCASE(testcase_0002) {
 
     derive_final_action([](msgrpc::Cell<YRsp>& r) {
         EXPECT_EQ(true, r.has_value());
-        if (r.has_value())  EXPECT_EQ(14, r.value().yrspa);
+        if (r.has_value())
+            EXPECT_EQ(14, r.value().yrspa);
         run_next_testcase();
     }, rsp_cell);
 }

@@ -22,19 +22,13 @@ namespace msgrpc {
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    typedef std::vector<InstanceInfo> instance_vector_t;
+
     struct ServiceRegisterListener {
         virtual ~ServiceRegisterListener() = default;
 
-        //TODO: add interface method for ServiceRegisterListener, to notify out service instances changes
+        virtual void on_changes(const std::string& service_name, const instance_vector_t& instances) = 0;
     };
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    struct instance_info_compare {
-        bool operator() (const InstanceInfo &a, const InstanceInfo &b) const { return a.service_id_ < b.service_id_; }
-    };
-
-    typedef std::set<InstanceInfo, instance_info_compare> instance_set_t;
-    typedef std::vector<InstanceInfo> instance_vector_t;
 }
 
 #endif //PROJECT_SERVICE_REGISTER_H

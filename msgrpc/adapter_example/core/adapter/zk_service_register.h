@@ -20,10 +20,17 @@ namespace demo {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     using msgrpc::InstanceInfo;
     using msgrpc::instance_vector_t;
-    using msgrpc::instance_set_t;
 
     typedef ConservatorFramework ZKHandle;
     typedef std::map<std::string, instance_vector_t> services_cache_t;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct instance_info_compare {
+        bool operator() (const InstanceInfo &a, const InstanceInfo &b) const { return a.service_id_ < b.service_id_; }
+    };
+
+    typedef std::set<InstanceInfo, instance_info_compare> instance_set_t;
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     namespace {
         boost::optional<msgrpc::service_id_t> str_to_service_id(const string& endpoint) {

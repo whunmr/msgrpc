@@ -148,24 +148,18 @@ namespace demo {
                 return;
             }
 
-            ZkServiceRegister* srv_register = (ZkServiceRegister*)watcher_ctxt;
+            auto* srv_register = (ZkServiceRegister*)watcher_ctxt;
 
-            services_cache_t cache;
+            vector<string> services = srv_register->try_fetch_services();
 
-            //TODO: compare which services are changed and only fetch changed service
-            //vector<string> latest_services = zh->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
+                vector<string> changed_services;
+                set_difference(services.begin(), services.end(), old_services_.begin(), old_services_.end(), back_inserter(changed_services) );
 
-            vector<string> dummy_paramerters;
-            bool fetch_ok = srv_register->try_fetch_services_from_zk(cache, dummy_paramerters);
+                for (auto ___s : changed_services) {
+                    fetch_and_update_instances(srv_register, ___s);
+                }
 
-            if (fetch_ok) {
-                msgrpc::Task::dispatch_async_to_main_queue(
-                    [srv_register, cache] {
-                        srv_register->services_cache_ = cache;
-                        //TODO: call user registered listeners
-                    }
-                );
-            }
+            old_services_ = services;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -174,26 +168,29 @@ namespace demo {
                 return;
             }
 
-            assert(strlen(path) > k_services_root.length() + 1 /* / */  && "should only handle path starts with /services/");
-
-            auto* srv_register = (ZkServiceRegister*)watcher_ctxt;
+            assert(strlen(path) > k_services_root.length() + 1 /* / */  && "expects path starts with /services/");
             string service_name = path + k_services_root.length() + 1 /* / */;
 
-            instance_vector_t instances;
-            bool fetch_ok = srv_register->fetch_service_instances_from_zk(service_name, instances);
+            fetch_and_update_instances((ZkServiceRegister*)watcher_ctxt, service_name);
+        }
 
-            msgrpc::Task::dispatch_async_to_main_queue(
-                [srv_register, service_name, instances] {
-                    srv_register->services_cache_[service_name] = instances;
-                    //TODO: call user registered listeners
-                }
-            );
+        static void fetch_and_update_instances(ZkServiceRegister* srv_register, const string &service_name) {
+            instance_vector_t instances;
+
+            bool fetch_ok = srv_register->fetch_service_instances_from_zk(service_name, instances);
+            if (fetch_ok) {
+                msgrpc::Task::dispatch_async_to_main_queue(
+                    [srv_register, service_name, instances] {
+                        srv_register->services_cache_[service_name] = instances;
+                        //TODO: call user registered listeners
+                    }
+                );
+            }
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        bool try_fetch_services(vector<string>& services) {
-            services = zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
-            return true;
+        vector<string> try_fetch_services() {
+            return zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////

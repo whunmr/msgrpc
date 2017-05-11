@@ -42,7 +42,7 @@ namespace demo {
         void strings_to_instances(const vector<string>& instance_strings, instance_vector_t& instances) {
             instance_set_t instance_set;
 
-            for (auto& si : instance_strings) {
+            for (const auto& si : instance_strings) {
                 boost::optional<msgrpc::service_id_t> service_id = str_to_service_id(si);
 
                 if (service_id) {
@@ -162,7 +162,7 @@ namespace demo {
                     set_difference(old_services_.begin(), old_services_.end(), services.begin(), services.end(), back_inserter(changed_services) );
                 }
 
-                for (auto ___s : changed_services) {
+                for (const auto& ___s : changed_services) {
                     fetch_and_update_instances(srv_register, ___s);
                 }
             }
@@ -211,7 +211,7 @@ namespace demo {
 
             vector<string> instance_strings = zk_->getChildren()->withWatcher(instance_child_watcher_fn, this)->forPath(k_services_root + "/" + service);
 
-            for (auto& service_instance : instance_strings) {
+            for (const auto& service_instance : instance_strings) {
                 ___log_debug("    %s instance : %s", service.c_str(), service_instance.c_str());
             }
 
@@ -233,7 +233,7 @@ namespace demo {
             services = latest_services;
             std::sort(services.begin(), services.end());
 
-            for (auto& service : latest_services) {
+            for (const auto& service : latest_services) {
                 ___log_debug("service list: %s", service.c_str());
 
                 instance_vector_t instances;

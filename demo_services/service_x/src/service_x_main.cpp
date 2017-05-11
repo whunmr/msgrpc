@@ -79,15 +79,6 @@ struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolve
 
 typedef CombinedServiceResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 
-
-static void show_vector(const string& msg, vector<string>& services) {
-    std::cout << "===========: " << msg << std::endl;
-    for (auto ___s : services) {
-        std::cout << ___s << ", ";
-    }
-    std::cout << std::endl;
-}
-
 void run_test_foo() {
     MyServiceResolver& resolver = MyServiceResolver::instance();
     resolver.service_name_to_id(service_y::g_service_name, nullptr, 0);

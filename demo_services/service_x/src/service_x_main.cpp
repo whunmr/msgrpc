@@ -37,47 +37,63 @@ template<const char* SERVICE_NAME>
 const char* SingleServiceResolver<SERVICE_NAME>::service_name_to_resolve_ = SERVICE_NAME;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<typename MULTI_SERVICE_RESOLVER, typename... SINGLE_SERVICE_RESOLVER>
-struct CombinedServiceResolver : ServiceResolver {
+template<typename DEFAULT_RESOLVER, typename... RESOLVER>
+struct CombinedServiceResolver
+        : ServiceResolver
+        , Singleton<CombinedServiceResolver<DEFAULT_RESOLVER, RESOLVER...>> {
+
     typedef const char* service_name_t;
     std::map<service_name_t, ServiceResolver*> resolvers_;
 
     CombinedServiceResolver()
         : resolvers_({
-            {SINGLE_SERVICE_RESOLVER::service_name_to_resolve_, &SINGLE_SERVICE_RESOLVER::instance()}...
+            {RESOLVER::service_name_to_resolve_, &RESOLVER::instance()}...
         })
     { /**/ }
 
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-        //1. call resolvers_
-        //2. call MULTI_SERVICE_RESOLVER if resolve service by (1) failed.
-        return boost::none;
+        //1. resolve service instance by service specific resolver
+        auto iter = resolvers_.find(service_name);
+        if (iter != resolvers_.end()) {
+            return iter->second->service_name_to_id(service_name, req, req_len);
+        }
+
+        //2. using default resolver, if can not find service specific resolver
+        return DEFAULT_RESOLVER::instance().service_name_to_id(service_name, req, req_len);
     }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct Y__ServiceResolver : SingleServiceResolver<service_y::g_service_name>, Singleton<Y__ServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        ___log_debug("service_name_to_id from Y__ServiceResolver");
         return boost::none;
     }
 };
 
 struct Z__ServiceResolver : SingleServiceResolver<service_z::g_service_name>, Singleton<Z__ServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        ___log_debug("service_name_to_id from Z__ServiceResolver");
         return boost::none;
     }
 };
 
 struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        ___log_debug("service_name_to_id from MyMultiServiceResolver");
         return boost::none;
     }
 };
 
+typedef CombinedServiceResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 
-typedef CombinedServiceResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__ServiceResolver>  MyServiceResolver;
-MyServiceResolver resolver;
-
+void run_test_foo() {
+    MyServiceResolver& resolver = MyServiceResolver::instance();
+    resolver.service_name_to_id("service_x", nullptr, 0);
+    resolver.service_name_to_id(service_y::g_service_name, nullptr, 0);
+    resolver.service_name_to_id(service_z::g_service_name, nullptr, 0);
+    resolver.service_name_to_id("service_y", nullptr, 0);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 DEFINE_SI(SI_call_y_f1m1, YReq, YRsp) {
@@ -158,6 +174,8 @@ int main() {
 
     auto x_init = [port]{
         msgrpc::Config::instance().service_register_->init();
+
+        run_test_foo();  exit(0);
 
         run_next_testcase();
     };

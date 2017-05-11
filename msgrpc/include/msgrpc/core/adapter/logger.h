@@ -3,10 +3,11 @@
 
 #include <string>
 #include <msgrpc/core/adapter/config.h>
+#include <msgrpc/core/adapter/adapter_base.h>
 
 namespace msgrpc {
 
-    struct Logger {
+    struct Logger : AdapterBase {
         enum severity_level { trace, debug, info, warning, error, fatal };
 
         virtual ~Logger() = default;

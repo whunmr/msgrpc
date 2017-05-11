@@ -10,7 +10,12 @@
 
 using namespace service_y;
 using namespace service_z;
+
+using namespace msgrpc;
 ////////////////////////////////////////////////////////////////////////////////
+struct ServiceResolverForSI : ServiceResolver {
+    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override;
+};
 
 
 DEFINE_SI(SI_call_y_f1m1, YReq, YRsp) {

@@ -5,12 +5,12 @@
 
 namespace msgrpc {
 
-    template<typename T, typename U>
+    template<typename REQ, typename RSP>
     struct SIBase { /*SI is short for service interaction*/
-        msgrpc::Cell<U> *run(const T &req) {
+        msgrpc::Cell<RSP> *run(const REQ &req) {
             msgrpc::RpcContext *ctxt = new msgrpc::RpcContext();
 
-            msgrpc::Cell<U> *result_cell = do_run(req, *ctxt);
+            msgrpc::Cell<RSP> *result_cell = do_run(req, *ctxt);
 
             assert(result_cell != nullptr && "should not return nullptr cell from SI");
             result_cell->set_binded_context(*ctxt);
@@ -19,7 +19,7 @@ namespace msgrpc {
             return result_cell;
         }
 
-        virtual msgrpc::Cell<U> *do_run(const T &req, msgrpc::RpcContext& ctxt) = 0;
+        virtual msgrpc::Cell<RSP> *do_run(const REQ &req, msgrpc::RpcContext& ctxt) = 0;
     };
 }
 

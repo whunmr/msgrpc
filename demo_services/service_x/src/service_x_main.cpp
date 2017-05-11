@@ -10,14 +10,44 @@
 
 using namespace service_y;
 using namespace service_z;
-
 using namespace msgrpc;
-////////////////////////////////////////////////////////////////////////////////
-struct ServiceResolverForSI : ServiceResolver {
-    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//1. Top Level service resolver is the system default resolver in msgrpc::Config::instance().service_register_
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct CommonServiceResolver : ServiceResolver {
+    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        return boost::none;
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<const char* SERVICE_NAME>
+struct SingleServiceResolver : ServiceResolver {
+    const char* service_name_to_resolve_;
+};
+
+struct Y__ServiceResolver : SingleServiceResolver<service_y::g_service_name> {
+    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        return boost::none;
+    }
+};
+
+struct Z__ServiceResolver : SingleServiceResolver<service_z::g_service_name> {
+    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        return boost::none;
+    }
+};
+
+struct MyServiceResolver : ServiceResolver {
+    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        return boost::none;
+    }
 };
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 DEFINE_SI(SI_call_y_f1m1, YReq, YRsp) {
     auto call_y_f1m1 = [&ctxt, req]() {
         return IY(ctxt).___f1m1(req);
@@ -41,7 +71,7 @@ DEF_TESTCASE(testcase_0000) {
     }, rsp_cell);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 DEFINE_SI(SI_call_z_f1m1, ZReq, ZRsp) {
     auto call_y_f1m1 = [&ctxt, req]() {
         return IZ(ctxt).___z_f1m1(req);
@@ -64,7 +94,7 @@ DEF_TESTCASE(testcase_0001) {
     }, rsp_cell);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 DEFINE_SI(SI_call_y_async_f1m2, YReq, YRsp) {
     auto call_async_f1m2 = [&ctxt, req]() {
         return IY(ctxt).____async_f1m2(req);
@@ -87,7 +117,7 @@ DEF_TESTCASE(testcase_0002) {
     }, rsp_cell);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main() {
     unsigned short port = 6666;
     const msgrpc::service_id_t x_service_id(boost::asio::ip::address::from_string("127.0.0.1"), port);

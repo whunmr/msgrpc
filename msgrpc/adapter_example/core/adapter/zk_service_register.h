@@ -9,6 +9,7 @@
 #include <map>
 
 #include <msgrpc/util/singleton.h>
+#include <msgrpc/util/instances_collector.h>
 #include <conservator/ConservatorFrameworkFactory.h>
 
 //TODO: split into .h and .cpp
@@ -236,7 +237,6 @@ namespace demo {
             }
 
             vector<string> latest_services = zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
-            ___log_debug("got service list of size: %d", latest_services.size());
 
             services = latest_services;
             std::sort(services.begin(), services.end());
@@ -257,6 +257,11 @@ namespace demo {
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual bool init() override {
+            auto& listeners = msgrpc::InstancesCollector<ServiceRegisterListener>::instance().instances();
+            for (auto& listener : listeners) {
+                this->register_listener(*listener);
+            }
+
             wait_util_zk_is_connected();
             return try_fetch_services_from_zk(services_cache_, old_services_);
         }

@@ -7,6 +7,7 @@
 
 #include <test_util/test_runner.h>
 #include <msgrpc/core/cell/timeout_cell.h>
+#include <msgrpc/util/instances_collector.h>
 
 using namespace service_y;
 using namespace service_z;
@@ -58,6 +59,10 @@ struct CombinedServiceResolver
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<const char* SERVICE_NAME>
 struct SRListenerT : ServiceRegisterListener {
+    SRListenerT() {
+        msgrpc::InstancesCollector<ServiceRegisterListener>::instance().track(*this);
+    }
+
     virtual const char* service_to_listener() override {
         return SERVICE_NAME;
     }

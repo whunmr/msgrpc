@@ -13,6 +13,7 @@ namespace msgrpc {
         msgrpc::service_id_t service_id_;
     };
 
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     typedef std::vector<InstanceInfo> instance_vector_t;
 
@@ -23,6 +24,7 @@ namespace msgrpc {
         virtual void on_changes(const instance_vector_t& instances) = 0;
     };
 
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct ServiceRegister : AdapterBase, ServiceResolver {
         virtual ~ServiceRegister() = default;
@@ -32,6 +34,9 @@ namespace msgrpc {
         virtual void   register_listener(ServiceRegisterListener& listener) = 0;
         virtual void unregister_listener(ServiceRegisterListener& listener) = 0;
     };
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }
 

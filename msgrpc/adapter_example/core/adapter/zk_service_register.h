@@ -152,12 +152,14 @@ namespace demo {
             ZkServiceRegister* srv_register = (ZkServiceRegister*)watcher_ctxt;
 
             services_cache_t cache;
+            //TODO: compare which services are changed and only fetch changed service
             bool fetch_ok = srv_register->try_fetch_services_from_zk(cache);
 
             if (fetch_ok) {
                 msgrpc::Task::dispatch_async_to_main_queue(
                     [srv_register, cache] {
                         srv_register->services_cache_ = cache;
+                        //TODO: call user registered listeners
                     }
                 );
             }
@@ -180,7 +182,7 @@ namespace demo {
             msgrpc::Task::dispatch_async_to_main_queue(
                 [srv_register, service_name, instances] {
                     srv_register->services_cache_[service_name] = instances;
-                    //call user registered listeners
+                    //TODO: call user registered listeners
                 }
             );
         }
@@ -189,7 +191,7 @@ namespace demo {
         bool fetch_service_instances_from_zk(const string& service, instance_vector_t& instances) {
             bool connected = try_connect_zk();
             if (!connected) {
-                ___log_error("try_fetch_services_from_zk failed, can not connect to zk.");
+                ___log_error("fetch_service_instances_from_zk failed, can not connect to zk.");
                 return false;
             }
 

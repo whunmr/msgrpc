@@ -22,6 +22,13 @@ namespace msgrpc {
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct ServiceRegisterListener {
+        virtual ~ServiceRegisterListener() = default;
+
+        //TODO: add interface method for ServiceRegisterListener, to notify out service instances changes
+    };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct instance_info_compare {
         bool operator() (const InstanceInfo &a, const InstanceInfo &b) const { return a.service_id_ < b.service_id_; }
     };

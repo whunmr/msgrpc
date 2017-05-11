@@ -13,7 +13,12 @@ using namespace service_z;
 using namespace msgrpc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//1. Top Level service resolver is the system default resolver in msgrpc::Config::instance().service_register_
+//last service resolver is the system default resolver in msgrpc::Config::instance().service_register_
+struct DefaultServiceResolver : ServiceResolver {
+    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        return msgrpc::Config::instance().service_register_->service_name_to_id(service_name, req, req_len);
+    }
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct CommonServiceResolver : ServiceResolver {
@@ -39,11 +44,13 @@ struct CombinedServiceResolver : ServiceResolver {
 
     CombinedServiceResolver()
         : resolvers_({
-                         {SINGLE_SERVICE_RESOLVER::service_name_to_resolve_, &SINGLE_SERVICE_RESOLVER::instance()}...
-                     })
+            {SINGLE_SERVICE_RESOLVER::service_name_to_resolve_, &SINGLE_SERVICE_RESOLVER::instance()}...
+        })
     { /**/ }
 
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        //1. call resolvers_
+        //2. call MULTI_SERVICE_RESOLVER if resolve service by (1) failed.
         return boost::none;
     }
 };

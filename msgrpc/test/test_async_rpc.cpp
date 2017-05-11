@@ -568,4 +568,3 @@ TEST_F(MsgRpcTest, should_able_to_support__map_operation_on_cell_____case1200) {
     msg_loop_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
     msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
-

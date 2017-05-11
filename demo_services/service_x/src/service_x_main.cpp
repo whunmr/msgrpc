@@ -14,16 +14,9 @@ using namespace msgrpc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //last service resolver is the system default resolver in msgrpc::Config::instance().service_register_
-struct DefaultServiceResolver : ServiceResolver {
+struct DefaultServiceResolver : ServiceResolver, Singleton<DefaultServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         return msgrpc::Config::instance().service_register_->service_name_to_id(service_name, req, req_len);
-    }
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct CommonServiceResolver : ServiceResolver {
-    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-        return boost::none;
     }
 };
 
@@ -42,8 +35,7 @@ struct CombinedServiceResolver
         : ServiceResolver
         , Singleton<CombinedServiceResolver<DEFAULT_RESOLVER, RESOLVER...>> {
 
-    typedef const char* service_name_t;
-    std::map<service_name_t, ServiceResolver*> resolvers_;
+    std::map<std::string, ServiceResolver*> resolvers_;
 
     CombinedServiceResolver()
         : resolvers_({
@@ -81,7 +73,7 @@ struct Z__ServiceResolver : SingleServiceResolver<service_z::g_service_name>, Si
 struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from MyMultiServiceResolver");
-        return boost::none;
+        return DefaultServiceResolver::instance().service_name_to_id(service_name, req, req_len);
     }
 };
 
@@ -89,10 +81,9 @@ typedef CombinedServiceResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__S
 
 void run_test_foo() {
     MyServiceResolver& resolver = MyServiceResolver::instance();
-    resolver.service_name_to_id("service_x", nullptr, 0);
     resolver.service_name_to_id(service_y::g_service_name, nullptr, 0);
     resolver.service_name_to_id(service_z::g_service_name, nullptr, 0);
-    resolver.service_name_to_id("service_y", nullptr, 0);
+    resolver.service_name_to_id("service_z", nullptr, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

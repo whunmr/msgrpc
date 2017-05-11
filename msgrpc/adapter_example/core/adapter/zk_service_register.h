@@ -124,10 +124,13 @@ namespace demo {
         bool create_ephemeral_node_for_service_instance(const char* service_name, const char* version, const char *end_point) {
             int ret;
             ret = zk_->create()->forPath(k_services_root);
+                  zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
+
             ret = zk_->create()->forPath(k_services_root + "/" + service_name);
 
             const clientid_t* session_id = zoo_client_id(zk_->handle());
             if (session_id == nullptr) {
+                ___log_error("can not get session id of zookeeper client.");
                 return false;
             }
 
@@ -142,6 +145,14 @@ namespace demo {
             return result;
         }
 
+        static void show_vector(const string& msg, vector<string>& services) {
+            std::cout << "===========: " << msg << std::endl;
+            for (auto ___s : services) {
+                std::cout << ___s << ", ";
+            }
+            std::cout << std::endl;
+        }
+
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         static void service_child_watcher_fn(zhandle_t *zh, int type, int state, const char *path, void *watcher_ctxt) {
             if (type != ZOO_CHILD_EVENT) {
@@ -151,11 +162,18 @@ namespace demo {
             auto* srv_register = (ZkServiceRegister*)watcher_ctxt;
 
             vector<string> services = srv_register->try_fetch_services();
+            std::sort(services.begin(), services.end());
+
+            show_vector("old services:", old_services_);
+            show_vector("latest services:", services);
 
                 vector<string> changed_services;
                 set_difference(services.begin(), services.end(), old_services_.begin(), old_services_.end(), back_inserter(changed_services) );
+                set_difference(old_services_.begin(), old_services_.end(), services.begin(), services.end(), back_inserter(changed_services) );
 
+                ___log_debug("----------------> changed service size: %d", changed_services.size());
                 for (auto ___s : changed_services) {
+                    ___log_debug("fetch changes of service: %s", ___s.c_str());
                     fetch_and_update_instances(srv_register, ___s);
                 }
 
@@ -220,7 +238,10 @@ namespace demo {
             }
 
             vector<string> latest_services = zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
+            ___log_debug("got service list of size: %d", latest_services.size());
+
             services = latest_services;
+            std::sort(services.begin(), services.end());
 
             for (auto& service : latest_services) {
                 ___log_debug("service list: %s", service.c_str());

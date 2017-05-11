@@ -8,8 +8,11 @@
 #include <test_util/test_runner.h>
 #include <msgrpc/core/cell/timeout_cell.h>
 
-////////////////////////////////////////////////////////////////////////////////
 using namespace service_y;
+using namespace service_z;
+////////////////////////////////////////////////////////////////////////////////
+
+
 DEFINE_SI(SI_call_y_f1m1, YReq, YRsp) {
     auto call_y_f1m1 = [&ctxt, req]() {
         return IY(ctxt).___f1m1(req);
@@ -34,7 +37,6 @@ DEF_TESTCASE(testcase_0000) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-using namespace service_z;
 DEFINE_SI(SI_call_z_f1m1, ZReq, ZRsp) {
     auto call_y_f1m1 = [&ctxt, req]() {
         return IZ(ctxt).___z_f1m1(req);

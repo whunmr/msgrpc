@@ -8,6 +8,24 @@
 
 namespace msgrpc {
 
+    typedef boost::optional<msgrpc::service_id_t> optional_service_id_t;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct ServiceResolver {
+        virtual ~ServiceResolver() = default;
+
+        virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) = 0;
+    };
+
+
+    struct ServiceRegister : AdapterBase, ServiceResolver {
+        virtual ~ServiceRegister() = default;
+
+        virtual bool register_service(const char* service_name, const char* version, const char* end_point) = 0;
+    };
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct InstanceInfo {
         msgrpc::service_id_t service_id_;
     };
@@ -18,19 +36,8 @@ namespace msgrpc {
         bool operator() (const InstanceInfo &a, const InstanceInfo &b) const { return a.service_id_ < b.service_id_; }
     };
 
-    typedef std::vector<InstanceInfo> instance_vector_t;
     typedef std::set<InstanceInfo, instance_info_compare> instance_set_t;
-    typedef boost::optional<msgrpc::service_id_t> optional_service_id_t;
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    struct ServiceRegister : AdapterBase {
-        virtual ~ServiceRegister() = default;
-
-        virtual bool register_service(const char* service_name, const char* version, const char* end_point) = 0;
-        virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) = 0;
-
-    };
+    typedef std::vector<InstanceInfo> instance_vector_t;
 }
 
 #endif //PROJECT_SERVICE_REGISTER_H

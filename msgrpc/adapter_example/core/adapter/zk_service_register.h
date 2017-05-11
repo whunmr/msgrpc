@@ -192,16 +192,27 @@ namespace demo {
         }
 
         static void fetch_and_update_instances(ZkServiceRegister* srv_register, const string &service_name) {
-            instance_vector_t instances;
+            instance_vector_t ___iv;
 
-            bool fetch_ok = srv_register->fetch_service_instances_from_zk(service_name, instances);
+            bool fetch_ok = srv_register->fetch_service_instances_from_zk(service_name, ___iv);
+
             if (fetch_ok) {
                 msgrpc::Task::dispatch_async_to_main_queue(
-                    [srv_register, service_name, instances] {
-                        srv_register->services_cache_[service_name] = instances;
-                        //TODO: call user registered listeners
+                    [srv_register, service_name, ___iv] {
+                        srv_register->services_cache_[service_name] = ___iv;
+
+                        srv_register->do_notify_listeners(service_name, ___iv);
                     }
                 );
+            }
+        }
+
+        void do_notify_listeners(const string &service_name, const instance_vector_t &___iv) {
+            auto iter = listeners_map_.find(service_name);
+            if (iter != listeners_map_.end()) {
+                for (auto &___l : iter->second) {
+                    ___l->on_changes(___iv);
+                }
             }
         }
 
@@ -242,12 +253,14 @@ namespace demo {
             std::sort(services.begin(), services.end());
 
             for (const auto& service : latest_services) {
-                ___log_debug("service list: %s", service.c_str());
+                instance_vector_t ___iv;
 
-                instance_vector_t instances;
-                bool fetch_ok = fetch_service_instances_from_zk(service, instances);
+                bool fetch_ok = fetch_service_instances_from_zk(service, ___iv);
                 if (fetch_ok) {
-                    cache[service] = instances;
+                    ___log_debug("fetched service list: %s", service.c_str());
+
+                    cache[service] = ___iv;
+                    do_notify_listeners(service, ___iv);
                 }
             }
 
@@ -301,14 +314,14 @@ namespace demo {
 
 
         virtual void register_listener(ServiceRegisterListener& listener) override {
-            std::set<ServiceRegisterListener*>& listeners = listeners_[listener.service_to_listener()];
+            std::set<ServiceRegisterListener*>& listeners = listeners_map_[listener.service_to_listener()];
 
             listeners.insert(&listener);
         }
 
         virtual void unregister_listener(ServiceRegisterListener& ___l) override {
-            auto iter = listeners_.find(___l.service_to_listener());
-            if (iter == listeners_.end()) {
+            auto iter = listeners_map_.find(___l.service_to_listener());
+            if (iter == listeners_map_.end()) {
                 return;
             }
 
@@ -316,7 +329,7 @@ namespace demo {
             listeners.erase(&___l);
         }
 
-        std::map<string, std::set<ServiceRegisterListener*>> listeners_;
+        std::map<string, std::set<ServiceRegisterListener*>> listeners_map_;
 
 
         std::map<string, size_t> round_robin_map_;

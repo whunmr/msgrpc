@@ -57,7 +57,6 @@ namespace demo {
         }
     }
 
-
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct ZkServiceRegister : msgrpc::ServiceRegister, msgrpc::Singleton<ZkServiceRegister> {
         bool is_zk_connected(const unique_ptr<ZKHandle> &zk) const {
@@ -152,8 +151,12 @@ namespace demo {
             ZkServiceRegister* srv_register = (ZkServiceRegister*)watcher_ctxt;
 
             services_cache_t cache;
+
             //TODO: compare which services are changed and only fetch changed service
-            bool fetch_ok = srv_register->try_fetch_services_from_zk(cache);
+            //vector<string> latest_services = zh->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
+
+            vector<string> dummy_paramerters;
+            bool fetch_ok = srv_register->try_fetch_services_from_zk(cache, dummy_paramerters);
 
             if (fetch_ok) {
                 msgrpc::Task::dispatch_async_to_main_queue(
@@ -188,6 +191,12 @@ namespace demo {
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        bool try_fetch_services(vector<string>& services) {
+            services = zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
+            return true;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         bool fetch_service_instances_from_zk(const string& service, instance_vector_t& instances) {
             bool connected = try_connect_zk();
             if (!connected) {
@@ -202,22 +211,21 @@ namespace demo {
             }
 
             strings_to_instances(instance_strings, instances);
-
-            ___log_debug("%s instance count: %d", service.c_str(), instances.size());
             return true;
         }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        bool try_fetch_services_from_zk(services_cache_t& cache) {
+        bool try_fetch_services_from_zk(services_cache_t& cache, vector<string>& services) {
             bool connected = try_connect_zk();
             if (!connected) {
                 ___log_error("try_fetch_services_from_zk failed, can not connect to zk.");
                 return false;
             }
 
-            vector<string> services = zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
+            vector<string> latest_services = zk_->getChildren()->withWatcher(service_child_watcher_fn, this)->forPath(k_services_root);
+            services = latest_services;
 
-            for (auto& service : services) {
+            for (auto& service : latest_services) {
                 ___log_debug("service list: %s", service.c_str());
 
                 instance_vector_t instances;
@@ -234,7 +242,7 @@ namespace demo {
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual bool init() override {
             wait_util_zk_is_connected();
-            return try_fetch_services_from_zk(services_cache_);
+            return try_fetch_services_from_zk(services_cache_, old_services_);
         }
 
         virtual bool register_service(const char* service_name, const char* version, const char *end_point) override {
@@ -280,7 +288,9 @@ namespace demo {
         //            srv_register->services_cache_ = cache;
         //        }
         //    );
-        services_cache_t services_cache_;
+        services_cache_t services_cache_;      //owned by main queue thread
+
+        static vector<string> old_services_;   //owned by zk client thread
 
         unique_ptr<ZKHandle> zk_;
     };

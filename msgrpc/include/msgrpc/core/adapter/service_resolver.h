@@ -1,6 +1,8 @@
 #ifndef PROJECT_SERVICE_RESOLVER_H
 #define PROJECT_SERVICE_RESOLVER_H
 
+#include <msgrpc/core/typedefs.h>
+
 namespace msgrpc {
 
     typedef boost::optional<msgrpc::service_id_t> optional_service_id_t;

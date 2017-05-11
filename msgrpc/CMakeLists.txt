@@ -25,6 +25,7 @@ include_directories(${___MSGRPC_INCLUDE})
 add_definitions(-DUSE_THREAD_SIMULATE_MSGRPC_PROCESS)
 
 ################################################################################
+FILE(GLOB_RECURSE ADAPTER_SOURCE_FILES      adapter_example/*.cpp adapter_example/*.h)
 FILE(GLOB_RECURSE DEMO_SOURCE_FILES         demo/*.cpp demo/*.h demo/*.interface)
 FILE(GLOB_RECURSE MSGRPC_SOURCE_FILES       include/*.h src/*.cpp)
 FILE(GLOB_RECURSE DEMO_TEST_SOURCE_FILES    test/*.cpp test/*.h)
@@ -35,9 +36,13 @@ target_link_libraries(msgrpc boost_system)
 set_target_properties(msgrpc PROPERTIES output_name "msgrpc")
 
 ################################################################################
+add_library(msgrpc_adapter_example SHARED ${ADAPTER_SOURCE_FILES})
+target_link_libraries(msgrpc_adapter_example boost_system zookeeper_mt conservator-framework msgrpc)
+
+################################################################################
 add_executable(msgrpc_demo ${DEMO_SOURCE_FILES} ${DEMO_TEST_SOURCE_FILES})
 
-target_link_libraries(msgrpc_demo ${___THRIFT_LIB} gtest gtest_main zookeeper_mt conservator-framework boost_system msgrpc)
+target_link_libraries(msgrpc_demo ${___THRIFT_LIB} gtest gtest_main zookeeper_mt conservator-framework boost_system msgrpc msgrpc_adapter_example)
 
 ################################################################################
 find_program(VALGRIND "valgrind")

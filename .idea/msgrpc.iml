@@ -2,6 +2,18 @@
 <module type="CPP_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_stub_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_impl_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_zookeeper.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_thrift_struct.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_async_rpc.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/iface_impl/iface_repository.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/cell/rsp_cell_base.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/msg_handlers/main_queue_task_handler.cpp" isTestSource="false" />
@@ -39,6 +51,7 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/schedule/task_run_on_main_queue.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_stub/iface_stub_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/adapter/adapter_base.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/adapter/service_resolver.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/adapter/msg_channel.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/adapter/timer_adapter.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/adapter/logger.h" isTestSource="false" />
@@ -52,24 +65,22 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/api/api_interface_impl_define.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/util/type_traits.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/util/singleton.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_types.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_struct_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_struct_common.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_codec.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_struct_define.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_define.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_stub_define.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_struct_declare.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_types.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_impl_define.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_struct_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_types.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_codec.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/thrift/thrift_struct_common.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/core/adapter/udp_msg_channel.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/core/adapter/simple_logger.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/core/adapter/zk_service_register.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/core/adapter/simple_timer_adapter.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/core/adapter/zk_service_register.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/details/UdpChannel.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/details/msgrpc_test_loop.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/details/test_constants.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/details/msgrpc_test.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/details/set_timer_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/CMakeLists.txt" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_zookeeper.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_thrift_struct.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_async_rpc.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/src/service_z_main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/src/api/service_z/z_api_struct_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/src/api/service_z/z_api_interface_impl_define.cpp" isTestSource="false" />

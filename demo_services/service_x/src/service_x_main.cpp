@@ -166,7 +166,7 @@ int main() {
     auto x_init = [port]{
         msgrpc::Config::instance().service_register_->init();
 
-        run_test_foo();  exit(0);
+        run_test_foo();
 
         run_next_testcase();
     };

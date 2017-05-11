@@ -22,12 +22,12 @@ struct DefaultServiceResolver : ServiceResolver, Singleton<DefaultServiceResolve
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<const char* SERVICE_NAME>
-struct SingleServiceResolver : ServiceResolver {
+struct SResolverT : ServiceResolver {
     static const char* service_name_to_resolve_;
 };
 
 template<const char* SERVICE_NAME>
-const char* SingleServiceResolver<SERVICE_NAME>::service_name_to_resolve_ = SERVICE_NAME;
+const char* SResolverT<SERVICE_NAME>::service_name_to_resolve_ = SERVICE_NAME;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<typename DEFAULT_RESOLVER, typename... RESOLVER>
@@ -56,17 +56,32 @@ struct CombinedServiceResolver
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct Y__ServiceResolver : SingleServiceResolver<service_y::g_service_name>, Singleton<Y__ServiceResolver> {
+template<const char* SERVICE_NAME>
+struct SRListenerT : ServiceRegisterListener {
+    virtual const char* service_to_listener() override {
+        return SERVICE_NAME;
+    }
+};
+
+struct Y__ServiceResolver : SRListenerT<service_y::k_name>, SResolverT<service_y::k_name>, Singleton<Y__ServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from Y__ServiceResolver");
         return boost::none;
     }
+
+    virtual void on_changes(const instance_vector_t& instances) override {
+        ___log_debug("Y__ServiceResolver::on_changes");
+    }
 };
 
-struct Z__ServiceResolver : SingleServiceResolver<service_z::g_service_name>, Singleton<Z__ServiceResolver> {
+struct Z__ServiceResolver : SRListenerT<service_z::k_name>, SResolverT<service_z::k_name>, Singleton<Z__ServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from Z__ServiceResolver");
         return boost::none;
+    }
+
+    virtual void on_changes(const instance_vector_t& instances) override {
+        ___log_debug("Z__ServiceResolver::on_changes");
     }
 };
 
@@ -82,8 +97,8 @@ typedef CombinedServiceResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__S
 
 void run_test_foo() {
     MyServiceResolver& resolver = MyServiceResolver::instance();
-    resolver.service_name_to_id(service_y::g_service_name, nullptr, 0);
-    resolver.service_name_to_id(service_z::g_service_name, nullptr, 0);
+    resolver.service_name_to_id(service_y::k_name, nullptr, 0);
+    resolver.service_name_to_id(service_z::k_name, nullptr, 0);
     resolver.service_name_to_id("service_z", nullptr, 0);
 }
 

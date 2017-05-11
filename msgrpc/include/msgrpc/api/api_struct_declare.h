@@ -10,8 +10,8 @@
 
 #define ___def_service(service_name_, version_)                         \
 namespace service_name_ {                                               \
-    extern const char g_service_name[];                                 \
-    extern const char g_api_version[];                                  \
+    extern const char k_name[];                                         \
+    extern const char k_version[];                                      \
     void msgrpc_register_service(const char* endpoint);                 \
 }                                                                       \
 namespace service_name_

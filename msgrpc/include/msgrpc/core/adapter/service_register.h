@@ -9,14 +9,6 @@
 
 namespace msgrpc {
 
-    struct ServiceRegister : AdapterBase, ServiceResolver {
-        virtual ~ServiceRegister() = default;
-
-        virtual bool register_service(const char* service_name, const char* version, const char* end_point) = 0;
-    };
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct InstanceInfo {
         msgrpc::service_id_t service_id_;
     };
@@ -27,8 +19,20 @@ namespace msgrpc {
     struct ServiceRegisterListener {
         virtual ~ServiceRegisterListener() = default;
 
-        virtual void on_changes(const std::string& service_name, const instance_vector_t& instances) = 0;
+        virtual const char* service_to_listener() = 0;
+        virtual void on_changes(const instance_vector_t& instances) = 0;
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct ServiceRegister : AdapterBase, ServiceResolver {
+        virtual ~ServiceRegister() = default;
+
+        virtual bool register_service(const char* service_name, const char* version, const char* end_point) = 0;
+
+        virtual void   register_listener(ServiceRegisterListener& listener) = 0;
+        virtual void unregister_listener(ServiceRegisterListener& listener) = 0;
+    };
+
 }
 
 #endif //PROJECT_SERVICE_REGISTER_H

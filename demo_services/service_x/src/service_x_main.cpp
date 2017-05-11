@@ -77,6 +77,7 @@ struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolve
     }
 };
 
+//TODO: register a global service resolver into msgrpc::Config
 typedef CombinedServiceResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 
 void run_test_foo() {

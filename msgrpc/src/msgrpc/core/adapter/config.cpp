@@ -43,4 +43,4 @@ namespace msgrpc {
         schedule_task_on_main_thread_msg_id_ = schedule_task_on_main_thread_msg_id;
     }
 
-}
+};

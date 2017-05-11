@@ -20,6 +20,7 @@ namespace demo {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     using msgrpc::InstanceInfo;
     using msgrpc::instance_vector_t;
+    using msgrpc::ServiceRegisterListener;
 
     typedef ConservatorFramework ZKHandle;
     typedef std::map<std::string, instance_vector_t> services_cache_t;
@@ -292,6 +293,26 @@ namespace demo {
 
             return instances[ next_rr_index % size ].service_id_;
         }
+
+
+        virtual void register_listener(ServiceRegisterListener& listener) override {
+            std::set<ServiceRegisterListener*>& listeners = listeners_[listener.service_to_listener()];
+
+            listeners.insert(&listener);
+        }
+
+        virtual void unregister_listener(ServiceRegisterListener& ___l) override {
+            auto iter = listeners_.find(___l.service_to_listener());
+            if (iter == listeners_.end()) {
+                return;
+            }
+
+            std::set<ServiceRegisterListener*>& listeners = iter->second;
+            listeners.erase(&___l);
+        }
+
+        std::map<string, std::set<ServiceRegisterListener*>> listeners_;
+
 
         std::map<string, size_t> round_robin_map_;
 

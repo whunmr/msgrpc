@@ -25,26 +25,51 @@ struct CommonServiceResolver : ServiceResolver {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<const char* SERVICE_NAME>
 struct SingleServiceResolver : ServiceResolver {
-    const char* service_name_to_resolve_;
+    static const char* service_name_to_resolve_;
 };
 
-struct Y__ServiceResolver : SingleServiceResolver<service_y::g_service_name> {
+template<const char* SERVICE_NAME>
+const char* SingleServiceResolver<SERVICE_NAME>::service_name_to_resolve_ = SERVICE_NAME;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<typename MULTI_SERVICE_RESOLVER, typename... SINGLE_SERVICE_RESOLVER>
+struct CombinedServiceResolver : ServiceResolver {
+    typedef const char* service_name_t;
+    std::map<service_name_t, ServiceResolver*> resolvers_;
+
+    CombinedServiceResolver()
+        : resolvers_({
+                         {SINGLE_SERVICE_RESOLVER::service_name_to_resolve_, &SINGLE_SERVICE_RESOLVER::instance()}...
+                     })
+    { /**/ }
+
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         return boost::none;
     }
 };
 
-struct Z__ServiceResolver : SingleServiceResolver<service_z::g_service_name> {
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct Y__ServiceResolver : SingleServiceResolver<service_y::g_service_name>, Singleton<Y__ServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         return boost::none;
     }
 };
 
-struct MyServiceResolver : ServiceResolver {
+struct Z__ServiceResolver : SingleServiceResolver<service_z::g_service_name>, Singleton<Z__ServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         return boost::none;
     }
 };
+
+struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolver> {
+    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        return boost::none;
+    }
+};
+
+
+typedef CombinedServiceResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__ServiceResolver>  MyServiceResolver;
+MyServiceResolver resolver;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

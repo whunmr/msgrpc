@@ -9,6 +9,9 @@
 #include <msgrpc/core/cell/timeout_cell.h>
 #include <msgrpc/util/instances_collector.h>
 
+#include <msgrpc/core/service_discovery/service_resolver.h>
+#include <msgrpc/core/service_discovery/combined_resolver.h>
+
 using namespace service_y;
 using namespace service_z;
 using namespace msgrpc;
@@ -23,50 +26,15 @@ struct DefaultServiceResolver : ServiceResolver, Singleton<DefaultServiceResolve
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<const char* SERVICE_NAME>
-struct SResolverT : ServiceResolver {
-    static const char* service_name_to_resolve_;
-};
-
-template<const char* SERVICE_NAME>
-const char* SResolverT<SERVICE_NAME>::service_name_to_resolve_ = SERVICE_NAME;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<typename DEFAULT_RESOLVER, typename... RESOLVER>
-struct CombinedServiceResolver
-        : ServiceResolver
-        , Singleton<CombinedServiceResolver<DEFAULT_RESOLVER, RESOLVER...>> {
-
-    std::map<std::string, ServiceResolver*> resolvers_;
-
-    CombinedServiceResolver()
-        : resolvers_({
-            {RESOLVER::service_name_to_resolve_, &RESOLVER::instance()}...
-        })
-    { /**/ }
-
-    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-        //1. resolve service instance by service specific resolver
-        auto iter = resolvers_.find(service_name);
-        if (iter != resolvers_.end()) {
-            return iter->second->service_name_to_id(service_name, req, req_len);
-        }
-
-        //2. using default resolver, if can not find service specific resolver
-        return DEFAULT_RESOLVER::instance().service_name_to_id(service_name, req, req_len);
-    }
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<const char* SERVICE_NAME>
 struct SRListenerT : ServiceRegisterListener {
-    void register_self() {
+    ServiceRegisterListener* register_as_listener() {
         bool has_service_register = msgrpc::Config::instance().service_register_ != nullptr;
-
         if (has_service_register) {
             msgrpc::Config::instance().service_register_->register_listener(*this);
         } else {
             msgrpc::InstancesCollector<ServiceRegisterListener>::instance().track(*this);
         }
+        return this;
     }
 
     virtual const char* service_to_listener() override {
@@ -74,11 +42,9 @@ struct SRListenerT : ServiceRegisterListener {
     }
 };
 
-struct Y__ServiceResolver : SRListenerT<service_y::k_name>, SResolverT<service_y::k_name>, Singleton<Y__ServiceResolver> {
-    Y__ServiceResolver() {
-        register_self();
-    }
-
+struct Y__ServiceResolver : SRListenerT<service_y::k_name>, NamedResolver<service_y::k_name>, Singleton<Y__ServiceResolver> {
+    //TODO: add msgrpc::MsgHeader as header
+    //TODO: add unencoded thrift struct as parameter
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from Y__ServiceResolver");
         return boost::none;
@@ -88,13 +54,9 @@ struct Y__ServiceResolver : SRListenerT<service_y::k_name>, SResolverT<service_y
         ___log_debug("Y__ServiceResolver::on_changes");
     }
 };
+auto p86 = Y__ServiceResolver::instance().register_as_listener();
 
-
-struct Z__ServiceResolver : SRListenerT<service_z::k_name>, SResolverT<service_z::k_name>, Singleton<Z__ServiceResolver> {
-    Z__ServiceResolver() {
-        register_self();
-    }
-
+struct Z__ServiceResolver : SRListenerT<service_z::k_name>, NamedResolver<service_z::k_name>, Singleton<Z__ServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from Z__ServiceResolver");
         return boost::none;
@@ -104,25 +66,23 @@ struct Z__ServiceResolver : SRListenerT<service_z::k_name>, SResolverT<service_z
         ___log_debug("Z__ServiceResolver::on_changes");
     }
 };
+auto p98 = Z__ServiceResolver::instance().register_as_listener();
 
 struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from MyMultiServiceResolver");
         return DefaultServiceResolver::instance().service_name_to_id(service_name, req, req_len);
     }
-
     //TODO: how to track changes of all services
 };
 
-
-//TODO: register a global service resolver into msgrpc::Config
-typedef CombinedServiceResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
+//TODO: register a global default service resolver into msgrpc::Config
+typedef CombinedResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 
 void run_test_foo() {
     MyServiceResolver& resolver = MyServiceResolver::instance();
     resolver.service_name_to_id(service_y::k_name, nullptr, 0);
     resolver.service_name_to_id(service_z::k_name, nullptr, 0);
-    resolver.service_name_to_id("service_z", nullptr, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

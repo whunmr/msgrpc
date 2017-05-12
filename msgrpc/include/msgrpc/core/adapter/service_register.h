@@ -3,7 +3,7 @@
 
 #include <boost/optional.hpp>
 #include <msgrpc/core/adapter/adapter_base.h>
-#include <msgrpc/core/adapter/service_resolver.h>
+#include <msgrpc/core/service_discovery/service_resolver.h>
 #include <set>
 #include <vector>
 
@@ -35,9 +35,7 @@ namespace msgrpc {
         virtual void unregister_listener(ServiceRegisterListener& listener) = 0;
     };
 
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 }
 
 #endif //PROJECT_SERVICE_REGISTER_H

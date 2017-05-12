@@ -2,6 +2,10 @@
 #include <adapter_example/details/msgrpc_test.h>
 #include <api/service_z/z_api_struct_declare.h>
 
+
+
+
+
 int main() {
     std::cout << "service_z_main" << std::endl;
 

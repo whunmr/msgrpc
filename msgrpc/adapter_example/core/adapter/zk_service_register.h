@@ -229,7 +229,8 @@ namespace demo {
                 return false;
             }
 
-            vector<string> instance_strings = zk_->getChildren()->withWatcher(instance_child_watcher_fn, this)->forPath(k_services_root + "/" + service);
+            string service_path = k_services_root + "/" + service;
+            vector<string> instance_strings = zk_->getChildren()->withWatcher(instance_child_watcher_fn, this)->forPath(service_path);
 
             for (const auto& service_instance : instance_strings) {
                 ___log_debug("    %s instance : %s", service.c_str(), service_instance.c_str());
@@ -257,7 +258,7 @@ namespace demo {
 
                 bool fetch_ok = fetch_service_instances_from_zk(service, ___iv);
                 if (fetch_ok) {
-                    ___log_debug("fetched service list: %s", service.c_str());
+                    ___log_debug("fetched service list for service: %s, with %d listener(s)", service.c_str(), listeners_map_.size());
 
                     cache[service] = ___iv;
                     do_notify_listeners(service, ___iv);
@@ -270,7 +271,7 @@ namespace demo {
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual bool init() override {
-            auto& listeners = msgrpc::InstancesCollector<ServiceRegisterListener>::instance().instances();
+            auto listeners = msgrpc::InstancesCollector<ServiceRegisterListener>::instance().instances();
             for (auto& listener : listeners) {
                 this->register_listener(*listener);
             }
@@ -315,8 +316,9 @@ namespace demo {
 
         virtual void register_listener(ServiceRegisterListener& listener) override {
             std::set<ServiceRegisterListener*>& listeners = listeners_map_[listener.service_to_listener()];
-
             listeners.insert(&listener);
+
+            //TODO: notify listener if this is a new registered listener.
         }
 
         virtual void unregister_listener(ServiceRegisterListener& ___l) override {

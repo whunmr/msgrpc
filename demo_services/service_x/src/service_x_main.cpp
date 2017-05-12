@@ -60,7 +60,13 @@ struct CombinedServiceResolver
 template<const char* SERVICE_NAME>
 struct SRListenerT : ServiceRegisterListener {
     SRListenerT() {
-        msgrpc::InstancesCollector<ServiceRegisterListener>::instance().track(*this);
+        bool has_service_register = msgrpc::Config::instance().service_register_ != nullptr;
+
+        if (has_service_register) {
+            msgrpc::Config::instance().service_register_->register_listener(*this);
+        } else {
+            msgrpc::InstancesCollector<ServiceRegisterListener>::instance().track(*this);
+        }
     }
 
     virtual const char* service_to_listener() override {

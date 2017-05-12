@@ -101,6 +101,8 @@ struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolve
         ___log_debug("service_name_to_id from MyMultiServiceResolver");
         return DefaultServiceResolver::instance().service_name_to_id(service_name, req, req_len);
     }
+
+    //TODO: how to track changes of all services
 };
 
 //TODO: register a global service resolver into msgrpc::Config

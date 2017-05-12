@@ -207,7 +207,7 @@ namespace demo {
             }
         }
 
-        void do_notify_listeners(const string &service_name, const instance_vector_t &___iv) {
+        void do_notify_listeners(const string& service_name, const instance_vector_t& ___iv) {
             auto iter = listeners_map_.find(service_name);
             if (iter != listeners_map_.end()) {
                 for (auto &___l : iter->second) {
@@ -318,7 +318,12 @@ namespace demo {
             std::set<ServiceRegisterListener*>& listeners = listeners_map_[listener.service_to_listener()];
             listeners.insert(&listener);
 
-            //TODO: notify listener if this is a new registered listener.
+            string service_name = listener.service_to_listener();
+
+            auto iter = services_cache_.find(service_name);
+            if (iter != services_cache_.end()) {
+                this->do_notify_listeners(service_name, iter->second);
+            }
         }
 
         virtual void unregister_listener(ServiceRegisterListener& ___l) override {
@@ -333,10 +338,10 @@ namespace demo {
 
         std::map<string, std::set<ServiceRegisterListener*>> listeners_map_;
 
-
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         std::map<string, size_t> round_robin_map_;
 
-        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //1. the zk client can only access this services_cache_ during init().
         //2. otherwise, all access to services_cache_ should schedule as task and dispatch into main_queue. like:
         //    msgrpc::Task::dispatch_async_to_main_queue(

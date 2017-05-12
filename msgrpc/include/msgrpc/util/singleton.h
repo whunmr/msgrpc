@@ -11,6 +11,11 @@ namespace msgrpc {
             static thread_local T t;
             return t;
         }
+
+    protected:
+        ThreadLocalSingleton() {}
+        ThreadLocalSingleton(ThreadLocalSingleton const&) = delete;
+        void operator=(ThreadLocalSingleton const&)       = delete;
     };
 
 
@@ -18,10 +23,15 @@ namespace msgrpc {
     struct Singleton {
         virtual ~Singleton() = default;
 
-        static T &instance() {
+        static T& instance() {
             static T t;
             return t;
         }
+
+    protected:
+        Singleton() {}
+        Singleton(Singleton const&)      = delete;
+        void operator=(Singleton const&) = delete;
     };
 }
 

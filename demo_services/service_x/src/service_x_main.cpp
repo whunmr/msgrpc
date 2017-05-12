@@ -85,6 +85,7 @@ struct Y__ServiceResolver : SRListenerT<service_y::k_name>, SResolverT<service_y
     }
 };
 
+
 struct Z__ServiceResolver : SRListenerT<service_z::k_name>, SResolverT<service_z::k_name>, Singleton<Z__ServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from Z__ServiceResolver");

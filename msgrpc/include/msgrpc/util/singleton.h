@@ -5,6 +5,8 @@ namespace msgrpc {
 
     template<typename T>
     struct ThreadLocalSingleton {
+        ThreadLocalSingleton(ThreadLocalSingleton const&) = delete;
+        void operator=(ThreadLocalSingleton const&)       = delete;
         virtual ~ThreadLocalSingleton() = default;
 
         static T &instance() {
@@ -12,26 +14,24 @@ namespace msgrpc {
             return t;
         }
 
-    protected:
-        ThreadLocalSingleton() {}
-        ThreadLocalSingleton(ThreadLocalSingleton const&) = delete;
-        void operator=(ThreadLocalSingleton const&)       = delete;
+      protected:
+        ThreadLocalSingleton() = default;
     };
 
-
+    ////////////////////////////////////////////////////////////////////////////////
     template<typename T>
     struct Singleton {
+        Singleton(Singleton const&)      = delete;
+        void operator=(Singleton const&) = delete;
         virtual ~Singleton() = default;
 
-        static T& instance() {
+        static T& instance(){
             static T t;
             return t;
         }
 
-    protected:
-        Singleton() {}
-        Singleton(Singleton const&)      = delete;
-        void operator=(Singleton const&) = delete;
+      protected:
+        Singleton() = default;
     };
 }
 

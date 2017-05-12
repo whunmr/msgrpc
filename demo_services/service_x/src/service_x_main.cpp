@@ -59,7 +59,7 @@ struct CombinedServiceResolver
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<const char* SERVICE_NAME>
 struct SRListenerT : ServiceRegisterListener {
-    SRListenerT() {
+    void register_self() {
         bool has_service_register = msgrpc::Config::instance().service_register_ != nullptr;
 
         if (has_service_register) {
@@ -75,6 +75,10 @@ struct SRListenerT : ServiceRegisterListener {
 };
 
 struct Y__ServiceResolver : SRListenerT<service_y::k_name>, SResolverT<service_y::k_name>, Singleton<Y__ServiceResolver> {
+    Y__ServiceResolver() {
+        register_self();
+    }
+
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from Y__ServiceResolver");
         return boost::none;
@@ -87,6 +91,10 @@ struct Y__ServiceResolver : SRListenerT<service_y::k_name>, SResolverT<service_y
 
 
 struct Z__ServiceResolver : SRListenerT<service_z::k_name>, SResolverT<service_z::k_name>, Singleton<Z__ServiceResolver> {
+    Z__ServiceResolver() {
+        register_self();
+    }
+
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from Z__ServiceResolver");
         return boost::none;
@@ -105,6 +113,7 @@ struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolve
 
     //TODO: how to track changes of all services
 };
+
 
 //TODO: register a global service resolver into msgrpc::Config
 typedef CombinedServiceResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;

@@ -1,19 +1,19 @@
 ___def_service(service_x, 1.0.0) {
 
     #define ___fields_of_struct___XReq(_, ...)                                                                         \
-        _(1, required, int32_t,  xreqa,                                                         (字段注释), __VA_ARGS__)\
-        _(2, optional, int32_t,  xreqb,                                                         (字段注释), __VA_ARGS__)
+        _(1, required, int32_t,  xreqa,                                                         (comments), __VA_ARGS__)\
+        _(2, optional, int32_t,  xreqb,                                                         (comments), __VA_ARGS__)
     ___as_struct(XReq);                                             
 
 
     #define ___fields_of_struct___XRsp(_, ...)                                                                         \
-        _(1, required, int32_t,  xrspa,                                                         (字段注释), __VA_ARGS__)\
-        _(2, optional, int32_t,  xrspb,                                                         (字段注释), __VA_ARGS__)
+        _(1, required, int32_t,  xrspa,                                                         (comments), __VA_ARGS__)\
+        _(2, optional, int32_t,  xrspb,                                                         (comments), __VA_ARGS__)
     ___as_struct(XRsp);                                             
 
 
     #define ___methods_of_interface___IX(_, ...)                                                                       \
-        _(1, XRsp, ___f1m1, XReq,                                                               (方法注释), __VA_ARGS__)
+        _(1, XRsp, ___f1m1, XReq,                                                               (comments), __VA_ARGS__)
     ___as_interface(IX, 1);
 
 }

@@ -24,9 +24,9 @@ include_directories(${___MSGRPC_INCLUDE})
 include_directories(./include)
 
 ################################################################################
-FILE(GLOB_RECURSE SERVICE_Y_SOURCE_FILES ./*.cpp ./*.h)
+FILE(GLOB_RECURSE SERVICE_Z_SOURCE_FILES ./*.cpp ./*.h)
 
-add_executable(service_z ${SERVICE_Y_SOURCE_FILES})
+add_executable(service_z ${SERVICE_Z_SOURCE_FILES})
 
 target_link_libraries(service_z ${___THRIFT_LIB} gtest zookeeper_mt conservator-framework boost_system msgrpc msgrpc_adapter_example)
 

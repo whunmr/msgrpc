@@ -4,4 +4,4 @@
 #include <msgrpc/api/api_struct_declare.h>
 #include <api/service_k/service_k.api>
 
-#endif //PROJECT_Z_API_STRUCT_DECLARE_H
+#endif //PROJECT_K_API_STRUCT_DECLARE_H

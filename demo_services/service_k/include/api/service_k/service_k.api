@@ -1,18 +1,18 @@
 ___def_service(service_k, 1.0.0) {
 
     #define ___fields_of_struct___KReq(_, ...)                                                                         \
-        _(1, required, std::string,               kreqa,                                                     (字段注释), __VA_ARGS__)\
-        _(2, optional, int32_t    ,               kreqb,                                                     (字段注释), __VA_ARGS__)
+        _(1, required, std::string,               kreqa,                                                     (comments), __VA_ARGS__)\
+        _(2, optional, int32_t    ,               kreqb,                                                     (comments), __VA_ARGS__)
     ___as_struct(KReq);
 
 
     #define ___fields_of_struct___KRsp(_, ...)                                                                         \
-        _(1, required, int32_t,  krspa,                                                         (字段注释), __VA_ARGS__)\
-        _(2, optional, int32_t,  krspb,                                                         (字段注释), __VA_ARGS__)
+        _(1, required, int32_t,  krspa,                                                         (comments), __VA_ARGS__)\
+        _(2, optional, int32_t,  krspb,                                                         (comments), __VA_ARGS__)
     ___as_struct(KRsp);
 
 
     #define ___methods_of_interface___IK(_, ...)                                                                       \
-        _(1, KRsp, ___k_f1m1, KReq,                                                               (方法注释), __VA_ARGS__)
+        _(1, KRsp, ___k_f1m1, KReq,                                                               (comments), __VA_ARGS__)
     ___as_interface(IK, 1);
 }

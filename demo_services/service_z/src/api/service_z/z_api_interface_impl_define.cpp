@@ -20,7 +20,7 @@ namespace service_z {
         return cell_with_value(rsp);
     }
 
-    void map_krsp_to_zrsp(Cell<ZRsp>& result, Cell<service_k::KRsp>& krsp)  {
+    void map_krsp_to_zrsp(Cell<ZRsp>& result, Cell<KRsp>& krsp)  {
         if (krsp.has_value()) {
             ZRsp zrsp;
             zrsp.__set_zrspa(krsp.value().krspa * 2);

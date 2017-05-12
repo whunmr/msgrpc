@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <api/service_y/y_api_interface_declare.h>
 #include <api/service_z/z_api_interface_declare.h>
 #include <adapter_example/details/msgrpc_test.h>
@@ -11,38 +9,14 @@
 
 #include <msgrpc/core/service_discovery/service_resolver.h>
 #include <msgrpc/core/service_discovery/combined_resolver.h>
+#include <msgrpc/core/service_discovery/named_sr_listener.h>
 
 using namespace service_y;
 using namespace service_z;
 using namespace msgrpc;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//last service resolver is the system default resolver in msgrpc::Config::instance().service_register_
-struct DefaultServiceResolver : ServiceResolver, Singleton<DefaultServiceResolver> {
-    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-        return msgrpc::Config::instance().service_register_->service_name_to_id(service_name, req, req_len);
-    }
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<const char* SERVICE_NAME>
-struct SRListenerT : ServiceRegisterListener {
-    ServiceRegisterListener* register_as_listener() {
-        bool has_service_register = msgrpc::Config::instance().service_register_ != nullptr;
-        if (has_service_register) {
-            msgrpc::Config::instance().service_register_->register_listener(*this);
-        } else {
-            msgrpc::InstancesCollector<ServiceRegisterListener>::instance().track(*this);
-        }
-        return this;
-    }
-
-    virtual const char* service_to_listener() override {
-        return SERVICE_NAME;
-    }
-};
-
-struct Y__ServiceResolver : SRListenerT<service_y::k_name>, NamedResolver<service_y::k_name>, Singleton<Y__ServiceResolver> {
+struct Y__ServiceResolver : NamedSRListener<service_y::k_name>, NamedResolver<service_y::k_name>, Singleton<Y__ServiceResolver> {
     //TODO: add msgrpc::MsgHeader as header
     //TODO: add unencoded thrift struct as parameter
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
@@ -56,7 +30,7 @@ struct Y__ServiceResolver : SRListenerT<service_y::k_name>, NamedResolver<servic
 };
 auto p86 = Y__ServiceResolver::instance().register_as_listener();
 
-struct Z__ServiceResolver : SRListenerT<service_z::k_name>, NamedResolver<service_z::k_name>, Singleton<Z__ServiceResolver> {
+struct Z__ServiceResolver : NamedSRListener<service_z::k_name>, NamedResolver<service_z::k_name>, Singleton<Z__ServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from Z__ServiceResolver");
         return boost::none;
@@ -71,7 +45,7 @@ auto p98 = Z__ServiceResolver::instance().register_as_listener();
 struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
         ___log_debug("service_name_to_id from MyMultiServiceResolver");
-        return DefaultServiceResolver::instance().service_name_to_id(service_name, req, req_len);
+        return msgrpc::Config::instance().service_register_->service_name_to_id(service_name, req, req_len);
     }
     //TODO: how to track changes of all services
 };
@@ -160,7 +134,7 @@ int main() {
     unsigned short port = 6666;
     const msgrpc::service_id_t x_service_id(boost::asio::ip::address::from_string("127.0.0.1"), port);
 
-    std::cout << "[service_start_up] service_x_main" << std::endl;
+    ___log_debug("[service_start_up] service_x_main");
 
     auto x_init = [port]{
         msgrpc::Config::instance().service_register_->init();

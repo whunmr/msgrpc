@@ -21,7 +21,7 @@ namespace demo {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     using msgrpc::InstanceInfo;
     using msgrpc::instance_vector_t;
-    using msgrpc::ServiceRegisterListener;
+    using msgrpc::SRListener;
 
     typedef ConservatorFramework ZKHandle;
     typedef std::map<std::string, instance_vector_t> services_cache_t;
@@ -270,7 +270,7 @@ namespace demo {
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         virtual bool init() override {
-            auto listeners = msgrpc::InstancesCollector<ServiceRegisterListener>::instance().instances();
+            auto listeners = msgrpc::InstancesCollector<SRListener>::instance().instances();
             for (auto& listener : listeners) {
                 this->register_listener(*listener);
             }
@@ -313,8 +313,8 @@ namespace demo {
         }
 
 
-        virtual void register_listener(ServiceRegisterListener& listener) override {
-            std::set<ServiceRegisterListener*>& listeners = listeners_map_[listener.service_to_listener()];
+        virtual void register_listener(SRListener& listener) override {
+            std::set<SRListener*>& listeners = listeners_map_[listener.service_to_listener()];
             listeners.insert(&listener);
 
             string service_name = listener.service_to_listener();
@@ -325,17 +325,17 @@ namespace demo {
             }
         }
 
-        virtual void unregister_listener(ServiceRegisterListener& ___l) override {
+        virtual void unregister_listener(SRListener& ___l) override {
             auto iter = listeners_map_.find(___l.service_to_listener());
             if (iter == listeners_map_.end()) {
                 return;
             }
 
-            std::set<ServiceRegisterListener*>& listeners = iter->second;
+            std::set<SRListener*>& listeners = iter->second;
             listeners.erase(&___l);
         }
 
-        std::map<string, std::set<ServiceRegisterListener*>> listeners_map_;
+        std::map<string, std::set<SRListener*>> listeners_map_;
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         std::map<string, size_t> round_robin_map_;

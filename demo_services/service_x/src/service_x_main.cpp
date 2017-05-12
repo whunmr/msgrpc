@@ -10,37 +10,13 @@
 #include <msgrpc/core/service_discovery/service_resolver.h>
 #include <msgrpc/core/service_discovery/combined_resolver.h>
 #include <msgrpc/core/service_discovery/named_sr_listener.h>
+#include <service_resolvers/service_y_resolver.h>
+#include <service_resolvers/service_z_resolver.h>
 
 using namespace service_y;
 using namespace service_z;
 using namespace msgrpc;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct Y__ServiceResolver : NamedSRListener<service_y::k_name>, NamedResolver<service_y::k_name>, Singleton<Y__ServiceResolver> {
-    //TODO: add msgrpc::MsgHeader as header
-    //TODO: add unencoded thrift struct as parameter
-    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-        ___log_debug("service_name_to_id from Y__ServiceResolver");
-        return boost::none;
-    }
-
-    virtual void on_changes(const instance_vector_t& instances) override {
-        ___log_debug("Y__ServiceResolver::on_changes");
-    }
-};
-auto p86 = Y__ServiceResolver::instance().register_as_listener();
-
-struct Z__ServiceResolver : NamedSRListener<service_z::k_name>, NamedResolver<service_z::k_name>, Singleton<Z__ServiceResolver> {
-    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-        ___log_debug("service_name_to_id from Z__ServiceResolver");
-        return boost::none;
-    }
-
-    virtual void on_changes(const instance_vector_t& instances) override {
-        ___log_debug("Z__ServiceResolver::on_changes");
-    }
-};
-auto p98 = Z__ServiceResolver::instance().register_as_listener();
 
 struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolver> {
     virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {

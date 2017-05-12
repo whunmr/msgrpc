@@ -9,4 +9,4 @@
 #include <msgrpc/api/api_interface_declare.h>
 #include <api/service_k/service_k.api>
 
-#endif //PROJECT_Z_API_INTERFACE_DECLARE_H_H
+#endif //PROJECT_K_API_INTERFACE_DECLARE_H_H

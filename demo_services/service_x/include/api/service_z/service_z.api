@@ -1,18 +1,18 @@
 ___def_service(service_z, 1.0.0) {
 
-    #define ___fields_of_struct___ZReq(_, ...)                                                                         \
+    #define ___fields_of_struct___ZReq(_, ...)                                                                          \
         _(1, required, std::string,  zreqa,                                                     (comments), __VA_ARGS__)\
         _(2, optional, int32_t    ,  zreqb,                                                     (comments), __VA_ARGS__)
     ___as_struct(ZReq);                                             
 
 
-    #define ___fields_of_struct___ZRsp(_, ...)                                                                         \
+    #define ___fields_of_struct___ZRsp(_, ...)                                                                          \
         _(1, required, int32_t,  zrspa,                                                         (comments), __VA_ARGS__)\
         _(2, optional, int32_t,  zrspb,                                                         (comments), __VA_ARGS__)
     ___as_struct(ZRsp);                                             
 
 
-    #define ___methods_of_interface___IZ(_, ...)                                                                       \
-        _(1, ZRsp, ___z_f1m1, ZReq,                                                               (comments), __VA_ARGS__)
+    #define ___methods_of_interface___IZ(_, ...)                                                                        \
+        _(1, ZRsp, ___z_f1m1, ZReq,                                                             (comments), __VA_ARGS__)
     ___as_interface(IZ, 1);
 }

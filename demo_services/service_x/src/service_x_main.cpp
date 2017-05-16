@@ -6,23 +6,14 @@
 #include <test_util/test_runner.h>
 #include <msgrpc/core/cell/timeout_cell.h>
 
-#include <msgrpc/core/service_discovery/service_resolvers.h>
-#include <msgrpc/core/service_discovery/named_sr_listener.h>
+#include <msgrpc/core/service_discovery/default_service_resolver.h>
 #include <service_resolvers/service_y_resolver.h>
 #include <service_resolvers/service_z_resolver.h>
+#include <msgrpc/core/service_discovery/service_resolvers.h>
 
 using namespace service_y;
 using namespace service_z;
 using namespace msgrpc;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//last service resolver is the system default resolver in msgrpc::Config::instance().service_register_
-struct DefaultServiceResolver : ServiceResolver, Singleton<DefaultServiceResolver> {
-    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-        ___log_debug("using DefaultServiceResolver to resolve service %s", service_name);
-        return msgrpc::Config::instance().service_register_->service_name_to_id(service_name, req, req_len);
-    }
-};
 
 typedef ServiceResolvers<DefaultServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 

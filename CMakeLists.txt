@@ -28,6 +28,7 @@ add_subdirectory(demo_services/service_k)
 #TODO: notify user about service's online and offline
 #TODO: support customized loadbalance strategy
 #TODO: support store meta data in services znode
+#TODO: support service discovery with service version
 #TODO: add batch service list support, like erlang_rpc's mcall
 #TODO: testing support
 #TODO: auto generate testing from SI ?

@@ -8,7 +8,7 @@
 #include <msgrpc/util/instances_collector.h>
 
 #include <msgrpc/core/service_discovery/service_resolver.h>
-#include <msgrpc/core/service_discovery/combined_resolver.h>
+#include <msgrpc/core/service_discovery/service_resolvers.h>
 #include <msgrpc/core/service_discovery/named_sr_listener.h>
 #include <service_resolvers/service_y_resolver.h>
 #include <service_resolvers/service_z_resolver.h>
@@ -17,22 +17,15 @@ using namespace service_y;
 using namespace service_z;
 using namespace msgrpc;
 
-
-struct MyMultiServiceResolver : ServiceResolver, Singleton<MyMultiServiceResolver> {
-    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
-        ___log_debug("service_name_to_id from MyMultiServiceResolver");
-        return msgrpc::Config::instance().service_register_->service_name_to_id(service_name, req, req_len);
-    }
-    //TODO: how to track changes of all services
-};
-
-//TODO: register a global default service resolver into msgrpc::Config
-typedef CombinedResolver<MyMultiServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
+//TODO: auto register Y__ServiceResolver and Z__ServiceResolver into global_resolver_list as default resolver.
+typedef ServiceResolvers<Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 
 void run_test_foo() {
     MyServiceResolver& resolver = MyServiceResolver::instance();
     resolver.service_name_to_id(service_y::k_name, nullptr, 0);
     resolver.service_name_to_id(service_z::k_name, nullptr, 0);
+    resolver.service_name_to_id("service_y", nullptr, 0);
+    resolver.service_name_to_id("service_qqqq", nullptr, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,9 +103,9 @@ int main() {
     unsigned short port = 6666;
     const msgrpc::service_id_t x_service_id(boost::asio::ip::address::from_string("127.0.0.1"), port);
 
-    ___log_debug("[service_start_up] service_x_main");
-
     auto x_init = [port]{
+        ___log_debug("[service_start_up] service_x_main");
+
         msgrpc::Config::instance().service_register_->init();
 
         run_test_foo();

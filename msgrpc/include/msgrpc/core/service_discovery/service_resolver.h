@@ -10,6 +10,8 @@ namespace msgrpc {
     struct ServiceResolver {
         virtual ~ServiceResolver() = default;
 
+        //TODO: add msgrpc::MsgHeader as header
+        //TODO: add unencoded thrift struct as parameter
         virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) = 0;
     };
 

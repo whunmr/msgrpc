@@ -9,5 +9,5 @@ msgrpc::optional_service_id_t Z__ServiceResolver::service_name_to_id(const char*
 }
 
 void Z__ServiceResolver::on_changes(const msgrpc::instance_vector_t& instances) {
-    ___log_debug("Z__ServiceResolver::on_changes");
+    ___log_debug("Z__ServiceResolver::on_changes, got instances count: %d", instances.size());
 }

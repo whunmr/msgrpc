@@ -6,7 +6,6 @@
 #include <test_util/test_runner.h>
 #include <msgrpc/core/cell/timeout_cell.h>
 
-#include <msgrpc/core/service_discovery/default_service_resolver.h>
 #include <service_resolvers/service_y_resolver.h>
 #include <service_resolvers/service_z_resolver.h>
 #include <msgrpc/core/service_discovery/service_resolvers.h>

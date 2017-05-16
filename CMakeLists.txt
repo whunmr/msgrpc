@@ -33,3 +33,4 @@ add_subdirectory(demo_services/service_k)
 #TODO: test log call flow draw
 #TODO: msgrpc message capture and save
 #TODO: wireshare plugin support to open captured msgrpc messages
+#TODO: add assert in thrift struct optional field access method, assert optional field has value before access.

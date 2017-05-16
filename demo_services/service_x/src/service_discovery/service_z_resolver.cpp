@@ -1,4 +1,4 @@
-#include <service_resolvers/service_z_resolver.h>
+#include <service_discovery/service_z_resolver.h>
 #include <msgrpc/core/adapter/logger.h>
 
 DEFINE_AND_REGISTER_SERVICE_RESOLVER(Z__ServiceResolver);

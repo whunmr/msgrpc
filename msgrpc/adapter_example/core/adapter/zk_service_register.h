@@ -11,6 +11,7 @@
 #include <msgrpc/util/singleton.h>
 #include <msgrpc/util/instances_collector.h>
 #include <conservator/ConservatorFrameworkFactory.h>
+#include <msgrpc/core/service_discovery/service_filter.h>
 
 //TODO: split into .h and .cpp
 namespace demo {
@@ -268,7 +269,12 @@ namespace demo {
 
                 bool fetch_ok = fetch_service_instances_from_zk(service, ___iv);
                 if (fetch_ok) {
-                    //TODO: using service filter to filte out not services with incompatible api version.
+
+                    auto filters = msgrpc::InstancesCollector<msgrpc::ServiceFilter>::instance().instances();
+                    for (auto& filter : filters) {
+                        ___iv = filter->filter_service(service, ___iv);
+                    }
+
                     cache[service] = ___iv;
                     do_notify_listeners(service, ___iv);
                 }

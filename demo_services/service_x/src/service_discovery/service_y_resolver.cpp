@@ -1,4 +1,4 @@
-#include <service_resolvers/service_y_resolver.h>
+#include <service_discovery/service_y_resolver.h>
 #include <msgrpc/core/adapter/logger.h>
 
 DEFINE_AND_REGISTER_SERVICE_RESOLVER(Y__ServiceResolver);

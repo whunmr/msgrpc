@@ -6,8 +6,8 @@
 #include <msgrpc/core/adapter/service_register.h>
 #include <msgrpc/util/line_var_macro.h>
 
-
 struct Y__ServiceResolver : msgrpc::NamedSRListener<service_y::k_name>, msgrpc::NamedResolver<service_y::k_name>, msgrpc::Singleton<Y__ServiceResolver> {
+    Y__ServiceResolver();
     virtual msgrpc::optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override;
     virtual void on_changes(const msgrpc::instance_vector_t& instances) override;
 

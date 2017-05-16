@@ -268,6 +268,7 @@ namespace demo {
 
                 bool fetch_ok = fetch_service_instances_from_zk(service, ___iv);
                 if (fetch_ok) {
+                    //TODO: using service filter to filte out not services with incompatible api version.
                     cache[service] = ___iv;
                     do_notify_listeners(service, ___iv);
                 }

@@ -15,17 +15,9 @@ using namespace service_y;
 using namespace service_z;
 using namespace msgrpc;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 typedef ServiceResolvers<DefaultServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 
-void run_test_foo() {
-    MyServiceResolver& resolver = MyServiceResolver::instance();
-    resolver.service_name_to_id(service_y::k_name, nullptr, 0);
-    resolver.service_name_to_id(service_z::k_name, nullptr, 0);
-    resolver.service_name_to_id("service_y", nullptr, 0);
-    resolver.service_name_to_id("service_foo", nullptr, 0);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 DEFINE_SI_WITH_RESOLVER(SI_call_y_f1m1, YReq, YRsp, MyServiceResolver) {
     auto call_y_f1m1 = [&ctxt, req]() {
         return IY(ctxt).___f1m1(req);
@@ -102,11 +94,7 @@ int main() {
 
     auto x_init = [port]{
         ___log_debug("[service_start_up] service_x_main");
-
         msgrpc::Config::instance().service_register_->init();
-
-        run_test_foo();
-
         run_next_testcase();
     };
 

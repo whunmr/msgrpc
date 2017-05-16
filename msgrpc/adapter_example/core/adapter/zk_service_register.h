@@ -258,7 +258,6 @@ namespace demo {
 
                 bool fetch_ok = fetch_service_instances_from_zk(service, ___iv);
                 if (fetch_ok) {
-                    ___log_debug("fetched service list for service: %s, with %d listener(s)", service.c_str(), listeners_map_.size());
                     cache[service] = ___iv;
                     do_notify_listeners(service, ___iv);
                 }

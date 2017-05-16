@@ -5,9 +5,7 @@
 
 #include <test_util/test_runner.h>
 #include <msgrpc/core/cell/timeout_cell.h>
-#include <msgrpc/util/instances_collector.h>
 
-#include <msgrpc/core/service_discovery/service_resolver.h>
 #include <msgrpc/core/service_discovery/service_resolvers.h>
 #include <msgrpc/core/service_discovery/named_sr_listener.h>
 #include <service_resolvers/service_y_resolver.h>
@@ -17,15 +15,23 @@ using namespace service_y;
 using namespace service_z;
 using namespace msgrpc;
 
-//TODO: auto register Y__ServiceResolver and Z__ServiceResolver into global_resolver_list as default resolver.
-typedef ServiceResolvers<Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//last service resolver is the system default resolver in msgrpc::Config::instance().service_register_
+struct DefaultServiceResolver : ServiceResolver, Singleton<DefaultServiceResolver> {
+    virtual optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override {
+        ___log_debug("using DefaultServiceResolver to resolve service %s", service_name);
+        return msgrpc::Config::instance().service_register_->service_name_to_id(service_name, req, req_len);
+    }
+};
+
+typedef ServiceResolvers<DefaultServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 
 void run_test_foo() {
     MyServiceResolver& resolver = MyServiceResolver::instance();
     resolver.service_name_to_id(service_y::k_name, nullptr, 0);
     resolver.service_name_to_id(service_z::k_name, nullptr, 0);
     resolver.service_name_to_id("service_y", nullptr, 0);
-    resolver.service_name_to_id("service_qqqq", nullptr, 0);
+    resolver.service_name_to_id("service_foo", nullptr, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

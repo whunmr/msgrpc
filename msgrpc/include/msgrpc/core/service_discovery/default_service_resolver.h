@@ -4,6 +4,7 @@
 #include <msgrpc/core/service_discovery/service_resolver.h>
 #include <msgrpc/util/singleton.h>
 #include <msgrpc/core/adapter/logger.h>
+#include <msgrpc/core/adapter/service_register.h>
 
 namespace msgrpc {
 

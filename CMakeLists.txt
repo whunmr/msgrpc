@@ -25,7 +25,6 @@ add_subdirectory(demo_services/service_y)
 add_subdirectory(demo_services/service_z)
 add_subdirectory(demo_services/service_k)
 
-#TODO: support customized loadbalance strategy
 #TODO: support store meta data in services znode
 #TODO: support service discovery with service version
 #TODO: add batch service list support, like erlang_rpc's mcall

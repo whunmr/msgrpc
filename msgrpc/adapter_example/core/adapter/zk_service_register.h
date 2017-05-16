@@ -47,6 +47,15 @@ namespace demo {
             return msgrpc::service_id_t(boost::asio::ip::address::from_string(ip), port);
         }
 
+        string service_version_of(const string& endpoint) {
+            size_t sep = endpoint.find("#");
+            if (sep == string::npos) {
+                return string();
+            }
+
+            return string(endpoint, sep);
+        }
+
 
         void strings_to_instances(const vector<string>& instance_strings, instance_vector_t& instances) {
             instance_set_t instance_set;
@@ -57,6 +66,7 @@ namespace demo {
                 if (service_id) {
                     InstanceInfo ii;
                     ii.service_id_ = service_id.value();
+                    ii.version_ = service_version_of(si);
 
                     instance_set.insert(ii);
                 }
@@ -143,7 +153,7 @@ namespace demo {
                 return false;
             }
 
-            string path = k_services_root + "/" + service_name + "/" + end_point + "@" + std::to_string(session_id->client_id) + "@" + version;
+            string path = k_services_root + "/" + service_name + "/" + end_point + "@" + std::to_string(session_id->client_id) + "#" + version;
             ret = zk_->create()->withFlags(ZOO_EPHEMERAL)->forPath(path, end_point);
 
             bool result = (ZOK == ret || ZNODEEXISTS == ret);

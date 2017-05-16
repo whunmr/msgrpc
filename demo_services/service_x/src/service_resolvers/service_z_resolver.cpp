@@ -1,10 +1,7 @@
 #include <service_resolvers/service_z_resolver.h>
 #include <msgrpc/core/adapter/logger.h>
 
-msgrpc::SRListener* Z__ServiceResolver::instance_ptr = Z__ServiceResolver::instance().register_as_listener();
-Z__ServiceResolver::Z__ServiceResolver() {
-    auto force_reference = instance_ptr;
-}
+DEFINE_AND_REGISTER_SERVICE_RESOLVER(Z__ServiceResolver);
 
 msgrpc::optional_service_id_t Z__ServiceResolver::service_name_to_id(const char* service_name, const char* req, size_t req_len) {
     ___log_debug("service_name_to_id from Z__ServiceResolver");

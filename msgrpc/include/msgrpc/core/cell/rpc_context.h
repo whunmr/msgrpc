@@ -3,6 +3,7 @@
 
 #include <list>
 #include <msgrpc/core/cell/updatable.h>
+#include <msgrpc/core/service_discovery/service_resolver.h>
 
 namespace msgrpc {
 
@@ -20,6 +21,7 @@ namespace msgrpc {
         }
 
         std::list<Updatable *> release_list_;
+        ServiceResolver* service_resolver_ = {nullptr};
     };
 }
 

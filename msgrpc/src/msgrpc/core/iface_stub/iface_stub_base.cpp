@@ -35,7 +35,9 @@ namespace msgrpc {
         header->sequence_id_ = seq_id;
         memcpy(header + 1, (const char *) pbuf, len);
 
-        optional_service_id_t service_id = msgrpc::Config::instance().service_register_
+        assert(nullptr != ctxt_.service_resolver_);
+
+        optional_service_id_t service_id = ctxt_.service_resolver_
                                            ->service_name_to_id(to_service_name, mem, msg_len_with_header);
 
         if (!service_id) {

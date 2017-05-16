@@ -2,6 +2,7 @@
 #define PROJECT_SERVICE_RESOLVER_H
 
 #include <msgrpc/core/typedefs.h>
+#include <boost/optional.hpp>
 
 namespace msgrpc {
 

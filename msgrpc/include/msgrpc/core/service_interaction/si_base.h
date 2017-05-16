@@ -10,6 +10,7 @@ namespace msgrpc {
     struct SIBase { /*SI is short for service interaction*/
         msgrpc::Cell<RSP> *run(const REQ &req) {
             msgrpc::RpcContext *ctxt = new msgrpc::RpcContext();
+            ctxt->service_resolver_ = &SERVICE_RESOLVER::instance();
 
             msgrpc::Cell<RSP> *result_cell = do_run(req, *ctxt);
 

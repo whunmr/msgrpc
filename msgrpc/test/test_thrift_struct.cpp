@@ -104,4 +104,7 @@ TEST(thrift_struct, test_should_able_to__encode_and_decode___large_object) {
 }
 
 
-
+TEST(thrift_struct, access_to_optional_field_which_has__NO_value____will_get_an_assertion_failure) {
+    demo::SingleOptionalFieldStruct foo;
+    EXPECT_DEATH(foo.get_value(), "Assertion failed");
+}

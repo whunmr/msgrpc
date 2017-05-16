@@ -2,6 +2,7 @@
 //#define MSGRPC_THRIFT_STRUCT_DEF_IDL_H
 
 #include "thrift_struct_common.h"
+#include <cassert>
 
 ////////////////////////////////////////////////////////////////////////////////
 #define ___expand_isset_init_list__required(fid_, opt_or_req_, ftype_, fname_, ...)
@@ -36,7 +37,7 @@
 
 
 #define ___expand_get_struct_field_method__required(fid_, opt_or_req_, ftype_, fname_, ...)
-#define ___expand_get_struct_field_method__optional(fid_, opt_or_req_, ftype_, fname_, ...) ftype_ get_##fname_() const { return this->fname_; }
+#define ___expand_get_struct_field_method__optional(fid_, opt_or_req_, ftype_, fname_, ...) ftype_ get_##fname_() const { assert(__isset.fname_ && "can only access optional field which has value."); return this->fname_; }
 
 #define ___expand_get_struct_field_method(fid_, opt_or_req_, ftype_, fname_, ...) \
               ___expand_get_struct_field_method__##opt_or_req_(fid_, opt_or_req_, ftype_, fname_, __VA_ARGS__)

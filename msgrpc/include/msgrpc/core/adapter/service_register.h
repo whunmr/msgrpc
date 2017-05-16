@@ -11,6 +11,7 @@ namespace msgrpc {
 
     struct InstanceInfo {
         msgrpc::service_id_t service_id_;
+        //TODO: add version info here std::string version_;
     };
 
 

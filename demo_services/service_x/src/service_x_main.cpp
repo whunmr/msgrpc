@@ -26,7 +26,7 @@ void run_test_foo() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-DEFINE_SI(SI_call_y_f1m1, YReq, YRsp) {
+DEFINE_SI_WITH_RESOLVER(SI_call_y_f1m1, YReq, YRsp, MyServiceResolver) {
     auto call_y_f1m1 = [&ctxt, req]() {
         return IY(ctxt).___f1m1(req);
     };

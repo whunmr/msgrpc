@@ -1,17 +1,14 @@
 #ifndef MSGRPC_CELL_BASE_H
 #define MSGRPC_CELL_BASE_H
-#include <list>
-#include <boost/optional.hpp>
+#include <vector>
+
 #include <msgrpc/core/rpc_result.h>
+#include <msgrpc/core/cell/rpc_context.h>
+
+#include <boost/optional.hpp>
 
 namespace msgrpc {
 
-    struct Updatable {
-        virtual ~Updatable() {}
-        virtual void update() = 0;
-    };
-
-    ////////////////////////////////////////////////////////////////////////////
     struct CellStatus {
         virtual ~CellStatus() = default;
 
@@ -78,25 +75,6 @@ namespace msgrpc {
 
         template<typename T> friend struct DefaultCell;
     };
-
-
-    ////////////////////////////////////////////////////////////////////////////
-    struct RpcContext {
-        ~RpcContext() {
-            for (auto* r: release_list_) {
-                delete r;
-            }
-        }
-
-        template<typename T>
-        T track(T cell) {
-            release_list_.push_back(static_cast<Updatable*>(cell));
-            return cell;
-        }
-
-        std::list<Updatable*> release_list_;
-    };
-
 
     ////////////////////////////////////////////////////////////////////////////
     struct CellContextBase {

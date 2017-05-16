@@ -25,10 +25,9 @@ add_subdirectory(demo_services/service_y)
 add_subdirectory(demo_services/service_z)
 add_subdirectory(demo_services/service_k)
 
-#TODO: support service discovery with service version
 #TODO: add batch service list support, like erlang_rpc's mcall
 #TODO: testing support
-#TODO: auto generate testing from SI ?
+#TODO: auto generate testing from SI
 #TODO: contract testing
 #TODO: test log call flow draw
 #TODO: msgrpc message capture and save

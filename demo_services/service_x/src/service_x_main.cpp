@@ -41,7 +41,7 @@ DEF_TESTCASE(testcase_0000) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-DEFINE_SI(SI_call_z_f1m1, ZReq, req, ZRsp) {
+msgrpc::Cell<ZRsp>* SI_call_z_f1m1(const ZReq& req, msgrpc::RpcContext& ctxt) {
     auto call_y_f1m1 = [&ctxt, req]() {
         return IZ(ctxt).___z_f1m1(req);
     };
@@ -53,7 +53,7 @@ DEF_TESTCASE(testcase_0001) {
     ZReq zreq;
     zreq.zreqa = 100;
 
-    auto* rsp_cell = SI_call_z_f1m1().run(zreq);
+    auto* rsp_cell = run_si(SI_call_z_f1m1, zreq);
 
     derive_final_action([](msgrpc::Cell<ZRsp>& r) {
         EXPECT_EQ(true, r.has_value());
@@ -64,7 +64,7 @@ DEF_TESTCASE(testcase_0001) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-DEFINE_SI(SI_call_y_async_f1m2, YReq, req, YRsp) {
+msgrpc::Cell<YRsp>* SI_call_y_async_f1m2(const YReq& req, msgrpc::RpcContext& ctxt) {
     auto call_async_f1m2 = [&ctxt, req]() {
         return IY(ctxt).____async_f1m2(req);
     };
@@ -76,7 +76,7 @@ DEF_TESTCASE(testcase_0002) {
     YReq yreq;
     yreq.yreqa = 100;
 
-    auto* rsp_cell = SI_call_y_async_f1m2().run(yreq);
+    auto* rsp_cell = run_si(SI_call_y_async_f1m2, yreq);
 
     derive_final_action([](msgrpc::Cell<YRsp>& r) {
         EXPECT_EQ(true, r.has_value());

@@ -46,13 +46,13 @@ msgrpc::Cell<ResponseBar>* InterfaceY_impl::______sync_y(const RequestFoo& req) 
     );
 }
 
-DEFINE_SI(SI_____async_y, RequestFoo, req, ResponseBar) {
+msgrpc::Cell<ResponseBar>* SI_____async_y(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
     return InterfaceX(ctxt).______sync_x(req);
 }
 
 msgrpc::Cell<ResponseBar>* InterfaceY_impl::_____async_y(const RequestFoo& req) {
     std::cout << "                     _____async_y" << std::endl;
-    return SI_____async_y().run(req);
+    return run_si(SI_____async_y, req);
 }
 
 msgrpc::Cell<ResponseBar>* InterfaceY_impl::______sync_y_failed(const RequestFoo& req) {
@@ -71,11 +71,11 @@ msgrpc::Cell<ResponseBar>* InterfaceY_impl::______sync_y_failed_immediately(cons
 using namespace msgrpc;
 
 template<typename SI>
-void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
+void rpc_main(SI& si, std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     RequestFoo foo; foo.reqa = k_req_init_value;
 
-    auto* rsp_cell = SI().run(foo);
+    auto* rsp_cell = run_si(si, foo);
 
     msgrpc::derive_final_action([f](msgrpc::Cell<ResponseBar>& r) {
         f(r);
@@ -84,9 +84,9 @@ void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case000, RequestFoo, req, ResponseBar) {
+msgrpc::Cell<ResponseBar>* SI_case000(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         return InterfaceY(ctxt).______sync_y(req);
-    }
+}
 
 TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case000) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -94,14 +94,14 @@ TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case000) {
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case000>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case000, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case100, RequestFoo, req, ResponseBar) {
+msgrpc::Cell<ResponseBar>* SI_case100(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         return InterfaceY(ctxt)._____async_y(req);
-    }
+}
 
 TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case100) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -109,7 +109,7 @@ TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case100) {
         EXPECT_EQ(k_req_init_value + k__sync_x__delta, ___r.value().rspa);
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case100>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case100, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
@@ -117,12 +117,12 @@ TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case100) {
 void save_rsp_from_other_services_to_db(Cell<ResponseBar>& r) { std::cout << "1/2 ----------------->>>> write db." << std::endl; };
 void save_rsp_to_log(Cell<ResponseBar>& r)                    { std::cout << "2/2 ----------------->>>> save_log." << std::endl; };
 
-    DEFINE_SI(SI_case200, RequestFoo, req, ResponseBar) {
-        auto ___1 = InterfaceY(ctxt).______sync_y(req);
-                    ___action(save_rsp_from_other_services_to_db, ___1);
-                    ___action(save_rsp_to_log, ___1);
-        return ___1;
-    }
+msgrpc::Cell<ResponseBar>* SI_case200(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
+    auto ___1 = InterfaceY(ctxt).______sync_y(req);
+    ___action(save_rsp_from_other_services_to_db, ___1);
+    ___action(save_rsp_to_log, ___1);
+    return ___1;
+}
 
 TEST_F(MsgRpcTest, should_able_to_support___SI_with_single_rpc____which_bind_with_actions______________case200) {
     // x ----(req)---->y (sync_y)
@@ -132,7 +132,7 @@ TEST_F(MsgRpcTest, should_able_to_support___SI_with_single_rpc____which_bind_wit
         EXPECT_EQ(k_req_init_value + k__sync_y__delta, ___r.value().rspa);
     };
 
-    msg_loop_thread thread_x(x_service_id, [&] {rpc_main<SI_case200>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&] {rpc_main(SI_case200, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
@@ -147,13 +147,14 @@ void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1, Cell<Resp
     }
 };
 
-    DEFINE_SI(SI_case300, RequestFoo, req, ResponseBar) {
-        auto ___1 = InterfaceY(ctxt)._____async_y(req);
-        auto ___2 = InterfaceY(ctxt)._____async_y(req);
-        auto ___3 = ___cell(merge_logic) <------ ___on(___1, ___2);
 
-        return ___3;
-    }
+msgrpc::Cell<ResponseBar>* SI_case300(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
+    auto ___1 = InterfaceY(ctxt)._____async_y(req);
+    auto ___2 = InterfaceY(ctxt)._____async_y(req);
+    auto ___3 = ___cell(merge_logic) <------ ___on(___1, ___2);
+
+    return ___3;
+}
 
 TEST_F(MsgRpcTest, should_able_to_support__SI_with_concurrent_rpc__and__merge_multiple_rpc_result________case300) {
     // x ----(req1)-------------------------->y  (async_y)
@@ -170,7 +171,7 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_concurrent_rpc__and__merge_mu
         EXPECT_EQ(expect_value, ___r.value().rspa);
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case300>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case300, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
@@ -197,19 +198,17 @@ Cell<ResponseBar>* call__sync_y_failed(RpcContext &ctxt, Cell<ResponseBar> &___r
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+msgrpc::Cell<ResponseBar>* SI_case4001(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
+    auto init_first_rpc        = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
+    auto call_sync_y_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
+    auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
 
-    DEFINE_SI(SI_case4001, RequestFoo, req, ResponseBar) {
-        auto init_first_rpc        = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
-        auto call_sync_y_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
-        auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
+    auto ___1 = ___rpc(___ms(10), init_first_rpc);
+    auto ___2 = ___rpcex(___ms(10), call_sync_y_after___1) <------ ___on(___1);
+    auto ___3 = ___rpcex(___ms(10), call_sync_y_after___2) <------ ___on(___2);
 
-        auto ___1 = ___rpc(___ms(10), init_first_rpc);
-        auto ___2 = ___rpcex(___ms(10), call_sync_y_after___1) <------ ___on(___1);
-        auto ___3 = ___rpcex(___ms(10), call_sync_y_after___2) <------ ___on(___2);
-
-        return ___3;
-    }
-
+    return ___3;
+}
 
 TEST_F(MsgRpcTest, should_able_to_support__SI_with_sequential_rpc______case4001) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -217,24 +216,23 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_sequential_rpc______case4001)
         EXPECT_EQ(k_req_init_value + k__sync_y__delta * 3, ___r.value().rspa);
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case4001>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case4001, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                   , not_drop_msg );
     msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Cell<ResponseBar>* SI_case4011_failed(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
+    auto init_first_rpc        = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y_failed(req); };
+    auto call_sync_y_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
+    auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
 
-    DEFINE_SI(SI_case4011_failed, RequestFoo, req, ResponseBar) {
-        auto init_first_rpc        = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y_failed(req); };
-        auto call_sync_y_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
-        auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
+    auto ___1 = ___rpc(___ms(10), init_first_rpc);
+    auto ___2 = ___rpcex(___ms(10), call_sync_y_after___1) <------ ___on(___1);
+    auto ___3 = ___rpcex(___ms(10), call_sync_y_after___2) <------ ___on(___2);
 
-        auto ___1 = ___rpc(___ms(10), init_first_rpc);
-        auto ___2 = ___rpcex(___ms(10), call_sync_y_after___1) <------ ___on(___1);
-        auto ___3 = ___rpcex(___ms(10), call_sync_y_after___2) <------ ___on(___2);
-
-        return ___3;
-    }
+    return ___3;
+}
 
 TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_of_sequential_rpc______case4011) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -242,13 +240,13 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
         EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case4011_failed>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case4011_failed, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                          , not_drop_msg);
     msg_loop_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case4021_failed, RequestFoo, req, ResponseBar) {
+Cell<ResponseBar>* SI_case4021_failed(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto init_first_rpc               = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
         auto call_sync_y_failed_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y_failed(ctxt, ___r); };
         auto call_sync_y_again            = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
@@ -258,7 +256,7 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
         auto ___3 = ___rpcex(___ms(10), call_sync_y_again)            <------ ___on(___2);
 
         return ___3;
-    }
+}
 
 TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_of_sequential_rpc______case4021) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -266,7 +264,7 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
         EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case4021_failed>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case4021_failed, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                          , not_drop_msg);
     msg_loop_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
 }
@@ -280,14 +278,15 @@ void gen2(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp_cell_1)  {
 
 void action1(Cell<ResponseBar> &r) { std::cout << "1/1 ----------------->>>> action1." << std::endl; };
 
-    DEFINE_SI(SI_case500, RequestFoo, req, ResponseBar) {
+
+Cell<ResponseBar>* SI_case500(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto ___3 = InterfaceY(ctxt)._____async_y(req);
         auto ___1 = InterfaceY(ctxt)._____async_y(req);
                     ___action(action1, ___1);
 
           auto ___2 = ___cell(gen2) <------ ___on(___1);
         return ___cell(merge_logic) <------ ___on(___2, ___3);
-    }
+}
 
 TEST_F(MsgRpcTest, should_able_to_support___parallel_rpcs_merge_after___1_transform_into__cell___2________case500) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -296,7 +295,7 @@ TEST_F(MsgRpcTest, should_able_to_support___parallel_rpcs_merge_after___1_transf
         EXPECT_EQ(expect_value, ___r.value().rspa);
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case500>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case500, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
@@ -306,17 +305,17 @@ void gen6(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp)  {
                            : result.set_value(rsp);
 };
 
-    DEFINE_SI(SI_case600, RequestFoo, req, ResponseBar) {
+Cell<ResponseBar>* SI_case600(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto ___1 = InterfaceY(ctxt).______sync_y_failed(req);
         return ___cell(gen6) <------ ___on(___1);
-    }
+}
 
 TEST_F(MsgRpcTest, should_able_to_support_failure_propagation__during__bind_cell_____case600) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_FALSE(___r.has_value());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case600>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case600, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}, not_drop_msg);
 }
 
@@ -326,12 +325,12 @@ TEST_F(MsgRpcTest, should_able_to_support_failure_propagation__during__bind_cell
 //      if the result cell finished, can not release response handler of the detached cell.
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case700_timeout, RequestFoo, req, ResponseBar) {
+Cell<ResponseBar>* SI_case700_timeout(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);
         return ___1;
-    }
+}
 
 TEST_F(MsgRpcTest, should_able_to_support__rpc_with_timer_and_retry___case700) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -339,7 +338,7 @@ TEST_F(MsgRpcTest, should_able_to_support__rpc_with_timer_and_retry___case700) {
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case700_timeout>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case700_timeout, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                          , drop_all_msg);
     msg_loop_thread thread_timer(timer_service_id, []{}                                  , not_drop_msg);
 }
@@ -360,18 +359,19 @@ void run_customized_action(CellBase<bool> &r) {
     std::cout << "run_customized_action" << std::endl;
 }
 
-    DEFINE_SI(SI_case701_timeout_action, RequestFoo, req, ResponseBar) {
+
+Cell<ResponseBar>* SI_case701_timeout_action(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto do_rpc_sync_y   = [&ctxt, req]()                     { return InterfaceY(ctxt).______sync_y(req); };
         auto do_rpc_rollback = [&ctxt, req](CellBase<bool>& ___1) { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);                                      //seq_id: 1, 2
                     ___action(run_customized_action, ___1->timeout());
-        
+
                     auto ___2 = ___rpcex(___ms(10), ___retry(1), do_rpc_rollback) <------ ___on(___1->timeout());       //seq_id: 3, ...
                     auto ___3 = ___rpcex(___ms(10), ___retry(1), do_rpc_rollback) <------ ___on(___1->timeout());
 
         return ___cell(join_rollback_cells) <------ ___on(___1, ___2, ___3);
-    }
+}
 
 TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc__after__rpc_failed_______case701) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -379,7 +379,7 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc__after__rpc_fail
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case701_timeout_action>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case701_timeout_action, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                                 , drop_msg_with_seq_id({1, 2, 3}) );
     msg_loop_thread thread_timer(timer_service_id, []{}                                         , not_drop_msg);
 }
@@ -389,37 +389,36 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc___do_not_rollbac
         EXPECT_EQ(true, ___r.has_value());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case701_timeout_action>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case701_timeout_action, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                                 , not_drop_msg);
     msg_loop_thread thread_timer(timer_service_id, []{}                                         , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    DEFINE_SI(SI_case702_cancel_timer_after_success, RequestFoo, req, ResponseBar) {
+Cell<ResponseBar>* SI_case702_cancel_timer_after_success(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);  //seq_id: 1, 2
         return ___1;
-    }
+}
 
 TEST_F(MsgRpcTest, should_able_to_support__cancel_timer_after__retry_rpc_succeeded_______case702) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_EQ(true, ___r.has_value());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case702_cancel_timer_after_success>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case702_cancel_timer_after_success, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                                             , not_drop_msg);
     msg_loop_thread thread_timer(timer_service_id, []{}                                                     , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case8, RequestFoo, req, ResponseBar) {
+Cell<ResponseBar>* SI_case8(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(2), do_rpc_sync_y);  //seq_id: 1, 2, 3
         return ___1;
-    }
+}
 
 TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_result_from_retry_______case8) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -427,13 +426,13 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_
         EXPECT_EQ(RpcResult::succeeded, ___r.failed_reason());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case8>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case8, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                , drop_msg_with_seq_id({1, 2}) );
     msg_loop_thread thread_timer(timer_service_id, []{}                        , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case900, RequestFoo, req, ResponseBar) {
+Cell<ResponseBar>* SI_case900(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto do_rpc_sync_y = [&ctxt, req]() {
             return InterfaceY(ctxt).______sync_y(req);
         };
@@ -457,7 +456,7 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_
         auto ___3 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y_after_2) <------ ___on(___2);
         auto ___4 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y_after_2) <------ ___on(___3);
         return ___4;
-    }
+}
 
 TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation__through_sequential_rpcs_______case900) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -465,14 +464,13 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation__through_sequenti
         EXPECT_EQ(RpcResult::timeout, ___r.failed_reason());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case900>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case900, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                  , drop_all_msg);
     msg_loop_thread thread_timer(timer_service_id, []{}                          , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    DEFINE_SI(SI_case1000, RequestFoo, req, ResponseBar) {
+Cell<ResponseBar>* SI_case1000(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto do_rpc_sync_y = [&ctxt, req]() {
             return InterfaceY(ctxt).______sync_y(req);
         };
@@ -488,19 +486,19 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation__through_sequenti
 
             return InterfaceY(ctxt).______sync_y(req);
         };
-        
+
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);                                       //seq_id: 1, 3
         auto ___2 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);                                       //seq_id: 2, 4
         auto ___3 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y_after_1_2) <------ ___on(___1, ___2);
         return ___3;
-    }
+}
 
 TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation______case1000) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_EQ(false, ___r.has_value());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case1000>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case1000, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                   , drop_msg_with_seq_id({1, 2, 3, 4}));
     msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
@@ -510,13 +508,13 @@ TEST_F(MsgRpcTest, should_able_to_support__happy_path______case1001) {
         EXPECT_EQ(true, ___r.has_value());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case1000>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case1000, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
     msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case1100, RequestFoo, req, ResponseBar) {
+Cell<ResponseBar>* SI_case1100(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto do_rpc_sync_y = [&ctxt, req]() {
             return InterfaceY(ctxt).______sync_y_failed_immediately(req);
         };
@@ -532,7 +530,7 @@ TEST_F(MsgRpcTest, should_able_to_support__happy_path______case1001) {
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);
         auto ___2 = ___rpcex(___ms(10), ___retry(1), do_rpc_sync_y__after__1) <------ ___on(___1);
         return ___2;
-    }
+}
 
 TEST_F(MsgRpcTest, DISABLED_should_able_to_support__timeout_propagation______case1100) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
@@ -540,13 +538,13 @@ TEST_F(MsgRpcTest, DISABLED_should_able_to_support__timeout_propagation______cas
         EXPECT_EQ(RpcResult::failed, ___r.failed_reason());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case1100>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case1100, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
     msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case1200, RequestFoo, req, ResponseBar) {
+Cell<ResponseBar>* SI_case1200(const RequestFoo& req, msgrpc::RpcContext& ctxt) {
         auto do_rpc_sync_y = [&ctxt, req]() {
             return InterfaceY(ctxt).______sync_y(req);
         };
@@ -559,14 +557,14 @@ TEST_F(MsgRpcTest, DISABLED_should_able_to_support__timeout_propagation______cas
         auto ___2 = ___rpcex(___ms(10), do_rpc_sync_y__after__1) <------ ___on(___1);
 
         return ___2;
-    }
+}
 
 TEST_F(MsgRpcTest, should_able_to_support__map_operation_on_cell_____case1200) {
     auto then_check = [](Cell<ResponseBar>& ___r) {
         EXPECT_EQ(true, ___r.has_value());
     };
 
-    msg_loop_thread thread_x(x_service_id, [&]{rpc_main<SI_case1200>(then_check);}, not_drop_msg);
+    msg_loop_thread thread_x(x_service_id, [&]{rpc_main(SI_case1200, then_check);}, not_drop_msg);
     msg_loop_thread thread_y(y_service_id, []{}                                   , not_drop_msg);
     msg_loop_thread thread_timer(timer_service_id, []{}                           , not_drop_msg);
 }

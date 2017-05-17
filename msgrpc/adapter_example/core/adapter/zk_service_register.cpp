@@ -337,7 +337,7 @@ namespace demo {
         string service_path = k_services_root + "/" + service;
         vector<string> instance_strings = zk_->getChildren()->withWatcher(instance_child_watcher_fn, this)->forPath(service_path);
 
-        for (const auto& service_instance : instance_strings) {
+        for (string service_instance : instance_strings) {
             ___log_debug("    %s instance : %s", service.c_str(), service_instance.c_str());
         }
 

@@ -27,19 +27,19 @@ namespace msgrpc {
 
 
 
-#define DEFINE_SI(SI_NAME_, REQ_, RSP_)                                                         \
-    struct SI_NAME_ : msgrpc::SIBase<REQ_, RSP_> {                                              \
-        virtual msgrpc::Cell<RSP_>* do_run(const REQ_ &req, msgrpc::RpcContext& ctxt) override; \
-    };                                                                                          \
-    msgrpc::Cell<RSP_>* SI_NAME_::do_run(const REQ_ &req, msgrpc::RpcContext& ctxt)
+#define DEFINE_SI(SI_NAME_, REQ_, REQ_VAR_, RSP_)                                                    \
+    struct SI_NAME_ : msgrpc::SIBase<REQ_, RSP_> {                                                   \
+        virtual msgrpc::Cell<RSP_>* do_run(const REQ_ &REQ_VAR_, msgrpc::RpcContext& ctxt) override; \
+    };                                                                                               \
+    msgrpc::Cell<RSP_>* SI_NAME_::do_run(const REQ_ &REQ_VAR_, msgrpc::RpcContext& ctxt)
 
 
 
-#define DEFINE_SI_WITH_RESOLVER(SI_NAME_, REQ_, RSP_, SERVICE_RESOLVER)                         \
-    struct SI_NAME_ : msgrpc::SIBase<REQ_, RSP_, SERVICE_RESOLVER> {                            \
-        virtual msgrpc::Cell<RSP_>* do_run(const REQ_ &req, msgrpc::RpcContext& ctxt) override; \
-    };                                                                                          \
-    msgrpc::Cell<RSP_>* SI_NAME_::do_run(const REQ_ &req, msgrpc::RpcContext& ctxt)
+#define DEFINE_SI_WITH_RESOLVER(SI_NAME_, REQ_, REQ_VAR_, RSP_, SERVICE_RESOLVER)                    \
+    struct SI_NAME_ : msgrpc::SIBase<REQ_, RSP_, SERVICE_RESOLVER> {                                 \
+        virtual msgrpc::Cell<RSP_>* do_run(const REQ_ &REQ_VAR_, msgrpc::RpcContext& ctxt) override; \
+    };                                                                                               \
+    msgrpc::Cell<RSP_>* SI_NAME_::do_run(const REQ_ &REQ_VAR_, msgrpc::RpcContext& ctxt)
 
 
 

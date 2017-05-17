@@ -17,7 +17,7 @@ using namespace msgrpc;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 typedef ServiceResolvers<DefaultServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 
-DEFINE_SI_WITH_RESOLVER(SI_call_y_f1m1, YReq, YRsp, MyServiceResolver) {
+DEFINE_SI_WITH_RESOLVER(SI_call_y_f1m1, YReq, req, YRsp, MyServiceResolver) {
     auto call_y_f1m1 = [&ctxt, req]() {
         return IY(ctxt).___f1m1(req);
     };
@@ -41,7 +41,7 @@ DEF_TESTCASE(testcase_0000) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-DEFINE_SI(SI_call_z_f1m1, ZReq, ZRsp) {
+DEFINE_SI(SI_call_z_f1m1, ZReq, req, ZRsp) {
     auto call_y_f1m1 = [&ctxt, req]() {
         return IZ(ctxt).___z_f1m1(req);
     };
@@ -64,7 +64,7 @@ DEF_TESTCASE(testcase_0001) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-DEFINE_SI(SI_call_y_async_f1m2, YReq, YRsp) {
+DEFINE_SI(SI_call_y_async_f1m2, YReq, req, YRsp) {
     auto call_async_f1m2 = [&ctxt, req]() {
         return IY(ctxt).____async_f1m2(req);
     };

@@ -4,6 +4,7 @@
 #include <msgrpc/core/cell/cell.h>
 #include <msgrpc/core/adapter/config.h>
 #include <msgrpc/core/adapter/timer_adapter.h>
+#include <msgrpc/core/cell/dummy_place_holder.h>
 
 namespace msgrpc {
 
@@ -102,16 +103,6 @@ namespace msgrpc {
         bind_type bind_;
     };
 
-    struct DummyPlaceHodler {
-        DummyPlaceHodler& operator--() {
-            return *this;
-        }
-
-        DummyPlaceHodler& operator< (DummyPlaceHodler& p) {
-            return p;
-        }
-
-    } g_dummy_holder;
 
     template<typename F, typename... Args>
     auto derive_rpc_cell(RpcContext &ctxt, timeout_len_t timeout_ms, size_t retry_times, F f, const DummyPlaceHodler& dummyPlaceHodler, Args &&... args)

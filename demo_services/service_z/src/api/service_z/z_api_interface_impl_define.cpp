@@ -30,7 +30,7 @@ namespace service_z {
         }
     };
 
-    DEFINE_SI(SI_call_k_async, ZReq, ZRsp) {
+    DEFINE_SI(SI_call_k_async, ZReq, req, ZRsp) {
         auto call_k_f1m1 = [&ctxt, req]() {
             service_k::KReq kreq;
             return service_k::IK(ctxt).___k_f1m1(kreq);

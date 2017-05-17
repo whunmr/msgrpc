@@ -12,11 +12,12 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/gen1/api_constants.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/demo/demo_api_interface_impl_define.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_zookeeper.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_thrift_struct.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_zookeeper.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/test/test_async_rpc.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/iface_impl/iface_repository.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/cell/rsp_cell_base.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/cell/dummy_place_holder.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/msg_handlers/main_queue_task_handler.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/msg_handlers/rsp_msg_handler.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/msg/msg_handlers/msg_handler_mgr.cpp" isTestSource="false" />
@@ -28,11 +29,12 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/iface_stub/iface_stub_base.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/src/msgrpc/core/adapter/config.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/types.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_discovery/service_resolver.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_discovery/default_service_resolver.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_discovery/named_sr_listener.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_discovery/service_filter.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_discovery/resolver_macros.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_discovery/service_resolvers.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_discovery/service_resolver.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/service_discovery/named_sr_listener.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_base_t.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_impl_utility.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/iface_impl/iface_repository.h" isTestSource="false" />
@@ -41,13 +43,14 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/rsp_sink.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/cell_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/derived_async_cell.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/rpc_context.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/rsp_cell_base.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/updatable.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/derived_action.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/rpc_context.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/dummy_place_holder.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/derived_cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/cell.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/timeout_cell.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/cell/derived_action.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/msg/msg_sender.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/msg/msg_handlers/msg_handler_mgr.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/include/msgrpc/core/msg/msg_handlers/req_msg_handler.h" isTestSource="false" />
@@ -90,11 +93,11 @@
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/details/msgrpc_test.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/adapter_example/details/set_timer_handler.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/msgrpc/CMakeLists.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/src/service_z_main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/src/api/service_z/z_api_struct_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/src/api/service_z/z_api_interface_impl_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/src/api/service_k/k_api_struct_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/src/api/service_k/k_api_interface_stub_define.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/src/service_z_main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/include/api/service_z/z_api_struct_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_z/include/api/service_z/z_api_interface_declare.h" isTestSource="false" />
@@ -114,18 +117,20 @@
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/api/service_z/z_api_struct_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/api/service_y/y_api_struct_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/api/service_y/y_api_interface_stub_define.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/service_x_main.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/test_util/test_runner.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/service_discovery/service_y_resolver.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/service_discovery/service_version_filter.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/service_discovery/service_z_resolver.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/test_util/test_runner.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/src/service_x_main.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/CMakeLists.txt" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/service_discovery/service_y_resolver.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/service_discovery/service_z_resolver.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/test_util/test_runner.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/api/service_z/z_api_struct_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/api/service_z/z_api_interface_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/api/service_y/y_api_interface_declare.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/api/service_y/y_api_struct_declare.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/service_discovery/service_y_resolver.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/service_discovery/service_version_filter.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/service_discovery/service_z_resolver.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/demo_services/service_x/include/test_util/test_runner.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_k/src/api/service_k/k_api_interface_impl_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_k/src/api/service_k/k_api_struct_define.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/demo_services/service_k/src/service_k_main.cpp" isTestSource="false" />

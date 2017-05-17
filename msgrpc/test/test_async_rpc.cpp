@@ -46,7 +46,7 @@ msgrpc::Cell<ResponseBar>* InterfaceY_impl::______sync_y(const RequestFoo& req) 
     );
 }
 
-DEFINE_SI(SI_____async_y, RequestFoo, ResponseBar) {
+DEFINE_SI(SI_____async_y, RequestFoo, req, ResponseBar) {
     return InterfaceX(ctxt).______sync_x(req);
 }
 
@@ -84,7 +84,7 @@ void rpc_main(std::function<void(msgrpc::Cell<ResponseBar>&)> f) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case000, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case000, RequestFoo, req, ResponseBar) {
         return InterfaceY(ctxt).______sync_y(req);
     }
 
@@ -99,7 +99,7 @@ TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case000) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case100, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case100, RequestFoo, req, ResponseBar) {
         return InterfaceY(ctxt)._____async_y(req);
     }
 
@@ -117,7 +117,7 @@ TEST_F(MsgRpcTest, rpc__should_able_to_support___SI_with_single_rpc___case100) {
 void save_rsp_from_other_services_to_db(Cell<ResponseBar>& r) { std::cout << "1/2 ----------------->>>> write db." << std::endl; };
 void save_rsp_to_log(Cell<ResponseBar>& r)                    { std::cout << "2/2 ----------------->>>> save_log." << std::endl; };
 
-    DEFINE_SI(SI_case200, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case200, RequestFoo, req, ResponseBar) {
         auto ___1 = InterfaceY(ctxt).______sync_y(req);
                     ___action(save_rsp_from_other_services_to_db, ___1);
                     ___action(save_rsp_to_log, ___1);
@@ -147,7 +147,7 @@ void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1, Cell<Resp
     }
 };
 
-    DEFINE_SI(SI_case300, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case300, RequestFoo, req, ResponseBar) {
         auto ___1 = InterfaceY(ctxt)._____async_y(req);
         auto ___2 = InterfaceY(ctxt)._____async_y(req);
         return ___cell(merge_logic, ___1, ___2);
@@ -196,7 +196,7 @@ Cell<ResponseBar>* call__sync_y_failed(RpcContext &ctxt, Cell<ResponseBar> &___r
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    DEFINE_SI(SI_case4001, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case4001, RequestFoo, req, ResponseBar) {
         auto init_first_rpc        = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
         auto call_sync_y_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
         auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
@@ -222,7 +222,7 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_sequential_rpc______case4001)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    DEFINE_SI(SI_case4011_failed, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case4011_failed, RequestFoo, req, ResponseBar) {
         auto init_first_rpc        = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y_failed(req); };
         auto call_sync_y_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
         auto call_sync_y_after___2 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
@@ -246,7 +246,7 @@ TEST_F(MsgRpcTest, should_able_to_support__failure_propagation__during__middle_o
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case4021_failed, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case4021_failed, RequestFoo, req, ResponseBar) {
         auto init_first_rpc               = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
         auto call_sync_y_failed_after___1 = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y_failed(ctxt, ___r); };
         auto call_sync_y_again            = [&ctxt](Cell<ResponseBar>& ___r) { return call__sync_y(ctxt, ___r); };
@@ -278,7 +278,7 @@ void gen2(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp_cell_1)  {
 
 void action1(Cell<ResponseBar> &r) { std::cout << "1/1 ----------------->>>> action1." << std::endl; };
 
-    DEFINE_SI(SI_case500, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case500, RequestFoo, req, ResponseBar) {
         auto ___3 = InterfaceY(ctxt)._____async_y(req);
         auto ___1 = InterfaceY(ctxt)._____async_y(req);
                     ___action(action1, ___1);
@@ -304,7 +304,7 @@ void gen6(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp)  {
                            : result.set_value(rsp);
 };
 
-    DEFINE_SI(SI_case600, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case600, RequestFoo, req, ResponseBar) {
         auto ___1 = InterfaceY(ctxt).______sync_y_failed(req);
         return ___cell(gen6, ___1);
     }
@@ -324,7 +324,7 @@ TEST_F(MsgRpcTest, should_able_to_support_failure_propagation__during__bind_cell
 //      if the result cell finished, can not release response handler of the detached cell.
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case700_timeout, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case700_timeout, RequestFoo, req, ResponseBar) {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);
@@ -358,7 +358,7 @@ void run_customized_action(CellBase<bool> &r) {
     std::cout << "run_customized_action" << std::endl;
 }
 
-    DEFINE_SI(SI_case701_timeout_action, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case701_timeout_action, RequestFoo, req, ResponseBar) {
         auto do_rpc_sync_y   = [&ctxt, req]()                     { return InterfaceY(ctxt).______sync_y(req); };
         auto do_rpc_rollback = [&ctxt, req](CellBase<bool>& ___1) { return InterfaceY(ctxt).______sync_y(req); };
 
@@ -394,7 +394,7 @@ TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc___do_not_rollbac
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    DEFINE_SI(SI_case702_cancel_timer_after_success, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case702_cancel_timer_after_success, RequestFoo, req, ResponseBar) {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(1), do_rpc_sync_y);  //seq_id: 1, 2
@@ -412,7 +412,7 @@ TEST_F(MsgRpcTest, should_able_to_support__cancel_timer_after__retry_rpc_succeed
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case8, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case8, RequestFoo, req, ResponseBar) {
         auto do_rpc_sync_y = [&ctxt, req]() { return InterfaceY(ctxt).______sync_y(req); };
 
         auto ___1 = ___rpc(___ms(10), ___retry(2), do_rpc_sync_y);  //seq_id: 1, 2, 3
@@ -431,7 +431,7 @@ TEST_F(MsgRpcTest, should_able_to__support_rpc_with_timeout_and_retry___and_got_
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case900, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case900, RequestFoo, req, ResponseBar) {
         auto do_rpc_sync_y = [&ctxt, req]() {
             return InterfaceY(ctxt).______sync_y(req);
         };
@@ -470,7 +470,7 @@ TEST_F(MsgRpcTest, should_able_to_support__timeout_propagation__through_sequenti
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    DEFINE_SI(SI_case1000, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case1000, RequestFoo, req, ResponseBar) {
         auto do_rpc_sync_y = [&ctxt, req]() {
             return InterfaceY(ctxt).______sync_y(req);
         };
@@ -514,7 +514,7 @@ TEST_F(MsgRpcTest, should_able_to_support__happy_path______case1001) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case1100, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case1100, RequestFoo, req, ResponseBar) {
         auto do_rpc_sync_y = [&ctxt, req]() {
             return InterfaceY(ctxt).______sync_y_failed_immediately(req);
         };
@@ -544,7 +544,7 @@ TEST_F(MsgRpcTest, DISABLED_should_able_to_support__timeout_propagation______cas
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    DEFINE_SI(SI_case1200, RequestFoo, ResponseBar) {
+    DEFINE_SI(SI_case1200, RequestFoo, req, ResponseBar) {
         auto do_rpc_sync_y = [&ctxt, req]() {
             return InterfaceY(ctxt).______sync_y(req);
         };

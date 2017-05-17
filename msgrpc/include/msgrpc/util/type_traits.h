@@ -40,4 +40,7 @@ struct function_traits<R (T::*)(Args...) const> {
 template<class T>
 using first_argument_type = typename std::tuple_element<0, typename function_traits<T>::argument_types>::type;
 
+template<class T>
+using function_result_type = typename function_traits<T>::result_type;
+
 #endif //MSGRPC_TYPE_TRAITS_H

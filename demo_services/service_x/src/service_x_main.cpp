@@ -17,7 +17,7 @@ using namespace msgrpc;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 typedef ServiceResolvers<DefaultServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 
-DEFINE_SI_WITH_RESOLVER(SI_call_y_f1m1, YReq, req, YRsp, MyServiceResolver) {
+msgrpc::Cell<YRsp>* SI_call_y_f1m1(const YReq& req, msgrpc::RpcContext& ctxt) {
     auto call_y_f1m1 = [&ctxt, req]() {
         return IY(ctxt).___f1m1(req);
     };
@@ -29,7 +29,7 @@ DEF_TESTCASE(testcase_0000) {
     YReq yreq;
     yreq.yreqa = 100;
 
-    auto* rsp_cell = SI_call_y_f1m1().run(yreq);
+    auto* rsp = run_si<MyServiceResolver>(SI_call_y_f1m1, yreq);
 
     derive_final_action([](msgrpc::Cell<YRsp>& r) {
         EXPECT_EQ(true, r.has_value());
@@ -37,7 +37,7 @@ DEF_TESTCASE(testcase_0000) {
             EXPECT_EQ(200, r.value().yrspa);
 
         run_next_testcase();
-    }, rsp_cell);
+    }, rsp);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -150,7 +150,9 @@ void merge_logic(Cell<ResponseBar>& result, Cell<ResponseBar>& cell_1, Cell<Resp
     DEFINE_SI(SI_case300, RequestFoo, req, ResponseBar) {
         auto ___1 = InterfaceY(ctxt)._____async_y(req);
         auto ___2 = InterfaceY(ctxt)._____async_y(req);
-        return ___cell(merge_logic, ___1, ___2);
+        auto ___3 = ___cell(merge_logic) <------ ___on(___1, ___2);
+
+        return ___3;
     }
 
 TEST_F(MsgRpcTest, should_able_to_support__SI_with_concurrent_rpc__and__merge_multiple_rpc_result________case300) {
@@ -283,8 +285,8 @@ void action1(Cell<ResponseBar> &r) { std::cout << "1/1 ----------------->>>> act
         auto ___1 = InterfaceY(ctxt)._____async_y(req);
                     ___action(action1, ___1);
 
-                    auto ___2 = ___cell(gen2, ___1);
-                                return ___cell(merge_logic, ___2, ___3);
+          auto ___2 = ___cell(gen2) <------ ___on(___1);
+        return ___cell(merge_logic) <------ ___on(___2, ___3);
     }
 
 TEST_F(MsgRpcTest, should_able_to_support___parallel_rpcs_merge_after___1_transform_into__cell___2________case500) {
@@ -306,7 +308,7 @@ void gen6(Cell<ResponseBar> &result, Cell<ResponseBar> &rsp)  {
 
     DEFINE_SI(SI_case600, RequestFoo, req, ResponseBar) {
         auto ___1 = InterfaceY(ctxt).______sync_y_failed(req);
-        return ___cell(gen6, ___1);
+        return ___cell(gen6) <------ ___on(___1);
     }
 
 TEST_F(MsgRpcTest, should_able_to_support_failure_propagation__during__bind_cell_____case600) {
@@ -368,7 +370,7 @@ void run_customized_action(CellBase<bool> &r) {
                     auto ___2 = ___rpcex(___ms(10), ___retry(1), do_rpc_rollback) <------ ___on(___1->timeout());       //seq_id: 3, ...
                     auto ___3 = ___rpcex(___ms(10), ___retry(1), do_rpc_rollback) <------ ___on(___1->timeout());
 
-        return ___cell(join_rollback_cells, ___1, ___2, ___3);
+        return ___cell(join_rollback_cells) <------ ___on(___1, ___2, ___3);
     }
 
 TEST_F(MsgRpcTest, should_able_to_support__SI_with_rollback_rpc__after__rpc_failed_______case701) {

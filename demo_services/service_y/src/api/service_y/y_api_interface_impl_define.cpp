@@ -37,8 +37,7 @@ namespace service_y {
         };
 
         auto ___1 = ___rpc(___ms(5000), call_z_f1m1);
-        //TODO: refactor to ___cell(...) <------ ___on(___1);
-        auto ___2 = ___cell(map_zrsp_to_yrsp, ___1);
+        auto ___2 = ___cell(map_zrsp_to_yrsp) <------ ___on(___1);
 
         return ___2;
     };

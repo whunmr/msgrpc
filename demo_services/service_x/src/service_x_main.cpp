@@ -18,9 +18,7 @@ using namespace msgrpc;
 typedef ServiceResolvers<DefaultServiceResolver, Y__ServiceResolver, Z__ServiceResolver> MyServiceResolver;
 
 msgrpc::Cell<YRsp>* SI_call_y_f1m1(const YReq& req, msgrpc::RpcContext& ctxt) {
-    auto call_y_f1m1 = [&ctxt, req]() {
-        return IY(ctxt).___f1m1(req);
-    };
+    auto call_y_f1m1 = [&ctxt, req] { return IY(ctxt).___f1m1(req); };
 
     return ___rpc(___ms(10), call_y_f1m1);
 }
@@ -84,6 +82,32 @@ DEF_TESTCASE(testcase_0002) {
             EXPECT_EQ(14, r.value().yrspa);
         run_next_testcase();
     }, rsp_cell);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//msgrpc::Cell<YRsp>* SI_multi_rpc(const YReq& req, msgrpc::RpcContext& ctxt) {
+//    auto call_async_f1m2 = [&ctxt, req]() {
+//        return IY(ctxt).____async_f1m2(req);
+//    };
+//
+//    return ___rpc(___ms(10000), call_async_f1m2);
+//}
+
+DEF_TESTCASE(testcase_0003) {
+    //1. print out all instances of service_y
+    instance_vector_t instances = msgrpc::Config::instance().service_register_->instances_of("service_y");
+    for (auto& instance : instances) {
+        std::cout << instance.service_id_ << ", version: " << instance.version_ << std::endl;
+    }
+
+    //    YReq yreq;
+    //    yreq.yreqa = 100;
+    //    auto* rsp_cell = run_si(SI_multi_rpc, yreq);
+    //    derive_final_action([](msgrpc::Cell<YRsp>& r) {
+    //        EXPECT_EQ(true, r.has_value());
+    //        run_next_testcase();
+    //    }, rsp_cell);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

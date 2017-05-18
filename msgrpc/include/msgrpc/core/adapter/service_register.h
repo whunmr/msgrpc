@@ -9,16 +9,6 @@
 
 namespace msgrpc {
 
-    struct InstanceInfo {
-        msgrpc::service_id_t service_id_;
-        std::string version_;
-        //TODO: add metadata
-    };
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    typedef std::vector<InstanceInfo> instance_vector_t;
-
     struct SRListener {
         virtual ~SRListener() = default;
 
@@ -29,6 +19,8 @@ namespace msgrpc {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct ServiceRegister : AdapterBase, ServiceResolver {
         virtual ~ServiceRegister() = default;
+
+        virtual instance_vector_t instances_of(const char* service_name) = 0;
 
         virtual bool register_service(const char* service_name, const char* version, const char* end_point) = 0;
 

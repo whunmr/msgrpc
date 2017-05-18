@@ -35,7 +35,7 @@ namespace demo {
                 return string();
             }
 
-            return string(endpoint, sep);
+            return string(endpoint, sep + 1);
         }
 
 
@@ -117,6 +117,15 @@ namespace demo {
         return instances[ next_rr_index % size ].service_id_;
     }
 
+    msgrpc::instance_vector_t ZkServiceRegister::instances_of(const char* service_name) {
+        msgrpc::instance_vector_t ___iv;
+        const auto& iter = services_cache_.find(service_name);
+        if (iter == services_cache_.end()) {
+            return ___iv;
+        }
+
+        return iter->second;
+    }
 
     void ZkServiceRegister::register_listener(SRListener& listener) {
         std::set<SRListener*>& listeners = listeners_map_[listener.service_to_listener()];

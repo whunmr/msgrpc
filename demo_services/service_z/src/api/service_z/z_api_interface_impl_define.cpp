@@ -30,7 +30,8 @@ namespace service_z {
         }
     };
 
-    DEFINE_SI(SI_call_k_async, ZReq, req, ZRsp) {
+
+    msgrpc::Cell<ZRsp>* SI_call_k_async(const ZReq& req, msgrpc::RpcContext& ctxt) {
         auto call_k_f1m1 = [&ctxt, req]() {
             service_k::KReq kreq;
             return service_k::IK(ctxt).___k_f1m1(kreq);
@@ -40,11 +41,10 @@ namespace service_z {
         auto ___2 = ___cell(map_krsp_to_zrsp) <------ ___on(___1);
 
         return ___2;
-    };
-
+    }
 
     Cell<ZRsp>* IZ_impl::___z_async_f1m1(const ZReq& req) {
-        return SI_call_k_async().run(req);
+        return run_si(SI_call_k_async, req);
     }
 
 

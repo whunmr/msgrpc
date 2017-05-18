@@ -22,11 +22,12 @@ namespace demo {
 
 
     struct ZkServiceRegister : msgrpc::ServiceRegister, msgrpc::Singleton<ZkServiceRegister> {
-
         virtual bool init() override;
 
         virtual bool register_service(const char* service_name, const char* version, const char *end_point) override;
+
         virtual msgrpc::optional_service_id_t service_name_to_id(const char* service_name, const char* req, size_t req_len) override;
+        virtual msgrpc::instance_vector_t instances_of(const char* service_name) override;
 
         virtual void register_listener(msgrpc::SRListener& listener) override;
         virtual void unregister_listener(msgrpc::SRListener& ___l) override;
